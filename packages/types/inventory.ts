@@ -1,0 +1,50 @@
+export type JenisPergerakan = 'masuk' | 'keluar' | 'penyesuaian'
+
+export type AlasanPenyesuaian = 'Koreksi' | 'Rusak' | 'Hilang' | 'Sampel' | 'Lainnya'
+
+export interface PergerakanStok {
+  id: string
+  produkId: string
+  produkNama: string
+  produkSku: string
+  jenis: JenisPergerakan
+  jumlah: number
+  stokSebelum: number
+  stokSesudah: number
+  referensi?: string | null
+  userId: string
+  userNama: string
+  catatan?: string | null
+  alasan?: AlasanPenyesuaian | null
+  createdAt: string
+}
+
+export interface PenyesuaianStokDto {
+  produkId: string
+  jumlah: number
+  alasan: AlasanPenyesuaian
+  catatan?: string
+}
+
+export interface DashboardStok {
+  totalProduk: number
+  produkMenipis: number
+  produkHabis: number
+  produkKedaluwarsa30Hari: number
+}
+
+export interface Supplier {
+  id: string
+  nama: string
+  kontak: string
+  alamat: string
+  produkDisuplai: string[]
+  createdAt: string
+  updatedAt: string
+}
+
+export interface CreateSupplierDto {
+  nama: string
+  kontak: string
+  alamat: string
+}

@@ -1,0 +1,22 @@
+{
+  "name": "tanigo",
+  "private": true,
+  "packageManager": "npm@11.6.2",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "build": "turbo build",
+    "dev": "turbo dev",
+    "lint": "turbo lint",
+    "typecheck": "turbo typecheck",
+    "dev:crm": "turbo dev --filter=crm",
+    "dev:pos": "turbo dev --filter=pos",
+    "dev:kiosk": "turbo dev --filter=kiosk"
+  },
+  "devDependencies": {
+    "turbo": "^2.5.4",
+    "typescript": "^5"
+  }
+}
