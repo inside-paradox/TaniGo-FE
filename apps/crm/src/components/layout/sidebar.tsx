@@ -14,22 +14,22 @@ import {
   ChevronLeft,
   ChevronRight,
   ShoppingBag,
-  FileText,
   ClipboardList,
   Star,
   Sprout,
+  ArrowLeftRight,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useUIStore } from '@/store/ui-store'
 import { useAuthStore } from '@/store/auth-store'
-import type { UserRole } from '@/types'
+import type { UserRole, TipeCabang } from '@/types'
 
 interface NavItem {
   href: string
   label: string
   icon: React.ReactNode
   roles: UserRole[]
-  children?: { href: string; label: string }[]
+  tipeCabang?: TipeCabang[]
 }
 
 const navItems: NavItem[] = [
@@ -55,6 +55,13 @@ const navItems: NavItem[] = [
     href: '/purchase-order',
     label: 'Purchase Order',
     icon: <ShoppingBag className="h-5 w-5" />,
+    roles: ['admin', 'manajer', 'staf_gudang'],
+    tipeCabang: ['gudang'],
+  },
+  {
+    href: '/transfer-stok',
+    label: 'Transfer Stok',
+    icon: <ArrowLeftRight className="h-5 w-5" />,
     roles: ['admin', 'manajer', 'staf_gudang'],
   },
   {
@@ -106,9 +113,12 @@ export function Sidebar() {
   const { sidebarCollapsed, toggleSidebar } = useUIStore()
   const { user } = useAuthStore()
 
-  const visibleItems = navItems.filter(
-    (item) => user && item.roles.includes(user.role)
-  )
+  const visibleItems = navItems.filter((item) => {
+    if (!user) return false
+    if (!item.roles.includes(user.role)) return false
+    if (item.tipeCabang && !item.tipeCabang.includes(user.tipeCabang)) return false
+    return true
+  })
 
   return (
     <aside

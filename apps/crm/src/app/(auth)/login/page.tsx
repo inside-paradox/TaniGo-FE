@@ -13,20 +13,20 @@ import type { User } from '@/types'
 
 const DEMO_USERS: { label: string; user: User }[] = [
   {
-    label: 'Admin',
-    user: { id: 'demo-admin', nama: 'Admin Demo', email: 'admin@tanigo.id', role: 'admin', cabang: 'Pusat', aktif: true, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+    label: 'Admin (Gudang)',
+    user: { id: 'demo-admin', nama: 'Admin Demo', email: 'admin@tanigo.id', role: 'admin', cabang: 'Gudang Pusat', tipeCabang: 'gudang', aktif: true, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
   },
   {
-    label: 'Manajer',
-    user: { id: 'demo-manajer', nama: 'Budi Manajer', email: 'manajer@tanigo.id', role: 'manajer', cabang: 'Pusat', aktif: true, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+    label: 'Manajer (Toko)',
+    user: { id: 'demo-manajer', nama: 'Budi Manajer', email: 'manajer@tanigo.id', role: 'manajer', cabang: 'Toko Utama', tipeCabang: 'toko', aktif: true, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
   },
   {
-    label: 'Kasir',
-    user: { id: 'demo-kasir', nama: 'Siti Kasir', email: 'kasir@tanigo.id', role: 'kasir', cabang: 'Pusat', aktif: true, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+    label: 'Kasir (Toko)',
+    user: { id: 'demo-kasir', nama: 'Siti Kasir', email: 'kasir@tanigo.id', role: 'kasir', cabang: 'Toko Utama', tipeCabang: 'toko', aktif: true, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
   },
   {
     label: 'Staf Gudang',
-    user: { id: 'demo-gudang', nama: 'Andi Gudang', email: 'gudang@tanigo.id', role: 'staf_gudang', cabang: 'Pusat', aktif: true, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+    user: { id: 'demo-gudang', nama: 'Andi Gudang', email: 'gudang@tanigo.id', role: 'staf_gudang', cabang: 'Gudang Pusat', tipeCabang: 'gudang', aktif: true, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
   },
 ]
 

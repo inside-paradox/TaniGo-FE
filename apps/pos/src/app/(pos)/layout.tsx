@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { FlaskConical, WifiOff, RefreshCw } from 'lucide-react'
 import { useAuthStore } from '@/store/authStore'
@@ -15,14 +15,16 @@ export default function POSLayout({ children }: { children: React.ReactNode }) {
   const isDemo = accessToken === 'demo-token'
   const isOnline = useOnlineStatus()
   const { queueCount, isSyncing } = useOfflineStore()
+  const [mounted, setMounted] = useState(false)
 
   useSync()
 
   useEffect(() => {
+    setMounted(true)
     if (!isAuthenticated()) router.replace('/login')
   }, [isAuthenticated, router])
 
-  if (!isAuthenticated()) return null
+  if (!mounted || !isAuthenticated()) return null
 
   return (
     <div className="flex h-screen flex-col overflow-hidden bg-gray-50">

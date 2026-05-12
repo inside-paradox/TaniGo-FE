@@ -1,4 +1,5 @@
 export type UserRole = 'admin' | 'manajer' | 'kasir' | 'staf_gudang'
+export type TipeCabang = 'toko' | 'gudang'
 
 export interface User {
   id: string
@@ -6,6 +7,7 @@ export interface User {
   email: string
   role: UserRole
   cabang: string
+  tipeCabang: TipeCabang
   aktif: boolean
   createdAt: string
   updatedAt: string
