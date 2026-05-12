@@ -17,6 +17,25 @@ import { useCreateTransferStok } from '@/hooks/use-transfer-stok'
 import { useProducts } from '@/hooks/use-products'
 import type { Produk } from '@/types'
 
+// Satuan umum produk pertanian
+const SATUAN_OPTIONS = [
+  'kg', 'gram', 'liter', 'ml', 'buah', 'pak', 'karung',
+  'dus', 'botol', 'sachet', 'roll', 'lembar', 'set', 'unit',
+]
+
+// Mock gudang — ganti dengan API ketika endpoint tersedia
+interface Gudang {
+  id: string
+  nama: string
+  lokasi: string
+}
+
+const GUDANG_OPTIONS: Gudang[] = [
+  { id: 'gudang-1', nama: 'Gudang Pusat', lokasi: 'Jakarta' },
+  { id: 'gudang-2', nama: 'Gudang Utara', lokasi: 'Bogor' },
+  { id: 'gudang-3', nama: 'Gudang Selatan', lokasi: 'Depok' },
+]
+
 interface ItemBaris {
   _key: number
   produkId: string
@@ -35,6 +54,7 @@ export default function BuatTransferStokPage() {
 
   const produkList: Produk[] = useMemo(() => produksData?.data ?? [], [produksData])
 
+  const [gudangId, setGudangId] = useState('')
   const [items, setItems] = useState<ItemBaris[]>([
     { _key: _counter++, produkId: '', produkNama: '', produkSku: '', satuan: '', qtyDiminta: 1 },
   ])
@@ -69,6 +89,10 @@ export default function BuatTransferStokPage() {
     )
   }
 
+  function handleSatuan(key: number, satuan: string) {
+    setItems((prev) => prev.map((i) => (i._key === key ? { ...i, satuan } : i)))
+  }
+
   function handleQty(key: number, qty: number) {
     setItems((prev) =>
       prev.map((i) => (i._key === key ? { ...i, qtyDiminta: Math.max(1, qty) } : i))
@@ -77,9 +101,11 @@ export default function BuatTransferStokPage() {
 
   function validate(): boolean {
     const errs: Record<string, string> = {}
+    if (!gudangId) errs.gudang = 'Pilih gudang tujuan'
     if (items.length === 0) errs.items = 'Minimal 1 item harus ditambahkan'
     items.forEach((item, idx) => {
       if (!item.produkId) errs[`item_${idx}_produk`] = 'Pilih produk'
+      if (!item.satuan) errs[`item_${idx}_satuan`] = 'Pilih satuan'
       if (item.qtyDiminta < 1) errs[`item_${idx}_qty`] = 'Qty minimal 1'
     })
     const duplikat = items
@@ -94,7 +120,8 @@ export default function BuatTransferStokPage() {
     e.preventDefault()
     if (!validate()) return
     await create({
-      items: items.map((i) => ({ produkId: i.produkId, qtyDiminta: i.qtyDiminta })),
+      gudangId,
+      items: items.map((i) => ({ produkId: i.produkId, qtyDiminta: i.qtyDiminta, satuan: i.satuan })),
       catatan: catatan || undefined,
     })
     router.push('/transfer-stok')
@@ -114,6 +141,33 @@ export default function BuatTransferStokPage() {
       />
 
       <form onSubmit={handleSubmit} className="space-y-6">
+        {/* Pilih Gudang */}
+        <Card>
+          <CardHeader><CardTitle>Gudang Tujuan</CardTitle></CardHeader>
+          <CardContent>
+            <Combobox<Gudang>
+              options={GUDANG_OPTIONS}
+              value={gudangId}
+              onChange={setGudangId}
+              getOptionValue={(g) => g.id}
+              getOptionLabel={(g) => g.nama}
+              filterFn={(g, q) =>
+                g.nama.toLowerCase().includes(q.toLowerCase()) ||
+                g.lokasi.toLowerCase().includes(q.toLowerCase())
+              }
+              renderOption={(g) => (
+                <div className="flex items-center justify-between">
+                  <span>{g.nama}</span>
+                  <span className="text-xs text-gray-400">{g.lokasi}</span>
+                </div>
+              )}
+              placeholder="Pilih gudang tujuan..."
+              error={errors.gudang}
+            />
+          </CardContent>
+        </Card>
+
+        {/* Daftar Item */}
         <Card>
           <CardHeader>
             <div className="flex items-center justify-between">
@@ -133,9 +187,9 @@ export default function BuatTransferStokPage() {
             )}
 
             <div className="hidden grid-cols-12 gap-2 pb-2 text-xs font-medium uppercase text-gray-500 sm:grid">
-              <div className="col-span-6">Produk</div>
+              <div className="col-span-5">Produk</div>
               <div className="col-span-2 text-center">Qty</div>
-              <div className="col-span-2">Satuan</div>
+              <div className="col-span-3">Satuan</div>
               <div className="col-span-2" />
             </div>
 
@@ -145,7 +199,8 @@ export default function BuatTransferStokPage() {
                   key={item._key}
                   className="grid grid-cols-12 items-start gap-2 pt-3 first:pt-0"
                 >
-                  <div className="col-span-12 sm:col-span-6">
+                  {/* Produk */}
+                  <div className="col-span-12 sm:col-span-5">
                     <Combobox<Produk>
                       options={produkList.filter((p) => p.statusAktif)}
                       value={item.produkId}
@@ -172,6 +227,7 @@ export default function BuatTransferStokPage() {
                     />
                   </div>
 
+                  {/* Qty */}
                   <div className="col-span-4 sm:col-span-2">
                     <input
                       type="number"
@@ -185,10 +241,24 @@ export default function BuatTransferStokPage() {
                     )}
                   </div>
 
-                  <div className="col-span-4 sm:col-span-2 flex items-center">
-                    <span className="text-sm text-gray-500">{item.satuan || '—'}</span>
+                  {/* Satuan */}
+                  <div className="col-span-4 sm:col-span-3">
+                    <select
+                      value={item.satuan}
+                      onChange={(e) => handleSatuan(item._key, e.target.value)}
+                      className="h-10 w-full rounded-lg border border-gray-300 bg-white px-3 text-sm text-gray-900 focus:border-green-500 focus:outline-none focus:ring-1 focus:ring-green-500 disabled:cursor-not-allowed disabled:bg-gray-50 disabled:text-gray-400"
+                    >
+                      <option value="" disabled>Pilih satuan</option>
+                      {SATUAN_OPTIONS.map((s) => (
+                        <option key={s} value={s}>{s}</option>
+                      ))}
+                    </select>
+                    {errors[`item_${idx}_satuan`] && (
+                      <p className="mt-1 text-xs text-red-500">{errors[`item_${idx}_satuan`]}</p>
+                    )}
                   </div>
 
+                  {/* Hapus */}
                   <div className="col-span-4 sm:col-span-2 flex items-center justify-end">
                     <button
                       type="button"

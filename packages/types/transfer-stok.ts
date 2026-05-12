@@ -34,7 +34,8 @@ export interface TransferStok {
 }
 
 export interface CreateTransferStokDto {
-  items: { produkId: string; qtyDiminta: number }[]
+  gudangId: string
+  items: { produkId: string; qtyDiminta: number; satuan: string }[]
   catatan?: string
 }
 
