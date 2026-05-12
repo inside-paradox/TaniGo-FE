@@ -87,23 +87,20 @@ export function Cart() {
           </div>
 
           <div className="flex gap-2">
-            <Button
-              variant="outline"
-              size="sm"
+            <button
               onClick={() => holdCart()}
-              className="flex-shrink-0"
+              className="flex flex-1 flex-col items-center justify-center gap-1 rounded-xl border border-gray-200 bg-white py-3 text-gray-600 transition-colors hover:bg-gray-50 active:scale-[0.98]"
             >
-              <PauseCircle size={14} />
-              Tahan
-            </Button>
-            <Button
-              size="md"
-              className="flex-1"
+              <PauseCircle size={20} />
+              <span className="text-xs font-medium">Tahan</span>
+            </button>
+            <button
               onClick={() => setShowPayment(true)}
+              className="flex flex-[3] flex-col items-center justify-center gap-1 rounded-xl bg-green-600 py-3 text-white shadow-md shadow-green-200 transition-colors hover:bg-green-700 active:scale-[0.98]"
             >
-              <CreditCard size={16} />
-              Proses Pembayaran
-            </Button>
+              <CreditCard size={20} />
+              <span className="text-sm font-bold">Proses Pembayaran</span>
+            </button>
           </div>
         </div>
       )}
