@@ -7,19 +7,12 @@ import { useCartStore } from '@/store/cartStore'
 import { InputNominal } from '@/components/ui/input-nominal'
 import { cn } from '@/lib/utils/cn'
 
-const SATUAN_DESIMAL = ['kg', 'liter', 'gram', 'ml', 'ltr', 'ton', 'kwintal', 'ons']
-
-function isDecimalUnit(satuan: string) {
-  return SATUAN_DESIMAL.includes(satuan.toLowerCase())
-}
-
 interface CartItemProps {
   item: ItemKeranjang
 }
 
 export function CartItemRow({ item }: CartItemProps) {
   const { updateQty, updateDiskon, removeItem } = useCartStore()
-  const isDecimal = isDecimalUnit(item.satuan)
 
   const handleDiskonChange = (value: string) => {
     const num = parseFloat(value)
@@ -46,28 +39,14 @@ export function CartItemRow({ item }: CartItemProps) {
       <div className="flex items-center gap-2">
         <div className="flex items-center rounded-lg border border-gray-200 overflow-hidden">
           <button
-            onClick={() => updateQty(item.produkId, isDecimal ? item.qty - 0.5 : item.qty - 1)}
+            onClick={() => updateQty(item.produkId, item.qty - 1)}
             className="flex h-7 w-7 items-center justify-center text-gray-500 hover:bg-gray-50 transition-colors"
           >
             <Minus size={13} />
           </button>
-          {isDecimal ? (
-            <input
-              type="number"
-              min="0.01"
-              step="0.5"
-              value={item.qty}
-              onChange={(e) => {
-                const v = parseFloat(e.target.value)
-                if (!isNaN(v) && v > 0) updateQty(item.produkId, v)
-              }}
-              className="w-14 border-x border-gray-200 text-center text-sm focus:border-green-500 focus:outline-none focus:ring-1 focus:ring-green-500"
-            />
-          ) : (
-            <span className="w-8 text-center text-sm font-medium">{item.qty}</span>
-          )}
+          <span className="w-8 text-center text-sm font-medium">{item.qty}</span>
           <button
-            onClick={() => updateQty(item.produkId, isDecimal ? item.qty + 0.5 : item.qty + 1)}
+            onClick={() => updateQty(item.produkId, item.qty + 1)}
             className="flex h-7 w-7 items-center justify-center text-gray-500 hover:bg-gray-50 transition-colors"
           >
             <Plus size={13} />
