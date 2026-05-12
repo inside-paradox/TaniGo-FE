@@ -1,6 +1,16 @@
 'use client'
 
-import { Package, AlertTriangle, TrendingUp, Truck, ShoppingCart, Users } from 'lucide-react'
+import {
+  Package,
+  AlertTriangle,
+  TrendingUp,
+  Truck,
+  ShoppingCart,
+  Users,
+  ArrowLeftRight,
+  ClipboardList,
+  Clock,
+} from 'lucide-react'
 import {
   AreaChart,
   Area,
@@ -78,99 +88,137 @@ function StatCard({
   )
 }
 
-export default function DashboardPage() {
-  const { user } = useAuthStore()
+function DashboardGudang() {
   const { data: stok, isLoading: stokLoading } = useDashboardStok()
+
+  return (
+    <div className="space-y-6">
+      {/* Stok Overview */}
+      <div>
+        <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-gray-400">
+          Stok
+        </h2>
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <StatCard
+            title="Total Produk"
+            value={stok?.totalProduk ?? 0}
+            subtitle="Produk aktif di katalog"
+            icon={<Package className="h-5 w-5 text-blue-600" />}
+            color="bg-blue-50"
+            loading={stokLoading}
+          />
+          <StatCard
+            title="Stok Menipis"
+            value={stok?.produkMenipis ?? 0}
+            subtitle="Perlu segera di-restock"
+            icon={<AlertTriangle className="h-5 w-5 text-yellow-600" />}
+            color="bg-yellow-50"
+            loading={stokLoading}
+          />
+          <StatCard
+            title="Stok Habis"
+            value={stok?.produkHabis ?? 0}
+            subtitle="Tidak tersedia"
+            icon={<Package className="h-5 w-5 text-red-600" />}
+            color="bg-red-50"
+            loading={stokLoading}
+          />
+          <StatCard
+            title="Kedaluwarsa 30 Hari"
+            value={stok?.produkKedaluwarsa30Hari ?? 0}
+            subtitle="Perlu perhatian segera"
+            icon={<AlertTriangle className="h-5 w-5 text-orange-600" />}
+            color="bg-orange-50"
+            loading={stokLoading}
+          />
+        </div>
+      </div>
+
+      {/* Purchase Order & Transfer Stok */}
+      <div>
+        <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-gray-400">
+          Aktivitas
+        </h2>
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+          <StatCard
+            title="PO Menunggu"
+            value={4}
+            subtitle="Menunggu konfirmasi supplier"
+            icon={<ClipboardList className="h-5 w-5 text-indigo-600" />}
+            color="bg-indigo-50"
+          />
+          <StatCard
+            title="Transfer Masuk"
+            value={7}
+            subtitle="Menunggu persetujuan"
+            icon={<Clock className="h-5 w-5 text-amber-600" />}
+            color="bg-amber-50"
+          />
+          <StatCard
+            title="Siap Dikirim"
+            value={3}
+            subtitle="Transfer sudah disetujui"
+            icon={<ArrowLeftRight className="h-5 w-5 text-teal-600" />}
+            color="bg-teal-50"
+          />
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function DashboardToko() {
   const { data: penjualan, isLoading: penjualanLoading } = useDashboardPenjualan()
+  const { data: stok, isLoading: stokLoading } = useDashboardStok()
 
   const penjualanHarian = penjualan?.harian || penjualanHarianMock
   const metodePembayaran = penjualan?.metodePembayaran || metodePembayaranMock
 
   return (
     <div className="space-y-6">
-      {/* Page title */}
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
-        <p className="text-sm text-gray-500">
-          Selamat datang kembali, <span className="font-medium">{user?.nama}</span>
-        </p>
-      </div>
-
-      {/* Stat Cards */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <StatCard
-          title="Total Produk"
-          value={stok?.totalProduk ?? 0}
-          subtitle="Produk aktif di katalog"
-          icon={<Package className="h-5 w-5 text-blue-600" />}
-          color="bg-blue-50"
-          loading={stokLoading}
-        />
-        <StatCard
-          title="Stok Menipis"
-          value={stok?.produkMenipis ?? 0}
-          subtitle="Perlu segera di-restock"
-          icon={<AlertTriangle className="h-5 w-5 text-yellow-600" />}
-          color="bg-yellow-50"
-          loading={stokLoading}
-        />
-        <StatCard
-          title="Stok Habis"
-          value={stok?.produkHabis ?? 0}
-          subtitle="Tidak tersedia untuk dijual"
-          icon={<Package className="h-5 w-5 text-red-600" />}
-          color="bg-red-50"
-          loading={stokLoading}
-        />
-        <StatCard
-          title="Kedaluwarsa 30 Hari"
-          value={stok?.produkKedaluwarsa30Hari ?? 0}
-          subtitle="Perlu perhatian segera"
-          icon={<AlertTriangle className="h-5 w-5 text-orange-600" />}
-          color="bg-orange-50"
-          loading={stokLoading}
-        />
-      </div>
-
       {/* Penjualan Stats */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <StatCard
-          title="Pendapatan Minggu Ini"
-          value={
-            penjualan?.totalPendapatan
-              ? formatRupiah(penjualan.totalPendapatan)
-              : formatRupiah(39100000)
-          }
-          subtitle="7 hari terakhir"
-          icon={<TrendingUp className="h-5 w-5 text-green-600" />}
-          color="bg-green-50"
-          loading={penjualanLoading}
-        />
-        <StatCard
-          title="Total Transaksi"
-          value={penjualan?.totalTransaksi ?? 142}
-          subtitle="7 hari terakhir"
-          icon={<ShoppingCart className="h-5 w-5 text-purple-600" />}
-          color="bg-purple-50"
-          loading={penjualanLoading}
-        />
-        <StatCard
-          title="Rata-rata Transaksi"
-          value={
-            penjualan?.rataRataTransaksi
-              ? formatRupiah(penjualan.rataRataTransaksi)
-              : formatRupiah(275352)
-          }
-          subtitle="Per transaksi"
-          icon={<Users className="h-5 w-5 text-indigo-600" />}
-          color="bg-indigo-50"
-          loading={penjualanLoading}
-        />
+      <div>
+        <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-gray-400">
+          Penjualan Minggu Ini
+        </h2>
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+          <StatCard
+            title="Pendapatan"
+            value={
+              penjualan?.totalPendapatan
+                ? formatRupiah(penjualan.totalPendapatan)
+                : formatRupiah(39100000)
+            }
+            subtitle="7 hari terakhir"
+            icon={<TrendingUp className="h-5 w-5 text-green-600" />}
+            color="bg-green-50"
+            loading={penjualanLoading}
+          />
+          <StatCard
+            title="Total Transaksi"
+            value={penjualan?.totalTransaksi ?? 142}
+            subtitle="7 hari terakhir"
+            icon={<ShoppingCart className="h-5 w-5 text-purple-600" />}
+            color="bg-purple-50"
+            loading={penjualanLoading}
+          />
+          <StatCard
+            title="Rata-rata Transaksi"
+            value={
+              penjualan?.rataRataTransaksi
+                ? formatRupiah(penjualan.rataRataTransaksi)
+                : formatRupiah(275352)
+            }
+            subtitle="Per transaksi"
+            icon={<Users className="h-5 w-5 text-indigo-600" />}
+            color="bg-indigo-50"
+            loading={penjualanLoading}
+          />
+        </div>
       </div>
 
       {/* Charts */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-        {/* Penjualan Harian */}
         <Card className="lg:col-span-2">
           <CardHeader>
             <CardTitle>Grafik Penjualan 7 Hari Terakhir</CardTitle>
@@ -221,7 +269,6 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
 
-        {/* Metode Pembayaran */}
         <Card>
           <CardHeader>
             <CardTitle>Metode Pembayaran</CardTitle>
@@ -263,30 +310,90 @@ export default function DashboardPage() {
         </Card>
       </div>
 
-      {/* Pengiriman Hari Ini */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <StatCard
-          title="Pengiriman Hari Ini"
-          value={8}
-          subtitle="3 sedang dalam perjalanan"
-          icon={<Truck className="h-5 w-5 text-teal-600" />}
-          color="bg-teal-50"
-        />
-        <StatCard
-          title="Pesanan Baru"
-          value={12}
-          subtitle="Menunggu diproses"
-          icon={<ShoppingCart className="h-5 w-5 text-amber-600" />}
-          color="bg-amber-50"
-        />
-        <StatCard
-          title="Tagihan Jatuh Tempo"
-          value={3}
-          subtitle="Pelanggan VIP"
-          icon={<AlertTriangle className="h-5 w-5 text-rose-600" />}
-          color="bg-rose-50"
-        />
+      {/* Operasional Hari Ini */}
+      <div>
+        <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-gray-400">
+          Operasional Hari Ini
+        </h2>
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <StatCard
+            title="Pengiriman"
+            value={8}
+            subtitle="3 sedang dalam perjalanan"
+            icon={<Truck className="h-5 w-5 text-teal-600" />}
+            color="bg-teal-50"
+          />
+          <StatCard
+            title="Pesanan Baru"
+            value={12}
+            subtitle="Menunggu diproses"
+            icon={<ShoppingCart className="h-5 w-5 text-amber-600" />}
+            color="bg-amber-50"
+          />
+          <StatCard
+            title="Tagihan Jatuh Tempo"
+            value={3}
+            subtitle="Pelanggan VIP"
+            icon={<AlertTriangle className="h-5 w-5 text-rose-600" />}
+            color="bg-rose-50"
+          />
+          <StatCard
+            title="Transfer Stok Pending"
+            value={2}
+            subtitle="Menunggu konfirmasi gudang"
+            icon={<ArrowLeftRight className="h-5 w-5 text-violet-600" />}
+            color="bg-violet-50"
+            loading={stokLoading}
+          />
+        </div>
       </div>
+
+      {/* Stok Menipis */}
+      <div>
+        <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-gray-400">
+          Perhatian Stok
+        </h2>
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <StatCard
+            title="Stok Menipis"
+            value={stok?.produkMenipis ?? 0}
+            subtitle="Pertimbangkan transfer dari gudang"
+            icon={<AlertTriangle className="h-5 w-5 text-yellow-600" />}
+            color="bg-yellow-50"
+            loading={stokLoading}
+          />
+          <StatCard
+            title="Stok Habis"
+            value={stok?.produkHabis ?? 0}
+            subtitle="Tidak tersedia untuk dijual"
+            icon={<Package className="h-5 w-5 text-red-600" />}
+            color="bg-red-50"
+            loading={stokLoading}
+          />
+        </div>
+      </div>
+    </div>
+  )
+}
+
+export default function DashboardPage() {
+  const { user } = useAuthStore()
+  const isGudang = user?.tipeCabang === 'gudang'
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
+        <p className="text-sm text-gray-500">
+          Selamat datang kembali,{' '}
+          <span className="font-medium">{user?.nama}</span>
+          {user?.cabang && (
+            <span className="ml-1 text-gray-400">· {user.cabang}</span>
+          )}
+        </p>
+      </div>
+
+      {isGudang ? <DashboardGudang /> : <DashboardToko />}
     </div>
   )
 }

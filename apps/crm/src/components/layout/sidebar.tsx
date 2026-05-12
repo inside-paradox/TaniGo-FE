@@ -69,18 +69,21 @@ const navItems: NavItem[] = [
     label: 'Pesanan',
     icon: <ShoppingCart className="h-5 w-5" />,
     roles: ['admin', 'manajer', 'kasir'],
+    tipeCabang: ['toko'],
   },
   {
     href: '/pelanggan-vip',
     label: 'Pelanggan VIP',
     icon: <Star className="h-5 w-5" />,
     roles: ['admin', 'manajer'],
+    tipeCabang: ['toko'],
   },
   {
     href: '/pengiriman',
     label: 'Pengiriman',
     icon: <Truck className="h-5 w-5" />,
-    roles: ['admin', 'manajer', 'staf_gudang'],
+    roles: ['admin', 'manajer', 'kasir'],
+    tipeCabang: ['toko'],
   },
   {
     href: '/laporan',
