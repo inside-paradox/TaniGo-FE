@@ -698,7 +698,7 @@ export const mockStokOpname: StokOpname[] = [
     nomorOpname: 'SO-2026-001',
     cabangId: 'gudang-1',
     cabangNama: 'Gudang Pusat',
-    status: 'Diajukan',
+    status: 'Disetujui',
     items: [
       { id: 'soi-1a', produkId: 'p-1', produkNama: 'Pupuk Urea 50kg', produkSku: 'PUP-001', satuan: 'karung', stokSistem: 130, stokFisik: 120, selisih: -10 },
       { id: 'soi-1b', produkId: 'p-2', produkNama: 'Pupuk NPK Mutiara', produkSku: 'PUP-002', satuan: 'kg', stokSistem: 8, stokFisik: 8, selisih: 0 },
@@ -708,14 +708,15 @@ export const mockStokOpname: StokOpname[] = [
     ],
     catatan: 'Opname rutin bulanan. Selisih urea kemungkinan karena tumpahan saat bongkar muat.',
     submittedAt: d(5),
-    createdAt: d(5), updatedAt: d(5),
+    approvedAt: d(4),
+    createdAt: d(5), updatedAt: d(4),
   },
   {
     id: 'so-2',
     nomorOpname: 'SO-2026-002',
     cabangId: 'toko-1',
     cabangNama: 'Toko Utama',
-    status: 'Diajukan',
+    status: 'Disetujui',
     items: [
       { id: 'soi-2a', produkId: 'p-1', produkNama: 'Pupuk Urea 50kg', produkSku: 'PUP-001', satuan: 'karung', stokSistem: 20, stokFisik: 20, selisih: 0 },
       { id: 'soi-2b', produkId: 'p-3', produkNama: 'Pestisida Roundup 1L', produkSku: 'PES-001', satuan: 'botol', stokSistem: 12, stokFisik: 10, selisih: -2 },
@@ -723,7 +724,8 @@ export const mockStokOpname: StokOpname[] = [
     ],
     catatan: 'Opname awal migrasi ke sistem TaniGo.',
     submittedAt: d(10),
-    createdAt: d(10), updatedAt: d(10),
+    approvedAt: d(9),
+    createdAt: d(10), updatedAt: d(9),
   },
   {
     id: 'so-3',

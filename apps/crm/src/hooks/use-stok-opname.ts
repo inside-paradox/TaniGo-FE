@@ -51,6 +51,22 @@ export function useSubmitStokOpname() {
   })
 }
 
+export function useApproveStokOpname() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (id: string) => stokOpnameApi.approve(id),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: [STOK_OPNAME_KEY] })
+      qc.invalidateQueries({ queryKey: ['products'] })
+      qc.invalidateQueries({ queryKey: ['inventory'] })
+      toast.success('Stok opname disetujui. Stok cabang telah diperbarui.')
+    },
+    onError: (err: { response?: { data?: { message?: string } } }) => {
+      toast.error(err.response?.data?.message || 'Gagal menyetujui stok opname')
+    },
+  })
+}
+
 export function useDeleteStokOpname() {
   const qc = useQueryClient()
   return useMutation({

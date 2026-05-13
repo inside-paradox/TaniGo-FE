@@ -18,14 +18,14 @@ const STATUS_TABS: { id: StatusStokOpname | 'semua'; label: string }[] = [
   { id: 'semua', label: 'Semua' },
   { id: 'Draft', label: 'Draft' },
   { id: 'Diajukan', label: 'Diajukan' },
+  { id: 'Disetujui', label: 'Disetujui' },
 ]
 
 function StatusBadge({ status }: { status: StatusStokOpname }) {
-  return (
-    <Badge variant={status === 'Diajukan' ? 'success' : 'default'}>
-      {status}
-    </Badge>
-  )
+  const map: Record<StatusStokOpname, 'default' | 'info' | 'success'> = {
+    Draft: 'default', Diajukan: 'info', Disetujui: 'success',
+  }
+  return <Badge variant={map[status]}>{status}</Badge>
 }
 
 function SelisihBadge({ selisih }: { selisih: number }) {

@@ -1,4 +1,4 @@
-export type StatusStokOpname = 'Draft' | 'Diajukan'
+export type StatusStokOpname = 'Draft' | 'Diajukan' | 'Disetujui'
 
 export interface StokOpnameItem {
   id: string
@@ -20,6 +20,7 @@ export interface StokOpname {
   items: StokOpnameItem[]
   catatan?: string | null
   submittedAt?: string | null
+  approvedAt?: string | null
   createdAt: string
   updatedAt: string
 }

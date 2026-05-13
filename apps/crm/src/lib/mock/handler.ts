@@ -622,9 +622,9 @@ export function getMockResponse(config: AxiosRequestConfig): Omit<AxiosResponse,
       const storedUser = typeof window !== 'undefined' ? localStorage.getItem('user') : null
       const currentUser = storedUser ? JSON.parse(storedUser) : null
       const cabangItem = currentUser?.cabangId ? cabang.find((c) => c.id === currentUser.cabangId) : null
-      const items = (body.items as Array<{ produkId: string; stokFisik: number }>).map((item, i) => {
+      const items = (body.items as Array<{ produkId: string; stokSistem?: number; stokFisik: number }>).map((item, i) => {
         const produk = mockProduk.find((p) => p.id === item.produkId)
-        const stokSistem = produk?.stok ?? 0
+        const stokSistem = item.stokSistem ?? produk?.stok ?? 0
         return {
           id: `soi-new-${i}`,
           produkId: item.produkId,
@@ -662,12 +662,13 @@ export function getMockResponse(config: AxiosRequestConfig): Omit<AxiosResponse,
 
     if (action === 'submit' && method === 'post' && idx !== -1) {
       const now = new Date().toISOString()
-      stokOpname[idx] = {
-        ...stokOpname[idx],
-        status: 'Diajukan',
-        submittedAt: now,
-        updatedAt: now,
-      }
+      stokOpname[idx] = { ...stokOpname[idx], status: 'Diajukan', submittedAt: now, updatedAt: now }
+      return ok(stokOpname[idx])
+    }
+
+    if (action === 'approve' && method === 'post' && idx !== -1) {
+      const now = new Date().toISOString()
+      stokOpname[idx] = { ...stokOpname[idx], status: 'Disetujui', approvedAt: now, updatedAt: now }
       return ok(stokOpname[idx])
     }
 

@@ -1,7 +1,7 @@
 'use client'
 
 import { useParams, useRouter } from 'next/navigation'
-import { ArrowLeft, Send, Trash2 } from 'lucide-react'
+import { ArrowLeft, CheckCircle, Send, Trash2 } from 'lucide-react'
 import { useState } from 'react'
 import { PageHeader } from '@/components/shared/page-header'
 import { Button } from '@/components/ui/button'
@@ -9,13 +9,18 @@ import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { ConfirmModal } from '@/components/ui/modal'
 import { Skeleton } from '@/components/ui/skeleton'
-import { useStokOpname, useSubmitStokOpname, useDeleteStokOpname } from '@/hooks/use-stok-opname'
+import { useStokOpname, useSubmitStokOpname, useApproveStokOpname, useDeleteStokOpname } from '@/hooks/use-stok-opname'
 import { useAuthStore } from '@/store/auth-store'
 import { formatTanggal, formatTanggalWaktu } from '@/lib/utils'
 import type { StatusStokOpname, StokOpnameItem } from '@/types'
 
 function StatusBadge({ status }: { status: StatusStokOpname }) {
-  return <Badge variant={status === 'Diajukan' ? 'success' : 'default'}>{status}</Badge>
+  const map: Record<StatusStokOpname, 'default' | 'info' | 'success'> = {
+    Draft: 'default',
+    Diajukan: 'info',
+    Disetujui: 'success',
+  }
+  return <Badge variant={map[status]}>{status}</Badge>
 }
 
 function SelisihCell({ item }: { item: StokOpnameItem }) {
@@ -42,17 +47,21 @@ export default function StokOpnameDetailPage() {
   const router = useRouter()
   const { user } = useAuthStore()
   const [showSubmitConfirm, setShowSubmitConfirm] = useState(false)
+  const [showApproveConfirm, setShowApproveConfirm] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
 
   const { data: opname, isLoading } = useStokOpname(id)
   const { mutate: submit, isPending: isSubmitting } = useSubmitStokOpname()
+  const { mutate: approve, isPending: isApproving } = useApproveStokOpname()
   const { mutate: hapus, isPending: isDeleting } = useDeleteStokOpname()
 
   if (isLoading) return <DetailSkeleton />
   if (!opname) return <div className="text-center text-sm text-gray-500 py-16">Stok opname tidak ditemukan.</div>
 
   const isDraft = opname.status === 'Draft'
+  const isDiajukan = opname.status === 'Diajukan'
   const isAdmin = user?.role === 'admin'
+  const isSuperadmin = user?.role === 'superadmin'
 
   const kurang = opname.items.filter((i) => i.selisih < 0)
   const lebih = opname.items.filter((i) => i.selisih > 0)
@@ -71,19 +80,21 @@ export default function StokOpnameDetailPage() {
             </Button>
             {isDraft && isAdmin && (
               <>
-                <Button
-                  variant="outline"
-                  onClick={() => setShowDeleteConfirm(true)}
-                  className="text-red-500 hover:text-red-600"
-                >
+                <Button variant="outline" onClick={() => setShowDeleteConfirm(true)} className="text-red-500 hover:text-red-600">
                   <Trash2 className="h-4 w-4" />
                   Hapus Draft
                 </Button>
                 <Button onClick={() => setShowSubmitConfirm(true)}>
                   <Send className="h-4 w-4" />
-                  Ajukan & Update Stok
+                  Ajukan
                 </Button>
               </>
+            )}
+            {isDiajukan && isSuperadmin && (
+              <Button onClick={() => setShowApproveConfirm(true)}>
+                <CheckCircle className="h-4 w-4" />
+                Setujui & Update Stok
+              </Button>
             )}
           </div>
         }
@@ -108,6 +119,12 @@ export default function StokOpnameDetailPage() {
             <div>
               <p className="text-xs text-gray-500 uppercase tracking-wide">Diajukan</p>
               <p className="mt-1 text-sm">{formatTanggalWaktu(opname.submittedAt)}</p>
+            </div>
+          )}
+          {opname.approvedAt && (
+            <div>
+              <p className="text-xs text-gray-500 uppercase tracking-wide">Disetujui</p>
+              <p className="mt-1 text-sm">{formatTanggalWaktu(opname.approvedAt)}</p>
             </div>
           )}
           {opname.catatan && (
@@ -200,6 +217,16 @@ export default function StokOpnameDetailPage() {
         description="Stok sistem akan diperbarui sesuai hasil hitung fisik. Tindakan ini tidak dapat dibatalkan."
         confirmLabel="Ajukan & Update Stok"
         loading={isSubmitting}
+      />
+
+      <ConfirmModal
+        open={showApproveConfirm}
+        onClose={() => setShowApproveConfirm(false)}
+        onConfirm={() => approve(id, { onSuccess: () => setShowApproveConfirm(false) })}
+        title="Setujui Stok Opname?"
+        description="Stok cabang akan diperbarui sesuai hasil hitung fisik. Tindakan ini tidak dapat dibatalkan."
+        confirmLabel="Setujui & Update Stok"
+        loading={isApproving}
       />
 
       <ConfirmModal

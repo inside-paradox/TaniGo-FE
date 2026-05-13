@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { ArrowLeft, Save, Send } from 'lucide-react'
 import { PageHeader } from '@/components/shared/page-header'
@@ -11,10 +11,12 @@ import { Textarea } from '@/components/ui/textarea'
 import { Badge } from '@/components/ui/badge'
 import { useCreateStokOpname, useSubmitStokOpname } from '@/hooks/use-stok-opname'
 import { useProducts } from '@/hooks/use-products'
+import { useAuthStore } from '@/store/auth-store'
 import type { Produk } from '@/types'
 
 interface ItemRow {
   produk: Produk
+  stokSistem: number
   stokFisik: string
 }
 
@@ -36,18 +38,26 @@ function SelisihCell({ diff }: { diff: number | null }) {
 
 export default function StokOpnameBaruPage() {
   const router = useRouter()
+  const { user } = useAuthStore()
   const { data: produkData, isLoading } = useProducts({ page: 1, limit: 100 })
   const produkList = produkData?.data ?? []
 
   const [rows, setRows] = useState<ItemRow[]>([])
   const [catatan, setCatatan] = useState('')
-  const [initialized, setInitialized] = useState(false)
 
-  // init rows once products loaded
-  if (!initialized && produkList.length > 0) {
-    setRows(produkList.map((p) => ({ produk: p, stokFisik: '' })))
-    setInitialized(true)
-  }
+  // Stok sistem: 0 untuk toko (belum ada inventory), pakai stok katalog untuk gudang
+  const isGudang = user?.tipeCabang === 'gudang'
+
+  useEffect(() => {
+    if (produkList.length > 0) {
+      setRows(produkList.map((p) => ({
+        produk: p,
+        // toko pakai 0 karena stok di katalog adalah stok gudang, bukan toko
+        stokSistem: isGudang ? p.stok : 0,
+        stokFisik: '',
+      })))
+    }
+  }, [produkList.length, isGudang])
 
   const { mutateAsync: create, isPending: isCreating } = useCreateStokOpname()
   const { mutateAsync: submit, isPending: isSubmitting } = useSubmitStokOpname()
@@ -60,7 +70,7 @@ export default function StokOpnameBaruPage() {
   const summary = useMemo(() => {
     let lebih = 0, kurang = 0, sesuai = 0
     filledRows.forEach((r) => {
-      const d = selisih(r.produk.stok, r.stokFisik)
+      const d = selisih(r.stokSistem, r.stokFisik)
       if (d === null) return
       if (d > 0) lebih++
       else if (d < 0) kurang++
@@ -76,6 +86,7 @@ export default function StokOpnameBaruPage() {
   const buildDto = () => ({
     items: filledRows.map((r) => ({
       produkId: r.produk.id,
+      stokSistem: r.stokSistem,
       stokFisik: parseInt(r.stokFisik, 10),
     })),
     catatan: catatan || undefined,
@@ -151,7 +162,7 @@ export default function StokOpnameBaruPage() {
                 </thead>
                 <tbody className="divide-y divide-gray-50">
                   {rows.map((row) => {
-                    const diff = selisih(row.produk.stok, row.stokFisik)
+                    const diff = selisih(row.stokSistem, row.stokFisik)
                     const hasValue = row.stokFisik !== ''
                     return (
                       <tr
@@ -164,7 +175,7 @@ export default function StokOpnameBaruPage() {
                         </td>
                         <td className="px-4 py-3 text-sm text-gray-600">{row.produk.kategori}</td>
                         <td className="px-4 py-3 text-center">
-                          <span className="font-semibold text-gray-700">{row.produk.stok}</span>
+                          <span className="font-semibold text-gray-700">{row.stokSistem}</span>
                           <span className="ml-1 text-xs text-gray-400">{row.produk.satuan}</span>
                         </td>
                         <td className="px-4 py-3">

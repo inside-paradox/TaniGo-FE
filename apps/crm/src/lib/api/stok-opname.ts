@@ -24,6 +24,11 @@ export const stokOpnameApi = {
     return data.data
   },
 
+  approve: async (id: string): Promise<StokOpname> => {
+    const { data } = await api.post(`/stok-opname/${id}/approve`)
+    return data.data
+  },
+
   delete: async (id: string): Promise<void> => {
     await api.delete(`/stok-opname/${id}`)
   },
