@@ -4,19 +4,33 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { ChevronRight, Home } from 'lucide-react'
 
-const pathLabels: Record<string, string> = {
+// Full-path overrides — checked first for specific routes
+const fullPathLabels: Record<string, string> = {
+  '/transfer-stok/baru': 'Permintaan Baru',
+  '/produk/baru': 'Tambah Produk',
+  '/purchase-order/baru': 'Buat PO',
+  '/pesanan/baru': 'Buat Pesanan',
+  '/cabang/baru': 'Tambah Cabang',
+  '/pengiriman/baru': 'Tambah Pengiriman',
+  '/pengguna/baru': 'Tambah Pengguna',
+}
+
+// Segment-level fallback labels
+const segmentLabels: Record<string, string> = {
   dashboard: 'Dashboard',
   produk: 'Produk',
   inventori: 'Inventori',
   'purchase-order': 'Purchase Order',
+  'transfer-stok': 'Transfer Stok',
   pesanan: 'Pesanan',
   'pelanggan-vip': 'Pelanggan VIP',
   pengiriman: 'Pengiriman',
   laporan: 'Laporan',
   pengguna: 'Pengguna',
+  cabang: 'Cabang',
   'audit-log': 'Log Audit',
   pengaturan: 'Pengaturan',
-  baru: 'Tambah Baru',
+  baru: 'Baru',
   edit: 'Edit',
   detail: 'Detail',
   supplier: 'Supplier',
@@ -39,7 +53,7 @@ export function Breadcrumb() {
       {segments.map((segment, index) => {
         const href = '/' + segments.slice(0, index + 1).join('/')
         const isLast = index === segments.length - 1
-        const label = pathLabels[segment] || segment
+        const label = fullPathLabels[href] ?? segmentLabels[segment] ?? segment
 
         return (
           <div key={href} className="flex items-center gap-1">
