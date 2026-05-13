@@ -7,6 +7,7 @@ import { ChevronRight, Home } from 'lucide-react'
 // Full-path overrides — checked first for specific routes
 const fullPathLabels: Record<string, string> = {
   '/transfer-stok/baru': 'Permintaan Baru',
+  '/stok-opname/baru': 'Buat Stok Opname',
   '/produk/baru': 'Tambah Produk',
   '/purchase-order/baru': 'Buat PO',
   '/pesanan/baru': 'Buat Pesanan',
@@ -22,6 +23,7 @@ const segmentLabels: Record<string, string> = {
   inventori: 'Inventori',
   'purchase-order': 'Purchase Order',
   'transfer-stok': 'Transfer Stok',
+  'stok-opname': 'Stok Opname',
   pesanan: 'Pesanan',
   'pelanggan-vip': 'Pelanggan VIP',
   pengiriman: 'Pengiriman',

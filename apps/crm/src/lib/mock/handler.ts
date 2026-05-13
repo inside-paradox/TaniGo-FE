@@ -10,9 +10,10 @@ import {
   mockPesanan,
   mockPelangganVIP,
   mockTagihanVIP,
+  mockStokOpname,
   paginate,
 } from './data'
-import type { Cabang, User, TransferStok, Pengiriman, PurchaseOrder, PembayaranPO, Pesanan, PelangganVIP, TagihanVIP, StatusPenerimaanItem } from '@/types'
+import type { Cabang, User, TransferStok, Pengiriman, PurchaseOrder, PembayaranPO, Pesanan, PelangganVIP, TagihanVIP, StokOpname, StatusPenerimaanItem } from '@/types'
 
 // In-memory mutable state for demo mutations
 let cabang = [...mockCabang] as Cabang[]
@@ -24,6 +25,7 @@ const pembayaranPO = [...mockPembayaranPO] as PembayaranPO[]
 const pesanan = [...mockPesanan] as Pesanan[]
 const pelangganVIP = [...mockPelangganVIP] as PelangganVIP[]
 const tagihanVIP = [...mockTagihanVIP] as TagihanVIP[]
+const stokOpname = [...mockStokOpname] as StokOpname[]
 
 function ok(data: unknown, status = 200): Omit<AxiosResponse, 'config'> {
   return { data: { data }, status, statusText: 'OK', headers: {} }
@@ -604,6 +606,73 @@ export function getMockResponse(config: AxiosRequestConfig): Omit<AxiosResponse,
 
     if (method === 'delete' && idx !== -1) {
       pelangganVIP.splice(idx, 1)
+      return ok({})
+    }
+  }
+
+  // ── Stok Opname ───────────────────────────────────────────────────────────
+  if (rawUrl === '/stok-opname' || rawUrl.startsWith('/stok-opname?')) {
+    if (method === 'get') {
+      let list = [...stokOpname]
+      if (params.status) list = list.filter((s) => s.status === params.status)
+      list = list.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+      return ok(paginate(list, Number(params.page ?? 1), Number(params.limit ?? 25)))
+    }
+    if (method === 'post') {
+      const storedUser = typeof window !== 'undefined' ? localStorage.getItem('user') : null
+      const currentUser = storedUser ? JSON.parse(storedUser) : null
+      const cabangItem = currentUser?.cabangId ? cabang.find((c) => c.id === currentUser.cabangId) : null
+      const items = (body.items as Array<{ produkId: string; stokFisik: number }>).map((item, i) => {
+        const produk = mockProduk.find((p) => p.id === item.produkId)
+        const stokSistem = produk?.stok ?? 0
+        return {
+          id: `soi-new-${i}`,
+          produkId: item.produkId,
+          produkNama: produk?.nama ?? item.produkId,
+          produkSku: produk?.sku ?? '',
+          satuan: produk?.satuan ?? '',
+          stokSistem,
+          stokFisik: item.stokFisik,
+          selisih: item.stokFisik - stokSistem,
+        }
+      })
+      const newOpname: StokOpname = {
+        id: `so-${Date.now()}`,
+        nomorOpname: `SO-2026-${String(stokOpname.length + 1).padStart(3, '0')}`,
+        cabangId: currentUser?.cabangId ?? 'gudang-1',
+        cabangNama: cabangItem?.nama ?? currentUser?.cabang ?? 'Cabang',
+        status: 'Draft',
+        items,
+        catatan: body.catatan,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      }
+      stokOpname.unshift(newOpname)
+      return ok(newOpname, 201)
+    }
+  }
+
+  const soActionMatch = matchPath(rawUrl, /^\/stok-opname\/([^/]+)(?:\/(.+))?$/)
+  if (soActionMatch) {
+    const id = soActionMatch[1]
+    const action = soActionMatch[2]
+    const idx = stokOpname.findIndex((s) => s.id === id)
+
+    if (method === 'get' && !action) return ok(stokOpname[idx] ?? null)
+
+    if (action === 'submit' && method === 'post' && idx !== -1) {
+      const now = new Date().toISOString()
+      stokOpname[idx] = {
+        ...stokOpname[idx],
+        status: 'Diajukan',
+        submittedAt: now,
+        updatedAt: now,
+      }
+      return ok(stokOpname[idx])
+    }
+
+    if (method === 'delete' && idx !== -1) {
+      stokOpname.splice(idx, 1)
       return ok({})
     }
   }

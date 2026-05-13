@@ -7,6 +7,7 @@ import type {
   Pesanan,
   PelangganVIP,
   TagihanVIP,
+  StokOpname,
   User,
   Produk,
 } from '@/types'
@@ -686,6 +687,55 @@ export const mockPesanan: Pesanan[] = [
     kasirId: 'u-3',
     kasirNama: 'Siti Kasir',
     createdAt: d(5), updatedAt: d(5),
+  },
+]
+
+// ─── Stok Opname ─────────────────────────────────────────────────────────────
+
+export const mockStokOpname: StokOpname[] = [
+  {
+    id: 'so-1',
+    nomorOpname: 'SO-2026-001',
+    cabangId: 'gudang-1',
+    cabangNama: 'Gudang Pusat',
+    status: 'Diajukan',
+    items: [
+      { id: 'soi-1a', produkId: 'p-1', produkNama: 'Pupuk Urea 50kg', produkSku: 'PUP-001', satuan: 'karung', stokSistem: 130, stokFisik: 120, selisih: -10 },
+      { id: 'soi-1b', produkId: 'p-2', produkNama: 'Pupuk NPK Mutiara', produkSku: 'PUP-002', satuan: 'kg', stokSistem: 8, stokFisik: 8, selisih: 0 },
+      { id: 'soi-1c', produkId: 'p-3', produkNama: 'Pestisida Roundup 1L', produkSku: 'PES-001', satuan: 'botol', stokSistem: 35, stokFisik: 37, selisih: 2 },
+      { id: 'soi-1d', produkId: 'p-5', produkNama: 'Sprayer Manual 16L', produkSku: 'ALT-001', satuan: 'unit', stokSistem: 15, stokFisik: 15, selisih: 0 },
+      { id: 'soi-1e', produkId: 'p-6', produkNama: 'Pupuk Kandang Organik', produkSku: 'PUP-003', satuan: 'karung', stokSistem: 60, stokFisik: 58, selisih: -2 },
+    ],
+    catatan: 'Opname rutin bulanan. Selisih urea kemungkinan karena tumpahan saat bongkar muat.',
+    submittedAt: d(5),
+    createdAt: d(5), updatedAt: d(5),
+  },
+  {
+    id: 'so-2',
+    nomorOpname: 'SO-2026-002',
+    cabangId: 'toko-1',
+    cabangNama: 'Toko Utama',
+    status: 'Diajukan',
+    items: [
+      { id: 'soi-2a', produkId: 'p-1', produkNama: 'Pupuk Urea 50kg', produkSku: 'PUP-001', satuan: 'karung', stokSistem: 20, stokFisik: 20, selisih: 0 },
+      { id: 'soi-2b', produkId: 'p-3', produkNama: 'Pestisida Roundup 1L', produkSku: 'PES-001', satuan: 'botol', stokSistem: 12, stokFisik: 10, selisih: -2 },
+      { id: 'soi-2c', produkId: 'p-6', produkNama: 'Pupuk Kandang Organik', produkSku: 'PUP-003', satuan: 'karung', stokSistem: 25, stokFisik: 25, selisih: 0 },
+    ],
+    catatan: 'Opname awal migrasi ke sistem TaniGo.',
+    submittedAt: d(10),
+    createdAt: d(10), updatedAt: d(10),
+  },
+  {
+    id: 'so-3',
+    nomorOpname: 'SO-2026-003',
+    cabangId: 'gudang-1',
+    cabangNama: 'Gudang Pusat',
+    status: 'Draft',
+    items: [
+      { id: 'soi-3a', produkId: 'p-4', produkNama: 'Benih Padi IR64', produkSku: 'BEN-001', satuan: 'kg', stokSistem: 0, stokFisik: 5, selisih: 5 },
+      { id: 'soi-3b', produkId: 'p-2', produkNama: 'Pupuk NPK Mutiara', produkSku: 'PUP-002', satuan: 'kg', stokSistem: 8, stokFisik: 6, selisih: -2 },
+    ],
+    createdAt: d(1), updatedAt: d(1),
   },
 ]
 

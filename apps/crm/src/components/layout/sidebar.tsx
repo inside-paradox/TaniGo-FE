@@ -15,6 +15,7 @@ import {
   ChevronRight,
   ShoppingBag,
   ClipboardList,
+  ClipboardCheck,
   Star,
   Sprout,
   ArrowLeftRight,
@@ -77,6 +78,12 @@ const navItems: NavItem[] = [
     href: '/transfer-stok',
     label: 'Transfer Stok',
     icon: <ArrowLeftRight className="h-5 w-5" />,
+    roles: ['admin', 'manajer', 'staf_gudang'],
+  },
+  {
+    href: '/stok-opname',
+    label: 'Stok Opname',
+    icon: <ClipboardCheck className="h-5 w-5" />,
     roles: ['admin', 'manajer', 'staf_gudang'],
   },
   {
