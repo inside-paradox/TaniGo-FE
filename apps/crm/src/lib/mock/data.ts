@@ -2,6 +2,8 @@ import type {
   Cabang,
   TransferStok,
   Pengiriman,
+  PurchaseOrder,
+  PembayaranPO,
   User,
   Produk,
 } from '@/types'
@@ -185,6 +187,154 @@ export const mockPengiriman: Pengiriman[] = [
     alasanGagal: 'Alamat tidak ditemukan. Pelanggan tidak bisa dihubungi.',
     biaya: { bbm: 60000, upahDriver: 100000, tol: 20000, lainnya: 0, total: 180000 },
     createdAt: d(5), updatedAt: d(4),
+  },
+]
+
+// ─── Purchase Orders ──────────────────────────────────────────────────────────
+
+export const mockPurchaseOrders: PurchaseOrder[] = [
+  // PO-001: Diterima & Lunas — stok sudah masuk
+  {
+    id: 'po-001',
+    nomorPO: 'PO-2026-001',
+    supplierId: 'sup-1',
+    supplierNama: 'CV Agro Mandiri',
+    items: [
+      { id: 'poi-1a', produkId: 'p-1', produkNama: 'Pupuk Urea 50kg', produkSku: 'PUP-001', qtyPesan: 50, qtyDiterima: 50, hargaBeli: 85000, subtotal: 4250000 },
+      { id: 'poi-1b', produkId: 'p-2', produkNama: 'Pupuk NPK Mutiara', produkSku: 'PUP-002', qtyPesan: 100, qtyDiterima: 100, hargaBeli: 12000, subtotal: 1200000 },
+    ],
+    biayaTambahan: { ongkosKirim: 200000, biayaBongkarMuat: 100000, upahKurir: 0, lainnya: 0 },
+    totalHargaBarang: 5450000,
+    totalBiayaTambahan: 300000,
+    totalKeseluruhan: 5750000,
+    hppPerUnit: 38333,
+    totalQty: 150,
+    status: 'Diterima',
+    statusPembayaran: 'Lunas',
+    totalDibayar: 5750000,
+    sisaHutang: 0,
+    catatan: 'Prioritas karena stok urea hampir habis.',
+    estimasiTanggalTiba: d(8),
+    createdAt: d(12), updatedAt: d(8),
+  },
+
+  // PO-002: Dikirim ke Supplier — menunggu barang datang
+  {
+    id: 'po-002',
+    nomorPO: 'PO-2026-002',
+    supplierId: 'sup-2',
+    supplierNama: 'PT Kimia Farma Agro',
+    items: [
+      { id: 'poi-2a', produkId: 'p-3', produkNama: 'Pestisida Roundup 1L', produkSku: 'PES-001', qtyPesan: 30, qtyDiterima: 0, hargaBeli: 55000, subtotal: 1650000 },
+      { id: 'poi-2b', produkId: 'p-5', produkNama: 'Sprayer Manual 16L', produkSku: 'ALT-001', qtyPesan: 10, qtyDiterima: 0, hargaBeli: 125000, subtotal: 1250000 },
+    ],
+    biayaTambahan: { ongkosKirim: 150000, biayaBongkarMuat: 0, upahKurir: 0, lainnya: 0 },
+    totalHargaBarang: 2900000,
+    totalBiayaTambahan: 150000,
+    totalKeseluruhan: 3050000,
+    hppPerUnit: 76250,
+    totalQty: 40,
+    status: 'Dikirim ke Supplier',
+    statusPembayaran: 'Belum Bayar',
+    totalDibayar: 0,
+    sisaHutang: 3050000,
+    estimasiTanggalTiba: d(-2),
+    createdAt: d(5), updatedAt: d(4),
+  },
+
+  // PO-003: Draft — belum dikirim ke supplier
+  {
+    id: 'po-003',
+    nomorPO: 'PO-2026-003',
+    supplierId: 'sup-3',
+    supplierNama: 'Toko Benih Nusantara',
+    items: [
+      { id: 'poi-3a', produkId: 'p-4', produkNama: 'Benih Padi IR64', produkSku: 'BEN-001', qtyPesan: 200, qtyDiterima: 0, hargaBeli: 15000, subtotal: 3000000 },
+      { id: 'poi-3b', produkId: 'p-6', produkNama: 'Pupuk Kandang Organik', produkSku: 'PUP-003', qtyPesan: 50, qtyDiterima: 0, hargaBeli: 25000, subtotal: 1250000 },
+    ],
+    biayaTambahan: { ongkosKirim: 100000, biayaBongkarMuat: 50000, upahKurir: 0, lainnya: 0 },
+    totalHargaBarang: 4250000,
+    totalBiayaTambahan: 150000,
+    totalKeseluruhan: 4400000,
+    hppPerUnit: 17600,
+    totalQty: 250,
+    status: 'Draft',
+    statusPembayaran: 'Belum Bayar',
+    totalDibayar: 0,
+    sisaHutang: 4400000,
+    catatan: 'Menunggu konfirmasi harga dari supplier.',
+    estimasiTanggalTiba: d(-7),
+    createdAt: d(2), updatedAt: d(2),
+  },
+
+  // PO-004: Diterima & Sebagian bayar — hutang masih ada
+  {
+    id: 'po-004',
+    nomorPO: 'PO-2026-004',
+    supplierId: 'sup-1',
+    supplierNama: 'CV Agro Mandiri',
+    items: [
+      { id: 'poi-4a', produkId: 'p-6', produkNama: 'Pupuk Kandang Organik', produkSku: 'PUP-003', qtyPesan: 100, qtyDiterima: 100, hargaBeli: 25000, subtotal: 2500000 },
+      { id: 'poi-4b', produkId: 'p-3', produkNama: 'Pestisida Roundup 1L', produkSku: 'PES-001', qtyPesan: 20, qtyDiterima: 20, hargaBeli: 55000, subtotal: 1100000 },
+    ],
+    biayaTambahan: { ongkosKirim: 175000, biayaBongkarMuat: 75000, upahKurir: 0, lainnya: 0 },
+    totalHargaBarang: 3600000,
+    totalBiayaTambahan: 250000,
+    totalKeseluruhan: 3850000,
+    hppPerUnit: 32083,
+    totalQty: 120,
+    status: 'Diterima',
+    statusPembayaran: 'Sebagian',
+    totalDibayar: 2000000,
+    sisaHutang: 1850000,
+    catatan: 'Pembayaran pertama sudah ditransfer. Sisa dibayar akhir bulan.',
+    estimasiTanggalTiba: d(18),
+    createdAt: d(22), updatedAt: d(18),
+  },
+
+  // PO-005: Dibatalkan
+  {
+    id: 'po-005',
+    nomorPO: 'PO-2026-005',
+    supplierId: 'sup-2',
+    supplierNama: 'PT Kimia Farma Agro',
+    items: [
+      { id: 'poi-5a', produkId: 'p-2', produkNama: 'Pupuk NPK Mutiara', produkSku: 'PUP-002', qtyPesan: 200, qtyDiterima: 0, hargaBeli: 12000, subtotal: 2400000 },
+    ],
+    biayaTambahan: { ongkosKirim: 100000, biayaBongkarMuat: 0, upahKurir: 0, lainnya: 0 },
+    totalHargaBarang: 2400000,
+    totalBiayaTambahan: 100000,
+    totalKeseluruhan: 2500000,
+    hppPerUnit: 12500,
+    totalQty: 200,
+    status: 'Dibatalkan',
+    statusPembayaran: 'Belum Bayar',
+    totalDibayar: 0,
+    sisaHutang: 0,
+    catatan: 'Dibatalkan karena supplier tidak bisa memenuhi harga yang disepakati.',
+    createdAt: d(30), updatedAt: d(28),
+  },
+]
+
+export const mockPembayaranPO: PembayaranPO[] = [
+  // Pembayaran untuk PO-001 (Lunas, 1x bayar)
+  {
+    id: 'pay-1a',
+    purchaseOrderId: 'po-001',
+    nominal: 5750000,
+    tanggal: d(9),
+    metode: 'Transfer',
+    catatan: 'Transfer via BCA ke rek CV Agro Mandiri',
+  },
+
+  // Pembayaran untuk PO-004 (Sebagian, 1x bayar dulu)
+  {
+    id: 'pay-4a',
+    purchaseOrderId: 'po-004',
+    nominal: 2000000,
+    tanggal: d(20),
+    metode: 'Transfer',
+    catatan: 'DP 50%, sisa dibayar akhir bulan',
   },
 ]
 

@@ -5,15 +5,19 @@ import {
   mockProduk,
   mockTransferStok,
   mockPengiriman,
+  mockPurchaseOrders,
+  mockPembayaranPO,
   paginate,
 } from './data'
-import type { Cabang, User, TransferStok, Pengiriman, StatusPenerimaanItem } from '@/types'
+import type { Cabang, User, TransferStok, Pengiriman, PurchaseOrder, PembayaranPO, StatusPenerimaanItem } from '@/types'
 
 // In-memory mutable state for demo mutations
 let cabang = [...mockCabang] as Cabang[]
 let users = [...mockUsers] as User[]
 const transferStok = [...mockTransferStok] as TransferStok[]
 const pengiriman = [...mockPengiriman] as Pengiriman[]
+const purchaseOrders = [...mockPurchaseOrders] as PurchaseOrder[]
+const pembayaranPO = [...mockPembayaranPO] as PembayaranPO[]
 
 function ok(data: unknown, status = 200): Omit<AxiosResponse, 'config'> {
   return { data: { data }, status, statusText: 'OK', headers: {} }
@@ -310,6 +314,128 @@ export function getMockResponse(config: AxiosRequestConfig): Omit<AxiosResponse,
         pg.updatedAt = now
         pengiriman[idx] = pg
         return ok(pg)
+      }
+    }
+  }
+
+  // ── Purchase Orders ───────────────────────────────────────────────────────
+  if (rawUrl === '/purchase-orders' || rawUrl.startsWith('/purchase-orders?')) {
+    if (method === 'get') {
+      let list = [...purchaseOrders]
+      if (params.status) list = list.filter((p) => p.status === params.status)
+      if (params.supplierId) list = list.filter((p) => p.supplierId === params.supplierId)
+      const q = params.search as string | undefined
+      if (q) list = list.filter((p) => p.nomorPO.toLowerCase().includes(q.toLowerCase()) || p.supplierNama.toLowerCase().includes(q.toLowerCase()))
+      return ok(paginate(list, Number(params.page ?? 1), Number(params.limit ?? 25)))
+    }
+    if (method === 'post') {
+      const items = (body.items as Array<{ produkId: string; qtyPesan: number; hargaBeli: number }>).map((item, i) => {
+        const produk = mockProduk.find((p) => p.id === item.produkId)
+        return {
+          id: `poi-new-${i}`,
+          produkId: item.produkId,
+          produkNama: produk?.nama ?? item.produkId,
+          produkSku: produk?.sku ?? '',
+          qtyPesan: item.qtyPesan,
+          qtyDiterima: 0,
+          hargaBeli: item.hargaBeli,
+          subtotal: item.qtyPesan * item.hargaBeli,
+        }
+      })
+      const bt = body.biayaTambahan ?? { ongkosKirim: 0, biayaBongkarMuat: 0, upahKurir: 0, lainnya: 0 }
+      const totalBarang = items.reduce((s, i) => s + i.subtotal, 0)
+      const totalBiaya = (bt.ongkosKirim ?? 0) + (bt.biayaBongkarMuat ?? 0) + (bt.upahKurir ?? 0) + (bt.lainnya ?? 0)
+      const totalKeseluruhan = totalBarang + totalBiaya
+      const totalQty = items.reduce((s, i) => s + i.qtyPesan, 0)
+      const newPO: PurchaseOrder = {
+        id: `po-${Date.now()}`,
+        nomorPO: `PO-2026-${String(purchaseOrders.length + 1).padStart(3, '0')}`,
+        supplierId: body.supplierId ?? 'sup-1',
+        supplierNama: 'Supplier Demo',
+        items,
+        biayaTambahan: bt,
+        totalHargaBarang: totalBarang,
+        totalBiayaTambahan: totalBiaya,
+        totalKeseluruhan,
+        hppPerUnit: totalQty > 0 ? Math.round(totalKeseluruhan / totalQty) : 0,
+        totalQty,
+        status: 'Draft',
+        statusPembayaran: 'Belum Bayar',
+        totalDibayar: 0,
+        sisaHutang: totalKeseluruhan,
+        catatan: body.catatan,
+        estimasiTanggalTiba: body.estimasiTanggalTiba,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      }
+      purchaseOrders.push(newPO)
+      return ok(newPO, 201)
+    }
+  }
+
+  const poActionMatch = matchPath(rawUrl, /^\/purchase-orders\/([^/]+)(?:\/(.+))?$/)
+  if (poActionMatch) {
+    const id = poActionMatch[1]
+    const action = poActionMatch[2]
+    const idx = purchaseOrders.findIndex((p) => p.id === id)
+
+    // GET detail
+    if (method === 'get' && !action) return ok(purchaseOrders[idx] ?? null)
+
+    // GET pembayaran list
+    if (method === 'get' && action === 'pembayaran') {
+      return ok(pembayaranPO.filter((p) => p.purchaseOrderId === id))
+    }
+
+    if (idx !== -1) {
+      const now = new Date().toISOString()
+      const po = { ...purchaseOrders[idx] }
+
+      if (action === 'kirim' && method === 'post') {
+        po.status = 'Dikirim ke Supplier'
+        po.updatedAt = now
+        purchaseOrders[idx] = po
+        return ok(po)
+      }
+
+      if (action === 'goods-receipt' && method === 'post') {
+        const incoming = body.items as Array<{ itemId: string; qtyDiterima: number }>
+        po.items = po.items.map((item) => {
+          const match = incoming.find((i) => i.itemId === item.id)
+          return match ? { ...item, qtyDiterima: match.qtyDiterima } : item
+        })
+        const allReceived = po.items.every((i) => i.qtyDiterima >= i.qtyPesan)
+        po.status = allReceived ? 'Diterima' : 'Sebagian Diterima'
+        po.updatedAt = now
+        purchaseOrders[idx] = po
+        return ok(po)
+      }
+
+      if (action === 'batalkan' && method === 'post') {
+        po.status = 'Dibatalkan'
+        po.catatan = body.alasan ?? po.catatan
+        po.sisaHutang = 0
+        po.updatedAt = now
+        purchaseOrders[idx] = po
+        return ok(po)
+      }
+
+      if (action === 'pembayaran' && method === 'post') {
+        const newBayar: PembayaranPO = {
+          id: `pay-${Date.now()}`,
+          purchaseOrderId: id,
+          nominal: body.nominal,
+          tanggal: body.tanggal,
+          metode: body.metode,
+          catatan: body.catatan,
+        }
+        pembayaranPO.push(newBayar)
+        po.totalDibayar = (po.totalDibayar ?? 0) + body.nominal
+        po.sisaHutang = Math.max(0, po.totalKeseluruhan - po.totalDibayar)
+        po.statusPembayaran = po.sisaHutang === 0 ? 'Lunas' : 'Sebagian'
+        po.updatedAt = now
+        purchaseOrders[idx] = po
+        return ok(newBayar, 201)
       }
     }
   }
