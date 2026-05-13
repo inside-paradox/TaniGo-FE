@@ -5,6 +5,8 @@ export type StatusTransferStok =
   | 'Dikirim'
   | 'Selesai'
 
+export type StatusPenerimaanItem = 'diterima' | 'dikembalikan'
+
 export interface TransferStokItem {
   id: string
   produkId: string
@@ -13,6 +15,8 @@ export interface TransferStokItem {
   satuan: string
   qtyDiminta: number
   qtyDisetujui?: number | null
+  qtyDiterima?: number | null
+  statusPenerimaan?: StatusPenerimaanItem | null
 }
 
 export interface TransferStok {
@@ -41,5 +45,10 @@ export interface CreateTransferStokDto {
 
 export interface ApproveTransferStokDto {
   items: { transferItemId: string; qtyDisetujui: number }[]
+  catatan?: string
+}
+
+export interface TerimaTransferStokDto {
+  items: { transferItemId: string; qtyDiterima: number; status: StatusPenerimaanItem }[]
   catatan?: string
 }

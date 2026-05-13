@@ -3,6 +3,7 @@ import type {
   TransferStok,
   CreateTransferStokDto,
   ApproveTransferStokDto,
+  TerimaTransferStokDto,
   PaginatedResponse,
   TableParams,
 } from '@/types'
@@ -40,8 +41,8 @@ export const transferStokApi = {
     return data.data
   },
 
-  terima: async (id: string): Promise<TransferStok> => {
-    const { data } = await api.patch(`/transfer-stok/${id}/terima`)
+  terima: async (id: string, payload: TerimaTransferStokDto): Promise<TransferStok> => {
+    const { data } = await api.patch(`/transfer-stok/${id}/terima`, payload)
     return data.data
   },
 }

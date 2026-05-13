@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { transferStokApi } from '@/lib/api'
-import type { CreateTransferStokDto, ApproveTransferStokDto, TableParams } from '@/types'
+import type { CreateTransferStokDto, ApproveTransferStokDto, TerimaTransferStokDto, TableParams } from '@/types'
 
 export const TRANSFER_STOK_KEY = 'transfer-stok'
 
@@ -82,7 +82,8 @@ export function useKirimTransferStok() {
 export function useTerimaTransferStok() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: (id: string) => transferStokApi.terima(id),
+    mutationFn: ({ id, payload }: { id: string; payload: TerimaTransferStokDto }) =>
+      transferStokApi.terima(id, payload),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: [TRANSFER_STOK_KEY] })
       toast.success('Stok berhasil diterima')

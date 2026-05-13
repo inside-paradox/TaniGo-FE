@@ -1,0 +1,255 @@
+import type { Pengiriman, TransferStok } from '@/types'
+
+// ─── Core ─────────────────────────────────────────────────────────────────────
+
+function printHTML(html: string) {
+  const win = window.open('', '_blank', 'width=900,height=650')
+  if (!win) return
+  win.document.write(html)
+  win.document.close()
+  win.focus()
+  setTimeout(() => {
+    win.print()
+    win.close()
+  }, 300)
+}
+
+const BASE_CSS = `
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: Arial, sans-serif; font-size: 12px; color: #111; background: #fff; padding: 32px; }
+  h1 { font-size: 18px; font-weight: 700; }
+  h2 { font-size: 13px; font-weight: 700; margin-bottom: 8px; }
+  table { width: 100%; border-collapse: collapse; }
+  th { background: #f3f4f6; text-align: left; padding: 7px 10px; font-size: 11px; text-transform: uppercase; letter-spacing: .04em; border: 1px solid #d1d5db; }
+  td { padding: 7px 10px; border: 1px solid #d1d5db; vertical-align: top; }
+  .header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 24px; border-bottom: 2px solid #16a34a; padding-bottom: 16px; }
+  .logo { font-size: 20px; font-weight: 800; color: #16a34a; }
+  .doc-title { font-size: 14px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: #374151; }
+  .doc-meta { font-size: 11px; color: #6b7280; margin-top: 4px; }
+  .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px; }
+  .info-block label { font-size: 10px; text-transform: uppercase; letter-spacing: .04em; color: #6b7280; display: block; margin-bottom: 2px; }
+  .info-block span { font-weight: 600; font-size: 12px; }
+  .section-title { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: #374151; margin-bottom: 8px; border-left: 3px solid #16a34a; padding-left: 8px; }
+  .check-box { display: inline-block; width: 14px; height: 14px; border: 1.5px solid #374151; margin-right: 4px; vertical-align: middle; }
+  .sig-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 40px; }
+  .sig-block { border-top: 1px solid #9ca3af; padding-top: 8px; }
+  .sig-block .sig-label { font-size: 10px; text-transform: uppercase; letter-spacing: .04em; color: #6b7280; }
+  .sig-block .sig-name { font-size: 11px; font-weight: 600; margin-top: 48px; }
+  .badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 10px; font-weight: 700; }
+  .badge-success { background: #dcfce7; color: #166534; }
+  .badge-warning { background: #fef9c3; color: #854d0e; }
+  .footer-note { margin-top: 20px; font-size: 10px; color: #9ca3af; border-top: 1px solid #e5e7eb; padding-top: 10px; }
+  @media print { body { padding: 16px; } @page { margin: 10mm; } }
+`
+
+function formatTgl(dateStr: string) {
+  return new Date(dateStr).toLocaleDateString('id-ID', {
+    day: '2-digit', month: 'long', year: 'numeric',
+  })
+}
+
+// ─── Surat Jalan Pengiriman ────────────────────────────────────────────────────
+
+export function printSuratJalanPengiriman(p: Pengiriman) {
+  const rows = p.pesananList.map((item, i) => `
+    <tr>
+      <td style="text-align:center">${i + 1}</td>
+      <td>${item.nomorPesanan}</td>
+      <td>${item.pelangganNama}</td>
+      <td>${item.alamat}</td>
+      <td style="text-align:center">
+        <span class="check-box"></span> Terkirim<br/>
+        <span class="check-box"></span> Dikembalikan
+      </td>
+    </tr>
+  `).join('')
+
+  const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Surat Jalan ${p.nomorPengiriman}</title><style>${BASE_CSS}</style></head><body>
+    <div class="header">
+      <div>
+        <div class="logo">🌱 TaniGo</div>
+        <div style="font-size:10px;color:#6b7280;margin-top:2px;">Sistem Manajemen Toko Perlengkapan Pertanian</div>
+      </div>
+      <div style="text-align:right">
+        <div class="doc-title">Surat Jalan</div>
+        <div class="doc-meta">No: <b>${p.nomorPengiriman}</b></div>
+        <div class="doc-meta">Tanggal: ${formatTgl(p.tanggalPengiriman)}</div>
+      </div>
+    </div>
+
+    <div class="info-grid">
+      <div class="info-block"><label>Driver / Kurir</label><span>${p.driverNama}</span></div>
+      <div class="info-block"><label>Tanggal Pengiriman</label><span>${formatTgl(p.tanggalPengiriman)}</span></div>
+      ${p.estimasiWaktu ? `<div class="info-block"><label>Estimasi Waktu</label><span>${p.estimasiWaktu}</span></div>` : ''}
+      ${p.catatan ? `<div class="info-block"><label>Catatan</label><span>${p.catatan}</span></div>` : ''}
+    </div>
+
+    <div class="section-title">Daftar Pesanan</div>
+    <table>
+      <thead>
+        <tr>
+          <th style="width:36px;text-align:center">No</th>
+          <th>No. Pesanan</th>
+          <th>Pelanggan</th>
+          <th>Alamat</th>
+          <th style="width:130px;text-align:center">Status</th>
+        </tr>
+      </thead>
+      <tbody>${rows}</tbody>
+    </table>
+
+    <div class="sig-grid">
+      <div class="sig-block">
+        <div class="sig-label">Disiapkan oleh</div>
+        <div class="sig-name">( _________________________ )</div>
+      </div>
+      <div class="sig-block">
+        <div class="sig-label">Kurir / Driver</div>
+        <div class="sig-name">( _________________________ )</div>
+      </div>
+      <div class="sig-block">
+        <div class="sig-label">Diterima oleh</div>
+        <div class="sig-name">( _________________________ )</div>
+      </div>
+    </div>
+
+    <div class="footer-note">Dokumen ini dicetak oleh sistem TaniGo. Harap simpan sebagai bukti pengiriman.</div>
+  </body></html>`
+
+  printHTML(html)
+}
+
+// ─── Surat Jalan Transfer Stok ─────────────────────────────────────────────────
+
+export function printSuratJalanTransfer(t: TransferStok) {
+  const rows = t.items.map((item, i) => `
+    <tr>
+      <td style="text-align:center">${i + 1}</td>
+      <td><b>${item.produkNama}</b><br/><span style="color:#6b7280;font-size:10px">${item.produkSku}</span></td>
+      <td style="text-align:center">${item.qtyDiminta}</td>
+      <td style="text-align:center">${item.qtyDisetujui ?? '—'}</td>
+      <td>${item.satuan}</td>
+      <td style="text-align:center">
+        <span class="check-box"></span> Terkirim<br/>
+        <span class="check-box"></span> Dikembalikan
+      </td>
+    </tr>
+  `).join('')
+
+  const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Surat Jalan ${t.nomorTransfer}</title><style>${BASE_CSS}</style></head><body>
+    <div class="header">
+      <div>
+        <div class="logo">🌱 TaniGo</div>
+        <div style="font-size:10px;color:#6b7280;margin-top:2px;">Sistem Manajemen Toko Perlengkapan Pertanian</div>
+      </div>
+      <div style="text-align:right">
+        <div class="doc-title">Surat Jalan Transfer Stok</div>
+        <div class="doc-meta">No: <b>${t.nomorTransfer}</b></div>
+        <div class="doc-meta">Tanggal: ${formatTgl(t.createdAt)}</div>
+      </div>
+    </div>
+
+    <div class="info-grid">
+      <div class="info-block"><label>Dari (Toko)</label><span>${t.tokNama}</span></div>
+      <div class="info-block"><label>Ke (Gudang)</label><span>${t.gudangNama}</span></div>
+      ${t.catatanToko ? `<div class="info-block"><label>Catatan Toko</label><span>${t.catatanToko}</span></div>` : ''}
+      ${t.catatanGudang ? `<div class="info-block"><label>Catatan Gudang</label><span>${t.catatanGudang}</span></div>` : ''}
+    </div>
+
+    <div class="section-title">Daftar Item</div>
+    <table>
+      <thead>
+        <tr>
+          <th style="width:36px;text-align:center">No</th>
+          <th>Produk</th>
+          <th style="width:80px;text-align:center">Diminta</th>
+          <th style="width:80px;text-align:center">Disetujui</th>
+          <th style="width:70px">Satuan</th>
+          <th style="width:140px;text-align:center">Status</th>
+        </tr>
+      </thead>
+      <tbody>${rows}</tbody>
+    </table>
+
+    <div class="sig-grid">
+      <div class="sig-block">
+        <div class="sig-label">Disiapkan Gudang</div>
+        <div class="sig-name">( _________________________ )</div>
+      </div>
+      <div class="sig-block">
+        <div class="sig-label">Kurir / Pengantar</div>
+        <div class="sig-name">( _________________________ )</div>
+      </div>
+      <div class="sig-block">
+        <div class="sig-label">Diterima Toko</div>
+        <div class="sig-name">( _________________________ )</div>
+      </div>
+    </div>
+
+    <div class="footer-note">Dokumen ini dicetak oleh sistem TaniGo. Harap simpan sebagai bukti transfer stok.</div>
+  </body></html>`
+
+  printHTML(html)
+}
+
+// ─── Packing List Transfer Stok ────────────────────────────────────────────────
+
+export function printPackingListTransfer(t: TransferStok) {
+  const rows = t.items.map((item, i) => `
+    <tr>
+      <td style="text-align:center">${i + 1}</td>
+      <td><b>${item.produkNama}</b><br/><span style="color:#6b7280;font-size:10px">${item.produkSku}</span></td>
+      <td style="text-align:center">${item.qtyDisetujui ?? item.qtyDiminta}</td>
+      <td>${item.satuan}</td>
+      <td style="text-align:center"><span class="check-box"></span></td>
+    </tr>
+  `).join('')
+
+  const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Packing List ${t.nomorTransfer}</title><style>${BASE_CSS}</style></head><body>
+    <div class="header">
+      <div>
+        <div class="logo">🌱 TaniGo</div>
+        <div style="font-size:10px;color:#6b7280;margin-top:2px;">Sistem Manajemen Toko Perlengkapan Pertanian</div>
+      </div>
+      <div style="text-align:right">
+        <div class="doc-title">Packing List</div>
+        <div class="doc-meta">Ref: <b>${t.nomorTransfer}</b></div>
+        <div class="doc-meta">Tanggal: ${formatTgl(t.createdAt)}</div>
+      </div>
+    </div>
+
+    <div class="info-grid">
+      <div class="info-block"><label>Tujuan Toko</label><span>${t.tokNama}</span></div>
+      <div class="info-block"><label>Gudang Pengirim</label><span>${t.gudangNama}</span></div>
+    </div>
+
+    <div class="section-title">Checklist Barang — Staf Gudang</div>
+    <table>
+      <thead>
+        <tr>
+          <th style="width:36px;text-align:center">No</th>
+          <th>Produk</th>
+          <th style="width:90px;text-align:center">Qty Dikirim</th>
+          <th style="width:70px">Satuan</th>
+          <th style="width:50px;text-align:center">✓</th>
+        </tr>
+      </thead>
+      <tbody>${rows}</tbody>
+    </table>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:40px;">
+      <div class="sig-block">
+        <div class="sig-label">Disiapkan oleh (Staf Gudang)</div>
+        <div class="sig-name">( _________________________ )</div>
+      </div>
+      <div class="sig-block">
+        <div class="sig-label">Diperiksa oleh</div>
+        <div class="sig-name">( _________________________ )</div>
+      </div>
+    </div>
+
+    <div class="footer-note">Dokumen internal — tidak untuk diberikan ke kurir. Simpan di arsip gudang.</div>
+  </body></html>`
+
+  printHTML(html)
+}

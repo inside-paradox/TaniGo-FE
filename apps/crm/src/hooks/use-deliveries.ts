@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { deliveriesApi } from '@/lib/api'
-import type { CreatePengirimanDto, BiayaPengiriman, TableParams } from '@/types'
+import type { CreatePengirimanDto, BiayaPengiriman, SubmitChecklistPengirimanDto, TableParams } from '@/types'
 
 export const DELIVERIES_KEY = 'deliveries'
 
@@ -50,6 +50,21 @@ export function useUpdateDeliveryStatus() {
     },
     onError: (err: { response?: { data?: { message?: string } } }) => {
       toast.error(err.response?.data?.message || 'Gagal memperbarui status pengiriman')
+    },
+  })
+}
+
+export function useSubmitChecklistPengiriman() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, payload }: { id: string; payload: SubmitChecklistPengirimanDto }) =>
+      deliveriesApi.submitChecklist(id, payload),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: [DELIVERIES_KEY] })
+      toast.success('Checklist pengiriman berhasil disimpan')
+    },
+    onError: (err: { response?: { data?: { message?: string } } }) => {
+      toast.error(err.response?.data?.message || 'Gagal menyimpan checklist')
     },
   })
 }

@@ -1,4 +1,5 @@
 export type StatusPengiriman = 'Dijadwalkan' | 'Dalam Perjalanan' | 'Selesai' | 'Gagal'
+export type StatusChecklistItem = 'terkirim' | 'dikembalikan'
 
 export interface BiayaPengiriman {
   bbm: number
@@ -7,6 +8,15 @@ export interface BiayaPengiriman {
   lainnya: number
   keteranganLainnya?: string
   total: number
+}
+
+export interface ChecklistPesanan {
+  pesananId: string
+  nomorPesanan: string
+  pelangganNama: string
+  alamat: string
+  status: StatusChecklistItem
+  catatan?: string | null
 }
 
 export interface Pengiriman {
@@ -24,6 +34,8 @@ export interface Pengiriman {
   catatanHasil?: string | null
   alasanGagal?: string | null
   catatan?: string | null
+  checklistItems?: ChecklistPesanan[] | null
+  checklistSubmittedAt?: string | null
   createdAt: string
   updatedAt: string
 }
@@ -35,4 +47,8 @@ export interface CreatePengirimanDto {
   tanggalPengiriman: string
   estimasiWaktu?: string
   catatan?: string
+}
+
+export interface SubmitChecklistPengirimanDto {
+  items: { pesananId: string; status: StatusChecklistItem; catatan?: string }[]
 }

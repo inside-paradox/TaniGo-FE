@@ -1,5 +1,5 @@
 import api from './axios'
-import type { Pengiriman, CreatePengirimanDto, BiayaPengiriman, PaginatedResponse, TableParams } from '@/types'
+import type { Pengiriman, CreatePengirimanDto, BiayaPengiriman, SubmitChecklistPengirimanDto, PaginatedResponse, TableParams } from '@/types'
 
 export const deliveriesApi = {
   getAll: async (
@@ -39,6 +39,11 @@ export const deliveriesApi = {
     const { data } = await api.post(`/deliveries/${id}/bukti`, formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
     })
+    return data.data
+  },
+
+  submitChecklist: async (id: string, payload: SubmitChecklistPengirimanDto): Promise<Pengiriman> => {
+    const { data } = await api.post(`/deliveries/${id}/checklist`, payload)
     return data.data
   },
 }

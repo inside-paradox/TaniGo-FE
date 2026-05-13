@@ -9,9 +9,11 @@ import {
   Clock,
   Edit2,
   Package,
+  Printer,
   Truck,
   Upload,
   XCircle,
+  ClipboardCheck,
 } from 'lucide-react'
 import { PageHeader } from '@/components/shared/page-header'
 import { Badge } from '@/components/ui/badge'
@@ -26,11 +28,13 @@ import {
   useDelivery,
   useUpdateDeliveryStatus,
   useUpdateBiayaPengiriman,
+  useSubmitChecklistPengiriman,
   DELIVERIES_KEY,
 } from '@/hooks/use-deliveries'
 import { deliveriesApi } from '@/lib/api/deliveries'
 import { formatRupiah, formatTanggal } from '@/lib/utils'
-import type { StatusPengiriman } from '@/types'
+import { printSuratJalanPengiriman } from '@/lib/print'
+import type { StatusPengiriman, StatusChecklistItem } from '@/types'
 
 // ─── helpers ─────────────────────────────────────────────────────────────────
 
@@ -334,14 +338,49 @@ export default function DetailPengirimanPage() {
 
   const { data: pengiriman, isLoading } = useDelivery(id)
   const { mutateAsync: updateStatus, isPending: updatingStatus } = useUpdateDeliveryStatus()
+  const { mutateAsync: submitChecklist, isPending: submittingChecklist } = useSubmitChecklistPengiriman()
 
   // Modals
   const [confirmMulaiOpen, setConfirmMulaiOpen] = useState(false)
   const [selesaiOpen, setSelesaiOpen] = useState(false)
   const [gagalOpen, setGagalOpen] = useState(false)
+  const [checklistOpen, setChecklistOpen] = useState(false)
   const [catatanHasil, setCatatanHasil] = useState('')
   const [alasanGagal, setAlasanGagal] = useState('')
   const [alasanError, setAlasanError] = useState('')
+
+  // Checklist state — per pesanan
+  const [checklistMap, setChecklistMap] = useState<Record<string, StatusChecklistItem>>({})
+  const [checklistCatatan, setChecklistCatatan] = useState<Record<string, string>>({})
+
+  function initChecklist() {
+    if (!pengiriman) return
+    const map: Record<string, StatusChecklistItem> = {}
+    const cat: Record<string, string> = {}
+    pengiriman.pesananList.forEach((p) => {
+      map[p.id] = pengiriman.checklistItems?.find((c) => c.pesananId === p.id)?.status ?? 'terkirim'
+      cat[p.id] = pengiriman.checklistItems?.find((c) => c.pesananId === p.id)?.catatan ?? ''
+    })
+    setChecklistMap(map)
+    setChecklistCatatan(cat)
+    setChecklistOpen(true)
+  }
+
+  async function handleSubmitChecklist(e: React.FormEvent) {
+    e.preventDefault()
+    if (!pengiriman) return
+    await submitChecklist({
+      id,
+      payload: {
+        items: pengiriman.pesananList.map((p) => ({
+          pesananId: p.id,
+          status: checklistMap[p.id] ?? 'terkirim',
+          catatan: checklistCatatan[p.id] || undefined,
+        })),
+      },
+    })
+    setChecklistOpen(false)
+  }
 
   async function handleMulaiPengiriman() {
     await updateStatus({ id, status: 'Dalam Perjalanan' })
@@ -415,6 +454,11 @@ export default function DetailPengirimanPage() {
               {pengiriman.status}
             </Badge>
 
+            <Button variant="outline" size="sm" onClick={() => printSuratJalanPengiriman(pengiriman)}>
+              <Printer className="h-4 w-4" />
+              Cetak Surat Jalan
+            </Button>
+
             {pengiriman.status === 'Dijadwalkan' && (
               <Button onClick={() => setConfirmMulaiOpen(true)} loading={updatingStatus}>
                 <Truck className="h-4 w-4" />
@@ -424,6 +468,10 @@ export default function DetailPengirimanPage() {
 
             {pengiriman.status === 'Dalam Perjalanan' && (
               <>
+                <Button variant="outline" onClick={initChecklist}>
+                  <ClipboardCheck className="h-4 w-4" />
+                  Checklist
+                </Button>
                 <Button onClick={() => setSelesaiOpen(true)}>
                   <CheckCircle className="h-4 w-4" />
                   Tandai Selesai
@@ -433,6 +481,13 @@ export default function DetailPengirimanPage() {
                   Laporkan Gagal
                 </Button>
               </>
+            )}
+
+            {pengiriman.status === 'Selesai' && (
+              <Button variant="outline" onClick={initChecklist}>
+                <ClipboardCheck className="h-4 w-4" />
+                {pengiriman.checklistItems?.length ? 'Edit Checklist' : 'Isi Checklist'}
+              </Button>
             )}
 
             <Button variant="outline" size="sm" onClick={() => router.push('/pengiriman')}>
@@ -522,6 +577,43 @@ export default function DetailPengirimanPage() {
             buktiFoto={pengiriman.buktiFoto}
             catatanHasil={pengiriman.catatanHasil}
           />
+
+          {/* Rekap Checklist */}
+          {pengiriman.checklistItems && pengiriman.checklistItems.length > 0 && (
+            <Card>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <CardTitle>Rekap Checklist Pengiriman</CardTitle>
+                  <div className="flex gap-2">
+                    <Badge variant="success">
+                      {pengiriman.checklistItems.filter((c) => c.status === 'terkirim').length} Terkirim
+                    </Badge>
+                    <Badge variant="danger">
+                      {pengiriman.checklistItems.filter((c) => c.status === 'dikembalikan').length} Dikembalikan
+                    </Badge>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="divide-y divide-gray-100">
+                  {pengiriman.checklistItems.map((item) => (
+                    <div key={item.pesananId} className="flex items-start justify-between gap-3 py-3">
+                      <div className="min-w-0">
+                        <p className="font-medium text-gray-900">{item.nomorPesanan}</p>
+                        <p className="text-sm text-gray-500">{item.pelangganNama}</p>
+                        {item.catatan && (
+                          <p className="text-xs text-gray-400 mt-0.5">Catatan: {item.catatan}</p>
+                        )}
+                      </div>
+                      <Badge variant={item.status === 'terkirim' ? 'success' : 'danger'}>
+                        {item.status === 'terkirim' ? 'Terkirim' : 'Dikembalikan'}
+                      </Badge>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
         </div>
 
         {/* Right column — Timeline */}
@@ -567,6 +659,56 @@ export default function DetailPengirimanPage() {
             <Button type="submit" loading={updatingStatus}>
               Tandai Selesai
             </Button>
+          </div>
+        </form>
+      </Modal>
+
+      {/* Checklist Modal */}
+      <Modal open={checklistOpen} onClose={() => setChecklistOpen(false)} title="Checklist Pengiriman" size="md">
+        <form onSubmit={handleSubmitChecklist} className="space-y-4">
+          <p className="text-sm text-gray-500">Tandai status setiap pesanan setelah pengiriman.</p>
+          <div className="space-y-3 rounded-lg border border-gray-200 p-3">
+            {pengiriman.pesananList.map((p) => (
+              <div key={p.id} className="space-y-2">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="font-medium text-gray-900 text-sm">{p.nomorPesanan}</p>
+                    <p className="text-xs text-gray-500">{p.pelangganNama} · {p.alamat}</p>
+                  </div>
+                  <div className="flex gap-2 shrink-0">
+                    {(['terkirim', 'dikembalikan'] as StatusChecklistItem[]).map((s) => (
+                      <button
+                        key={s}
+                        type="button"
+                        onClick={() => setChecklistMap((m) => ({ ...m, [p.id]: s }))}
+                        className={`rounded-lg px-3 py-1.5 text-xs font-medium border transition-colors ${
+                          checklistMap[p.id] === s
+                            ? s === 'terkirim'
+                              ? 'bg-green-100 border-green-500 text-green-700'
+                              : 'bg-red-100 border-red-500 text-red-700'
+                            : 'border-gray-200 text-gray-500 hover:bg-gray-50'
+                        }`}
+                      >
+                        {s === 'terkirim' ? '✓ Terkirim' : '✗ Dikembalikan'}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                {checklistMap[p.id] === 'dikembalikan' && (
+                  <input
+                    type="text"
+                    placeholder="Alasan dikembalikan (opsional)"
+                    value={checklistCatatan[p.id] ?? ''}
+                    onChange={(e) => setChecklistCatatan((c) => ({ ...c, [p.id]: e.target.value }))}
+                    className="h-8 w-full rounded-lg border border-gray-300 px-3 text-xs text-gray-800 focus:border-green-500 focus:outline-none focus:ring-1 focus:ring-green-500"
+                  />
+                )}
+              </div>
+            ))}
+          </div>
+          <div className="flex justify-end gap-3 pt-2">
+            <Button type="button" variant="outline" onClick={() => setChecklistOpen(false)}>Batal</Button>
+            <Button type="submit" loading={submittingChecklist}>Simpan Checklist</Button>
           </div>
         </form>
       </Modal>
