@@ -2,13 +2,12 @@
 
 import { useState, useMemo, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { ArrowLeft, Save, Send } from 'lucide-react'
+import { ArrowLeft, Save, Search, Send } from 'lucide-react'
 import { PageHeader } from '@/components/shared/page-header'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
-import { Badge } from '@/components/ui/badge'
 import { useCreateStokOpname, useSubmitStokOpname } from '@/hooks/use-stok-opname'
 import { useProducts } from '@/hooks/use-products'
 import { useCabangInventory } from '@/hooks/use-inventory'
@@ -46,6 +45,7 @@ export default function StokOpnameBaruPage() {
 
   const [rows, setRows] = useState<ItemRow[]>([])
   const [catatan, setCatatan] = useState('')
+  const [search, setSearch] = useState('')
 
   const isLoading = produkLoading || inventoryLoading
 
@@ -72,6 +72,14 @@ export default function StokOpnameBaruPage() {
     () => rows.filter((r) => r.stokFisik !== ''),
     [rows]
   )
+
+  const visibleRows = useMemo(() => {
+    if (!search.trim()) return rows
+    const q = search.toLowerCase()
+    return rows.filter(
+      (r) => r.produk.nama.toLowerCase().includes(q) || r.produk.sku.toLowerCase().includes(q) || r.produk.kategori.toLowerCase().includes(q)
+    )
+  }, [rows, search])
 
   const summary = useMemo(() => {
     let lebih = 0, kurang = 0, sesuai = 0
@@ -146,10 +154,23 @@ export default function StokOpnameBaruPage() {
       {/* Product table */}
       <Card>
         <CardHeader>
-          <CardTitle>Daftar Produk</CardTitle>
-          <p className="text-sm text-gray-500">
-            Kosongkan kolom "Stok Fisik" untuk produk yang tidak dihitung.
-          </p>
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <CardTitle>Daftar Produk</CardTitle>
+              <p className="text-sm text-gray-500 mt-0.5">
+                Kosongkan kolom "Stok Fisik" untuk produk yang tidak dihitung.
+              </p>
+            </div>
+            <div className="relative w-64 shrink-0">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
+              <Input
+                placeholder="Cari nama, SKU, kategori..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="pl-9"
+              />
+            </div>
+          </div>
         </CardHeader>
         <CardContent className="p-0">
           {isLoading ? (
@@ -167,7 +188,14 @@ export default function StokOpnameBaruPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-50">
-                  {rows.map((row) => {
+                  {visibleRows.length === 0 && (
+                    <tr>
+                      <td colSpan={5} className="px-4 py-10 text-center text-sm text-gray-400">
+                        Tidak ada produk yang cocok dengan pencarian.
+                      </td>
+                    </tr>
+                  )}
+                  {visibleRows.map((row) => {
                     const diff = selisih(row.stokSistem, row.stokFisik)
                     const hasValue = row.stokFisik !== ''
                     return (
