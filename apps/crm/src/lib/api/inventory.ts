@@ -1,5 +1,6 @@
 import api from './axios'
 import type {
+  CabangInventory,
   PergerakanStok,
   PenyesuaianStokDto,
   DashboardStok,
@@ -10,6 +11,11 @@ import type {
 } from '@/types'
 
 export const inventoryApi = {
+  getCabangInventory: async (cabangId: string): Promise<CabangInventory[]> => {
+    const { data } = await api.get('/cabang-inventory', { params: { cabangId } })
+    return data.data
+  },
+
   getDashboard: async (): Promise<DashboardStok> => {
     const { data } = await api.get('/inventory/dashboard')
     return data.data

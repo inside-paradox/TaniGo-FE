@@ -10,6 +10,7 @@ import type {
   StokOpname,
   User,
   Produk,
+  CabangInventory,
 } from '@/types'
 
 const now = new Date().toISOString()
@@ -739,6 +740,24 @@ export const mockStokOpname: StokOpname[] = [
     ],
     createdAt: d(1), updatedAt: d(1),
   },
+]
+
+// ─── Cabang Inventory (stok per cabang) ──────────────────────────────────────
+// Derived from approved stok opname records. This is the source of truth for
+// per-branch stock — NOT produk.stok which is just a catalog reference.
+
+export const mockCabangInventory: CabangInventory[] = [
+  // Gudang Pusat — dari SO-2026-001 (approved)
+  { id: 'ci-g1-p1', cabangId: 'gudang-1', produkId: 'p-1', produkNama: 'Pupuk Urea 50kg',       produkSku: 'PUP-001', satuan: 'karung', stok: 120, updatedAt: d(4) },
+  { id: 'ci-g1-p2', cabangId: 'gudang-1', produkId: 'p-2', produkNama: 'Pupuk NPK Mutiara',     produkSku: 'PUP-002', satuan: 'kg',     stok: 8,   updatedAt: d(4) },
+  { id: 'ci-g1-p3', cabangId: 'gudang-1', produkId: 'p-3', produkNama: 'Pestisida Roundup 1L',  produkSku: 'PES-001', satuan: 'botol',  stok: 37,  updatedAt: d(4) },
+  { id: 'ci-g1-p4', cabangId: 'gudang-1', produkId: 'p-4', produkNama: 'Benih Padi IR64',       produkSku: 'BEN-001', satuan: 'kg',     stok: 0,   updatedAt: d(4) },
+  { id: 'ci-g1-p5', cabangId: 'gudang-1', produkId: 'p-5', produkNama: 'Sprayer Manual 16L',    produkSku: 'ALT-001', satuan: 'unit',   stok: 15,  updatedAt: d(4) },
+  { id: 'ci-g1-p6', cabangId: 'gudang-1', produkId: 'p-6', produkNama: 'Pupuk Kandang Organik', produkSku: 'PUP-003', satuan: 'karung', stok: 58,  updatedAt: d(4) },
+  // Toko Utama — dari SO-2026-002 (approved)
+  { id: 'ci-t1-p1', cabangId: 'toko-1', produkId: 'p-1', produkNama: 'Pupuk Urea 50kg',       produkSku: 'PUP-001', satuan: 'karung', stok: 20, updatedAt: d(9) },
+  { id: 'ci-t1-p3', cabangId: 'toko-1', produkId: 'p-3', produkNama: 'Pestisida Roundup 1L',  produkSku: 'PES-001', satuan: 'botol',  stok: 10, updatedAt: d(9) },
+  { id: 'ci-t1-p6', cabangId: 'toko-1', produkId: 'p-6', produkNama: 'Pupuk Kandang Organik', produkSku: 'PUP-003', satuan: 'karung', stok: 25, updatedAt: d(9) },
 ]
 
 // ─── Paginated wrapper ────────────────────────────────────────────────────────

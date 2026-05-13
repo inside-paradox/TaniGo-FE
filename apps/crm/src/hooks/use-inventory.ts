@@ -6,6 +6,14 @@ import type { PenyesuaianStokDto, CreateSupplierDto, TableParams } from '@/types
 export const INVENTORY_KEY = 'inventory'
 export const SUPPLIERS_KEY = 'suppliers'
 
+export function useCabangInventory(cabangId?: string) {
+  return useQuery({
+    queryKey: [INVENTORY_KEY, 'cabang', cabangId],
+    queryFn: () => inventoryApi.getCabangInventory(cabangId!),
+    enabled: !!cabangId,
+  })
+}
+
 export function useDashboardInventori() {
   return useQuery({
     queryKey: [INVENTORY_KEY, 'dashboard'],

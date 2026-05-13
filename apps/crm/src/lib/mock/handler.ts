@@ -11,9 +11,10 @@ import {
   mockPelangganVIP,
   mockTagihanVIP,
   mockStokOpname,
+  mockCabangInventory,
   paginate,
 } from './data'
-import type { Cabang, User, TransferStok, Pengiriman, PurchaseOrder, PembayaranPO, Pesanan, PelangganVIP, TagihanVIP, StokOpname, StatusPenerimaanItem } from '@/types'
+import type { Cabang, User, TransferStok, Pengiriman, PurchaseOrder, PembayaranPO, Pesanan, PelangganVIP, TagihanVIP, StokOpname, CabangInventory, StatusPenerimaanItem } from '@/types'
 
 // In-memory mutable state for demo mutations
 let cabang = [...mockCabang] as Cabang[]
@@ -26,6 +27,44 @@ const pesanan = [...mockPesanan] as Pesanan[]
 const pelangganVIP = [...mockPelangganVIP] as PelangganVIP[]
 const tagihanVIP = [...mockTagihanVIP] as TagihanVIP[]
 const stokOpname = [...mockStokOpname] as StokOpname[]
+const cabangInventory = [...mockCabangInventory] as CabangInventory[]
+
+function upsertInventory(branchId: string, produkId: string, stok: number, now: string) {
+  const produk = mockProduk.find((p) => p.id === produkId)
+  const idx = cabangInventory.findIndex((inv) => inv.cabangId === branchId && inv.produkId === produkId)
+  if (idx !== -1) {
+    cabangInventory[idx] = { ...cabangInventory[idx], stok, updatedAt: now }
+  } else if (produk) {
+    cabangInventory.push({
+      id: `ci-${branchId}-${produkId}-${Date.now()}`,
+      cabangId: branchId, produkId,
+      produkNama: produk.nama, produkSku: produk.sku, satuan: produk.satuan,
+      stok, updatedAt: now,
+    })
+  }
+}
+
+function addInventory(branchId: string, produkId: string, qty: number, now: string) {
+  const produk = mockProduk.find((p) => p.id === produkId)
+  const idx = cabangInventory.findIndex((inv) => inv.cabangId === branchId && inv.produkId === produkId)
+  if (idx !== -1) {
+    cabangInventory[idx] = { ...cabangInventory[idx], stok: cabangInventory[idx].stok + qty, updatedAt: now }
+  } else if (produk) {
+    cabangInventory.push({
+      id: `ci-${branchId}-${produkId}-${Date.now()}`,
+      cabangId: branchId, produkId,
+      produkNama: produk.nama, produkSku: produk.sku, satuan: produk.satuan,
+      stok: qty, updatedAt: now,
+    })
+  }
+}
+
+function deductInventory(branchId: string, produkId: string, qty: number, now: string) {
+  const idx = cabangInventory.findIndex((inv) => inv.cabangId === branchId && inv.produkId === produkId)
+  if (idx !== -1) {
+    cabangInventory[idx] = { ...cabangInventory[idx], stok: Math.max(0, cabangInventory[idx].stok - qty), updatedAt: now }
+  }
+}
 
 function ok(data: unknown, status = 200): Omit<AxiosResponse, 'config'> {
   return { data: { data }, status, statusText: 'OK', headers: {} }
@@ -152,8 +191,17 @@ export function getMockResponse(config: AxiosRequestConfig): Omit<AxiosResponse,
     }
   }
 
-  // ── Produk / Inventory ────────────────────────────────────────────────────
-  if (rawUrl === '/products' || rawUrl.startsWith('/products?') || rawUrl === '/inventory' || rawUrl.startsWith('/inventory?')) {
+  // ── Cabang Inventory (per-branch stock) ──────────────────────────────────
+  if (rawUrl === '/cabang-inventory' || rawUrl.startsWith('/cabang-inventory?')) {
+    if (method === 'get') {
+      let list = [...cabangInventory]
+      if (params.cabangId) list = list.filter((inv) => inv.cabangId === params.cabangId)
+      return ok(list)
+    }
+  }
+
+  // ── Produk (master catalog) ───────────────────────────────────────────────
+  if (rawUrl === '/products' || rawUrl.startsWith('/products?')) {
     if (method === 'get') {
       let list = [...mockProduk]
       const q = params.search as string | undefined
@@ -164,12 +212,11 @@ export function getMockResponse(config: AxiosRequestConfig): Omit<AxiosResponse,
     }
   }
 
-  const produkIdMatch = matchPath(rawUrl, /^\/(?:products|inventory)\/([^/]+)$/)
+  const produkIdMatch = matchPath(rawUrl, /^\/products\/([^/]+)$/)
   if (produkIdMatch) {
     const id = produkIdMatch[1]
     const item = mockProduk.find((p) => p.id === id)
     if (method === 'get') return ok(item ?? null)
-    // mutations: return unchanged for demo
     if (method === 'patch') return ok({ ...item, ...body, updatedAt: new Date().toISOString() })
   }
 
@@ -225,6 +272,10 @@ export function getMockResponse(config: AxiosRequestConfig): Omit<AxiosResponse,
           const incoming = (body.items as Array<{ transferItemId: string; qtyDisetujui: number }> | undefined)?.find((i) => i.transferItemId === item.id)
           return { ...item, qtyDisetujui: incoming?.qtyDisetujui ?? item.qtyDiminta }
         })
+        // Deduct approved qty from gudang inventory
+        for (const item of ts.items) {
+          deductInventory(ts.gudangId, item.produkId, item.qtyDisetujui ?? item.qtyDiminta, now)
+        }
       } else if (action === 'tolak') {
         ts.status = 'Ditolak'
         ts.catatanGudang = body.catatan ?? ts.catatanGudang
@@ -240,6 +291,12 @@ export function getMockResponse(config: AxiosRequestConfig): Omit<AxiosResponse,
             ? { ...item, qtyDiterima: incoming.qtyDiterima, statusPenerimaan: incoming.status as StatusPenerimaanItem }
             : item
         })
+        // Add received qty to toko inventory
+        for (const item of ts.items) {
+          if (item.qtyDiterima && item.qtyDiterima > 0) {
+            addInventory(ts.tokoId, item.produkId, item.qtyDiterima, now)
+          }
+        }
       }
 
       ts.updatedAt = now
@@ -416,6 +473,16 @@ export function getMockResponse(config: AxiosRequestConfig): Omit<AxiosResponse,
         po.status = allReceived ? 'Diterima' : 'Sebagian Diterima'
         po.updatedAt = now
         purchaseOrders[idx] = po
+        // Add received qty to gudang inventory
+        const storedUser = typeof window !== 'undefined' ? localStorage.getItem('user') : null
+        const currentUser = storedUser ? JSON.parse(storedUser) : null
+        const gudangId = currentUser?.cabangId ?? 'gudang-1'
+        for (const line of incoming) {
+          if (line.qtyDiterima > 0) {
+            const poItem = po.items.find((i) => i.id === line.itemId)
+            if (poItem) addInventory(gudangId, poItem.produkId, line.qtyDiterima, now)
+          }
+        }
         return ok(po)
       }
 
@@ -668,7 +735,12 @@ export function getMockResponse(config: AxiosRequestConfig): Omit<AxiosResponse,
 
     if (action === 'approve' && method === 'post' && idx !== -1) {
       const now = new Date().toISOString()
-      stokOpname[idx] = { ...stokOpname[idx], status: 'Disetujui', approvedAt: now, updatedAt: now }
+      const so = stokOpname[idx]
+      stokOpname[idx] = { ...so, status: 'Disetujui', approvedAt: now, updatedAt: now }
+      // Set branch inventory to stokFisik (reconciled count)
+      for (const item of so.items) {
+        upsertInventory(so.cabangId, item.produkId, item.stokFisik, now)
+      }
       return ok(stokOpname[idx])
     }
 

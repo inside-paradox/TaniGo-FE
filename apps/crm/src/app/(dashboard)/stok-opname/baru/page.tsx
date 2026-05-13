@@ -11,6 +11,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Badge } from '@/components/ui/badge'
 import { useCreateStokOpname, useSubmitStokOpname } from '@/hooks/use-stok-opname'
 import { useProducts } from '@/hooks/use-products'
+import { useCabangInventory } from '@/hooks/use-inventory'
 import { useAuthStore } from '@/store/auth-store'
 import type { Produk } from '@/types'
 
@@ -39,25 +40,30 @@ function SelisihCell({ diff }: { diff: number | null }) {
 export default function StokOpnameBaruPage() {
   const router = useRouter()
   const { user } = useAuthStore()
-  const { data: produkData, isLoading } = useProducts({ page: 1, limit: 100 })
+  const { data: produkData, isLoading: produkLoading } = useProducts({ page: 1, limit: 100 })
+  const { data: inventoryData, isLoading: inventoryLoading } = useCabangInventory(user?.cabangId ?? undefined)
   const produkList = produkData?.data ?? []
 
   const [rows, setRows] = useState<ItemRow[]>([])
   const [catatan, setCatatan] = useState('')
 
-  // Stok sistem: 0 untuk toko (belum ada inventory), pakai stok katalog untuk gudang
-  const isGudang = user?.tipeCabang === 'gudang'
+  const isLoading = produkLoading || inventoryLoading
+
+  const inventoryMap = useMemo(() => {
+    const map: Record<string, number> = {}
+    inventoryData?.forEach((inv) => { map[inv.produkId] = inv.stok })
+    return map
+  }, [inventoryData])
 
   useEffect(() => {
-    if (produkList.length > 0) {
+    if (produkList.length > 0 && !inventoryLoading) {
       setRows(produkList.map((p) => ({
         produk: p,
-        // toko pakai 0 karena stok di katalog adalah stok gudang, bukan toko
-        stokSistem: isGudang ? p.stok : 0,
+        stokSistem: inventoryMap[p.id] ?? 0,
         stokFisik: '',
       })))
     }
-  }, [produkList.length, isGudang])
+  }, [produkList.length, inventoryData])
 
   const { mutateAsync: create, isPending: isCreating } = useCreateStokOpname()
   const { mutateAsync: submit, isPending: isSubmitting } = useSubmitStokOpname()

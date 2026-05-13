@@ -1,3 +1,14 @@
+export interface CabangInventory {
+  id: string
+  cabangId: string
+  produkId: string
+  produkNama: string
+  produkSku: string
+  satuan: string
+  stok: number
+  updatedAt: string
+}
+
 export type JenisPergerakan = 'masuk' | 'keluar' | 'penyesuaian'
 
 export type AlasanPenyesuaian = 'Koreksi' | 'Rusak' | 'Hilang' | 'Sampel' | 'Lainnya'

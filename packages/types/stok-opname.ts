@@ -26,6 +26,6 @@ export interface StokOpname {
 }
 
 export interface CreateStokOpnameDto {
-  items: { produkId: string; stokFisik: number }[]
+  items: { produkId: string; stokSistem: number; stokFisik: number }[]
   catatan?: string
 }
