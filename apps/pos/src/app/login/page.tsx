@@ -18,6 +18,7 @@ const DEMO_USER = {
   nama: 'Kasir Demo',
   email: 'demo@tanigo.id',
   role: 'kasir' as const,
+  cabangId: 'toko-1',
   cabang: 'Toko Utama',
   tipeCabang: 'toko' as const,
   aktif: true,
