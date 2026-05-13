@@ -132,8 +132,19 @@ export const mockPengiriman: Pengiriman[] = [
     nomorPengiriman: 'PG-2026-001',
     pesananIds: ['po-1', 'po-2'],
     pesananList: [
-      { id: 'po-1', nomorPesanan: 'ORD-2026-041', pelangganNama: 'Pak Hendra', alamat: 'Jl. Mawar No.12, Depok' },
-      { id: 'po-2', nomorPesanan: 'ORD-2026-042', pelangganNama: 'Bu Wati', alamat: 'Jl. Melati No.5, Depok' },
+      {
+        id: 'po-1', nomorPesanan: 'ORD-2026-041', pelangganNama: 'Pak Hendra', alamat: 'Jl. Mawar No.12, Depok',
+        items: [
+          { produkNama: 'Pupuk Urea 50kg', produkSku: 'PUP-001', qty: 5, satuan: 'karung' },
+          { produkNama: 'Pupuk NPK Mutiara', produkSku: 'PUP-002', qty: 10, satuan: 'kg' },
+        ],
+      },
+      {
+        id: 'po-2', nomorPesanan: 'ORD-2026-042', pelangganNama: 'Bu Wati', alamat: 'Jl. Melati No.5, Depok',
+        items: [
+          { produkNama: 'Pestisida Roundup 1L', produkSku: 'PES-001', qty: 3, satuan: 'botol' },
+        ],
+      },
     ],
     driverNama: 'Rudi Santoso',
     tanggalPengiriman: d(0),
@@ -147,9 +158,28 @@ export const mockPengiriman: Pengiriman[] = [
     nomorPengiriman: 'PG-2026-002',
     pesananIds: ['po-3', 'po-4', 'po-5'],
     pesananList: [
-      { id: 'po-3', nomorPesanan: 'ORD-2026-038', pelangganNama: 'Bpk. Slamet', alamat: 'Jl. Anggrek No.8, Jakarta Selatan' },
-      { id: 'po-4', nomorPesanan: 'ORD-2026-039', pelangganNama: 'CV Tani Makmur', alamat: 'Jl. Industri No.22, Jakarta Timur' },
-      { id: 'po-5', nomorPesanan: 'ORD-2026-040', pelangganNama: 'Ibu Lastri', alamat: 'Jl. Kenanga No.3, Bekasi' },
+      {
+        id: 'po-3', nomorPesanan: 'ORD-2026-038', pelangganNama: 'Bpk. Slamet', alamat: 'Jl. Anggrek No.8, Jakarta Selatan',
+        items: [
+          { produkNama: 'Pupuk Urea 50kg', produkSku: 'PUP-001', qty: 5, satuan: 'karung' },
+          { produkNama: 'Pupuk NPK Mutiara', produkSku: 'PUP-002', qty: 10, satuan: 'kg' },
+        ],
+      },
+      {
+        id: 'po-4', nomorPesanan: 'ORD-2026-039', pelangganNama: 'CV Tani Makmur', alamat: 'Jl. Industri No.22, Jakarta Timur',
+        items: [
+          { produkNama: 'Pupuk Urea 50kg', produkSku: 'PUP-001', qty: 60, satuan: 'karung' },
+          { produkNama: 'Pupuk Kandang Organik', produkSku: 'PUP-003', qty: 50, satuan: 'karung' },
+          { produkNama: 'Pupuk NPK Mutiara', produkSku: 'PUP-002', qty: 100, satuan: 'kg' },
+        ],
+      },
+      {
+        id: 'po-5', nomorPesanan: 'ORD-2026-040', pelangganNama: 'Ibu Lastri', alamat: 'Jl. Kenanga No.3, Bekasi',
+        items: [
+          { produkNama: 'Pestisida Roundup 1L', produkSku: 'PES-001', qty: 2, satuan: 'botol' },
+          { produkNama: 'Sprayer Manual 16L', produkSku: 'ALT-001', qty: 1, satuan: 'unit' },
+        ],
+      },
     ],
     driverNama: 'Agus Triyono',
     tanggalPengiriman: d(0),
@@ -162,8 +192,21 @@ export const mockPengiriman: Pengiriman[] = [
     nomorPengiriman: 'PG-2026-003',
     pesananIds: ['po-6', 'po-7'],
     pesananList: [
-      { id: 'po-6', nomorPesanan: 'ORD-2026-035', pelangganNama: 'Pak Darto', alamat: 'Jl. Padi No.10, Bogor' },
-      { id: 'po-7', nomorPesanan: 'ORD-2026-036', pelangganNama: 'Kelompok Tani Sejahtera', alamat: 'Jl. Sawah No.1, Bogor' },
+      {
+        id: 'po-6', nomorPesanan: 'ORD-2026-035', pelangganNama: 'Pak Darto', alamat: 'Jl. Padi No.10, Bogor',
+        items: [
+          { produkNama: 'Pestisida Roundup 1L', produkSku: 'PES-001', qty: 10, satuan: 'botol' },
+          { produkNama: 'Sprayer Manual 16L', produkSku: 'ALT-001', qty: 3, satuan: 'unit' },
+          { produkNama: 'Pupuk Kandang Organik', produkSku: 'PUP-003', qty: 15, satuan: 'karung' },
+        ],
+      },
+      {
+        id: 'po-7', nomorPesanan: 'ORD-2026-036', pelangganNama: 'Kelompok Tani Sejahtera', alamat: 'Jl. Sawah No.1, Bogor',
+        items: [
+          { produkNama: 'Pupuk Urea 50kg', produkSku: 'PUP-001', qty: 15, satuan: 'karung' },
+          { produkNama: 'Pupuk Kandang Organik', produkSku: 'PUP-003', qty: 30, satuan: 'karung' },
+        ],
+      },
     ],
     driverNama: 'Rudi Santoso',
     tanggalPengiriman: d(2),
@@ -182,7 +225,14 @@ export const mockPengiriman: Pengiriman[] = [
     nomorPengiriman: 'PG-2026-004',
     pesananIds: ['po-8'],
     pesananList: [
-      { id: 'po-8', nomorPesanan: 'ORD-2026-030', pelangganNama: 'PT Agro Nusantara', alamat: 'Jl. Industri Besar No.45, Tangerang' },
+      {
+        id: 'po-8', nomorPesanan: 'ORD-2026-030', pelangganNama: 'PT Agro Nusantara', alamat: 'Jl. Industri Besar No.45, Tangerang',
+        items: [
+          { produkNama: 'Pupuk Urea 50kg', produkSku: 'PUP-001', qty: 30, satuan: 'karung' },
+          { produkNama: 'Pupuk Kandang Organik', produkSku: 'PUP-003', qty: 50, satuan: 'karung' },
+          { produkNama: 'Pestisida Roundup 1L', produkSku: 'PES-001', qty: 20, satuan: 'botol' },
+        ],
+      },
     ],
     driverNama: 'Agus Triyono',
     tanggalPengiriman: d(4),

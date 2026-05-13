@@ -51,18 +51,44 @@ function formatTgl(dateStr: string) {
 // ─── Surat Jalan Pengiriman ────────────────────────────────────────────────────
 
 export function printSuratJalanPengiriman(p: Pengiriman) {
-  const rows = p.pesananList.map((item, i) => `
-    <tr>
-      <td style="text-align:center">${i + 1}</td>
-      <td>${item.nomorPesanan}</td>
-      <td>${item.pelangganNama}</td>
-      <td>${item.alamat}</td>
-      <td style="text-align:center">
-        <span class="check-box"></span> Terkirim<br/>
-        <span class="check-box"></span> Dikembalikan
-      </td>
-    </tr>
-  `).join('')
+  const blocks = p.pesananList.map((pesanan, i) => {
+    const itemRows = pesanan.items?.length
+      ? pesanan.items.map((it) => `
+          <tr>
+            <td style="padding:4px 8px;border:1px solid #e5e7eb;font-size:11px">${it.produkNama} <span style="color:#9ca3af">(${it.produkSku})</span></td>
+            <td style="padding:4px 8px;border:1px solid #e5e7eb;text-align:center;font-size:11px;font-weight:700">${it.qty}</td>
+            <td style="padding:4px 8px;border:1px solid #e5e7eb;font-size:11px">${it.satuan}</td>
+            <td style="padding:4px 8px;border:1px solid #e5e7eb;text-align:center"><span class="check-box"></span></td>
+          </tr>`).join('')
+      : `<tr><td colspan="4" style="padding:6px 8px;border:1px solid #e5e7eb;color:#9ca3af;font-size:11px">—</td></tr>`
+
+    return `
+      <div style="margin-bottom:20px;border:1px solid #d1d5db;border-radius:6px;overflow:hidden;page-break-inside:avoid">
+        <div style="background:#f9fafb;padding:8px 12px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #d1d5db">
+          <div>
+            <span style="font-weight:700;font-size:12px">${i + 1}. ${pesanan.nomorPesanan}</span>
+            <span style="margin-left:12px;font-size:11px;color:#374151">${pesanan.pelangganNama}</span>
+          </div>
+          <div style="font-size:10px;color:#6b7280">${pesanan.alamat}</div>
+        </div>
+        <table style="width:100%;border-collapse:collapse">
+          <thead>
+            <tr style="background:#f3f4f6">
+              <th style="padding:5px 8px;border:1px solid #e5e7eb;font-size:10px;text-align:left">Produk</th>
+              <th style="padding:5px 8px;border:1px solid #e5e7eb;font-size:10px;width:60px;text-align:center">Qty</th>
+              <th style="padding:5px 8px;border:1px solid #e5e7eb;font-size:10px;width:70px">Satuan</th>
+              <th style="padding:5px 8px;border:1px solid #e5e7eb;font-size:10px;width:50px;text-align:center">✓</th>
+            </tr>
+          </thead>
+          <tbody>${itemRows}</tbody>
+        </table>
+        <div style="padding:6px 12px;background:#f9fafb;border-top:1px solid #e5e7eb;display:flex;gap:24px;font-size:11px">
+          <span><span class="check-box"></span> Terkirim</span>
+          <span><span class="check-box"></span> Dikembalikan</span>
+          <span style="margin-left:auto;color:#6b7280">TTD penerima: ___________________________</span>
+        </div>
+      </div>`
+  }).join('')
 
   const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Surat Jalan ${p.nomorPengiriman}</title><style>${BASE_CSS}</style></head><body>
     <div class="header">
@@ -71,32 +97,21 @@ export function printSuratJalanPengiriman(p: Pengiriman) {
         <div style="font-size:10px;color:#6b7280;margin-top:2px;">Sistem Manajemen Toko Perlengkapan Pertanian</div>
       </div>
       <div style="text-align:right">
-        <div class="doc-title">Surat Jalan</div>
+        <div class="doc-title">Surat Jalan Pengiriman</div>
         <div class="doc-meta">No: <b>${p.nomorPengiriman}</b></div>
         <div class="doc-meta">Tanggal: ${formatTgl(p.tanggalPengiriman)}</div>
       </div>
     </div>
 
-    <div class="info-grid">
+    <div class="info-grid" style="margin-bottom:20px">
       <div class="info-block"><label>Driver / Kurir</label><span>${p.driverNama}</span></div>
       <div class="info-block"><label>Tanggal Pengiriman</label><span>${formatTgl(p.tanggalPengiriman)}</span></div>
       ${p.estimasiWaktu ? `<div class="info-block"><label>Estimasi Waktu</label><span>${p.estimasiWaktu}</span></div>` : ''}
       ${p.catatan ? `<div class="info-block"><label>Catatan</label><span>${p.catatan}</span></div>` : ''}
     </div>
 
-    <div class="section-title">Daftar Pesanan</div>
-    <table>
-      <thead>
-        <tr>
-          <th style="width:36px;text-align:center">No</th>
-          <th>No. Pesanan</th>
-          <th>Pelanggan</th>
-          <th>Alamat</th>
-          <th style="width:130px;text-align:center">Status</th>
-        </tr>
-      </thead>
-      <tbody>${rows}</tbody>
-    </table>
+    <div class="section-title" style="margin-bottom:12px">Daftar Pesanan & Barang (${p.pesananList.length} pesanan)</div>
+    ${blocks}
 
     <div class="sig-grid">
       <div class="sig-block">
@@ -108,7 +123,7 @@ export function printSuratJalanPengiriman(p: Pengiriman) {
         <div class="sig-name">( _________________________ )</div>
       </div>
       <div class="sig-block">
-        <div class="sig-label">Diterima oleh</div>
+        <div class="sig-label">Mengetahui</div>
         <div class="sig-name">( _________________________ )</div>
       </div>
     </div>

@@ -19,11 +19,19 @@ export interface ChecklistPesanan {
   catatan?: string | null
 }
 
+export interface PesananListItem {
+  id: string
+  nomorPesanan: string
+  pelangganNama: string
+  alamat: string
+  items?: { produkNama: string; produkSku: string; qty: number; satuan: string }[]
+}
+
 export interface Pengiriman {
   id: string
   nomorPengiriman: string
   pesananIds: string[]
-  pesananList: { id: string; nomorPesanan: string; pelangganNama: string; alamat: string }[]
+  pesananList: PesananListItem[]
   driverId?: string | null
   driverNama: string
   tanggalPengiriman: string
