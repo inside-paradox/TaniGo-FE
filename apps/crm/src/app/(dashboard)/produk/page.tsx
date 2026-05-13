@@ -12,6 +12,7 @@ import { ProdukForm } from '@/components/produk/produk-form'
 import { ProdukFilter } from '@/components/produk/produk-filter'
 import { getProdukColumns } from '@/components/produk/produk-columns'
 import { useProducts } from '@/hooks/use-products'
+import { useAuthStore } from '@/store/auth-store'
 import type { Produk, KategoriProduk, StatusStok } from '@/types'
 
 interface FilterState {
@@ -22,6 +23,8 @@ interface FilterState {
 }
 
 export default function ProdukPage() {
+  const { user } = useAuthStore()
+  const canManage = user?.role === 'superadmin'
   const [page, setPage] = useState(1)
   const [limit, setLimit] = useState(25)
   const [sorting, setSorting] = useState<SortingState>([])
@@ -68,18 +71,20 @@ export default function ProdukPage() {
     setEditProduk(null)
   }
 
-  const columns = getProdukColumns(handleEdit)
+  const columns = getProdukColumns(canManage ? handleEdit : null)
 
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Manajemen Produk"
+        title="Katalog Produk"
         subtitle={`${data?.meta.total ?? 0} produk terdaftar`}
         actions={
-          <Button onClick={() => setFormOpen(true)}>
-            <Plus className="h-4 w-4" />
-            Tambah Produk
-          </Button>
+          canManage ? (
+            <Button onClick={() => setFormOpen(true)}>
+              <Plus className="h-4 w-4" />
+              Tambah Produk
+            </Button>
+          ) : undefined
         }
       />
 
@@ -125,7 +130,7 @@ export default function ProdukPage() {
         </div>
       </Card>
 
-      <ProdukForm open={formOpen} onClose={handleCloseForm} produk={editProduk} />
+      {canManage && <ProdukForm open={formOpen} onClose={handleCloseForm} produk={editProduk} />}
     </div>
   )
 }

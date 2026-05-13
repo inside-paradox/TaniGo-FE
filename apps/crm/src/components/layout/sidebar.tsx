@@ -59,7 +59,7 @@ const navItems: NavItem[] = [
     href: '/produk',
     label: 'Produk',
     icon: <Package className="h-5 w-5" />,
-    roles: ['admin', 'manajer', 'staf_gudang'],
+    roles: ['superadmin', 'admin', 'manajer', 'staf_gudang'],
   },
   {
     href: '/inventori',

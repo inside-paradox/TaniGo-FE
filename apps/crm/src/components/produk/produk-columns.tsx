@@ -108,7 +108,7 @@ function AksiCell({
 }
 
 export function getProdukColumns(
-  onEdit: (produk: Produk) => void
+  onEdit: ((produk: Produk) => void) | null
 ): ColumnDef<Produk>[] {
   return [
     {
@@ -204,11 +204,11 @@ export function getProdukColumns(
           <Badge variant="default">Nonaktif</Badge>
         ),
     },
-    {
+    ...(onEdit ? [{
       id: 'aksi',
       header: '',
       enableSorting: false,
-      cell: ({ row }) => <AksiCell produk={row.original} onEdit={onEdit} />,
-    },
+      cell: ({ row }: { row: { original: Produk } }) => <AksiCell produk={row.original} onEdit={onEdit} />,
+    }] : []),
   ]
 }
