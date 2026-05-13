@@ -60,7 +60,7 @@ export default function StokOpnameDetailPage() {
 
   const isDraft = opname.status === 'Draft'
   const isDiajukan = opname.status === 'Diajukan'
-  const isAdmin = user?.role === 'admin'
+  const canSubmit = user?.role === 'admin' || user?.role === 'manajer'
   const isSuperadmin = user?.role === 'superadmin'
 
   const kurang = opname.items.filter((i) => i.selisih < 0)
@@ -78,7 +78,7 @@ export default function StokOpnameDetailPage() {
               <ArrowLeft className="h-4 w-4" />
               Kembali
             </Button>
-            {isDraft && isAdmin && (
+            {isDraft && canSubmit && (
               <>
                 <Button variant="outline" onClick={() => setShowDeleteConfirm(true)} className="text-red-500 hover:text-red-600">
                   <Trash2 className="h-4 w-4" />

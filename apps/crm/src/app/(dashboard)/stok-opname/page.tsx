@@ -126,7 +126,7 @@ export default function StokOpnamePage() {
                     <p className="text-xs text-gray-400">Diajukan {formatTanggal(opname.submittedAt)}</p>
                   )}
                 </div>
-                {opname.status === 'Draft' && user?.role === 'admin' && (
+                {opname.status === 'Draft' && (user?.role === 'admin' || user?.role === 'manajer') && (
                   <Button
                     variant="ghost"
                     size="sm"
