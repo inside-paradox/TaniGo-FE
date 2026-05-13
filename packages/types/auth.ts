@@ -1,13 +1,13 @@
-export type UserRole = 'admin' | 'manajer' | 'kasir' | 'staf_gudang'
-export type TipeCabang = 'toko' | 'gudang'
+export type UserRole = 'superadmin' | 'admin' | 'manajer' | 'kasir' | 'staf_gudang'
 
 export interface User {
   id: string
   nama: string
   email: string
   role: UserRole
-  cabang: string
-  tipeCabang: TipeCabang
+  cabangId: string | null
+  cabang: string | null
+  tipeCabang: import('./cabang').TipeCabang | null
   aktif: boolean
   createdAt: string
   updatedAt: string

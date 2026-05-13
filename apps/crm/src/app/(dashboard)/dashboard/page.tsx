@@ -10,6 +10,9 @@ import {
   ArrowLeftRight,
   ClipboardList,
   Clock,
+  Store,
+  Warehouse,
+  TrendingDown,
 } from 'lucide-react'
 import {
   AreaChart,
@@ -23,10 +26,14 @@ import {
   Pie,
   Cell,
   Legend,
+  BarChart,
+  Bar,
 } from 'recharts'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
+import { Badge } from '@/components/ui/badge'
 import { useDashboardStok, useDashboardPenjualan } from '@/hooks/use-dashboard'
+import { useCabangList } from '@/hooks/use-cabang'
 import { useAuthStore } from '@/store/auth-store'
 import { formatRupiah } from '@/lib/utils'
 
@@ -376,8 +383,157 @@ function DashboardToko() {
   )
 }
 
+// ─── Mock performance data per toko (replace with API when available) ──────────
+const performanceTokoMock = [
+  { nama: 'Toko Utama', pendapatan: 39100000, transaksi: 142, pertumbuhan: 12.4 },
+  { nama: 'Toko Selatan', pendapatan: 28500000, transaksi: 103, pertumbuhan: -3.2 },
+  { nama: 'Toko Barat', pendapatan: 31200000, transaksi: 118, pertumbuhan: 8.7 },
+  { nama: 'Toko Timur', pendapatan: 19800000, transaksi: 76, pertumbuhan: 21.1 },
+]
+
+function DashboardSuperadmin() {
+  const { data: cabangData, isLoading: cabangLoading } = useCabangList()
+  const allCabang = cabangData?.data ?? []
+  const tokoList = allCabang.filter((c) => c.tipe === 'toko')
+  const gudangList = allCabang.filter((c) => c.tipe === 'gudang')
+  const activeCount = allCabang.filter((c) => c.aktif).length
+
+  const totalPendapatan = performanceTokoMock.reduce((s, t) => s + t.pendapatan, 0)
+  const totalTransaksi = performanceTokoMock.reduce((s, t) => s + t.transaksi, 0)
+
+  return (
+    <div className="space-y-6">
+      {/* Global summary */}
+      <div>
+        <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-gray-400">Overview Jaringan</h2>
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <StatCard
+            title="Total Toko"
+            value={cabangLoading ? '...' : tokoList.length}
+            subtitle={`${tokoList.filter((c) => c.aktif).length} aktif`}
+            icon={<Store className="h-5 w-5 text-blue-600" />}
+            color="bg-blue-50"
+            loading={cabangLoading}
+          />
+          <StatCard
+            title="Total Gudang"
+            value={cabangLoading ? '...' : gudangList.length}
+            subtitle={`${gudangList.filter((c) => c.aktif).length} aktif`}
+            icon={<Warehouse className="h-5 w-5 text-yellow-600" />}
+            color="bg-yellow-50"
+            loading={cabangLoading}
+          />
+          <StatCard
+            title="Pendapatan Minggu Ini"
+            value={formatRupiah(totalPendapatan)}
+            subtitle="Semua toko"
+            icon={<TrendingUp className="h-5 w-5 text-green-600" />}
+            color="bg-green-50"
+          />
+          <StatCard
+            title="Total Transaksi"
+            value={totalTransaksi}
+            subtitle="7 hari terakhir"
+            icon={<ShoppingCart className="h-5 w-5 text-purple-600" />}
+            color="bg-purple-50"
+          />
+        </div>
+      </div>
+
+      {/* Bar chart performa toko */}
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+        <Card className="lg:col-span-2">
+          <CardHeader><CardTitle>Pendapatan per Toko (7 Hari Terakhir)</CardTitle></CardHeader>
+          <CardContent>
+            <ResponsiveContainer width="100%" height={220}>
+              <BarChart data={performanceTokoMock} barSize={32}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                <XAxis dataKey="nama" tick={{ fontSize: 11, fill: '#6b7280' }} axisLine={false} tickLine={false} />
+                <YAxis tick={{ fontSize: 11, fill: '#6b7280' }} axisLine={false} tickLine={false}
+                  tickFormatter={(v) => `${(v / 1000000).toFixed(0)}jt`} />
+                <Tooltip
+                  formatter={(value) => [formatRupiah(Number(value)), 'Pendapatan']}
+                  contentStyle={{ fontSize: 12, borderRadius: 8, border: '1px solid #e5e7eb' }}
+                />
+                <Bar dataKey="pendapatan" fill="#16a34a" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+
+        {/* Cabang aktif/nonaktif */}
+        <Card>
+          <CardHeader><CardTitle>Status Cabang</CardTitle></CardHeader>
+          <CardContent>
+            {cabangLoading ? (
+              <Skeleton className="h-48 w-full" />
+            ) : (
+              <div className="space-y-3">
+                {allCabang.map((c) => (
+                  <div key={c.id} className="flex items-center justify-between text-sm">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <div className={`h-2 w-2 shrink-0 rounded-full ${c.aktif ? 'bg-green-500' : 'bg-gray-300'}`} />
+                      <span className="truncate text-gray-800">{c.nama}</span>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0 ml-2">
+                      <Badge variant={c.tipe === 'toko' ? 'info' : 'warning'}>
+                        {c.tipe === 'toko' ? 'Toko' : 'Gudang'}
+                      </Badge>
+                    </div>
+                  </div>
+                ))}
+                {allCabang.length === 0 && (
+                  <p className="text-sm text-gray-400">Belum ada cabang terdaftar</p>
+                )}
+                <div className="pt-2 border-t border-gray-100 text-xs text-gray-500">
+                  {activeCount} dari {allCabang.length} cabang aktif
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Performa per toko */}
+      <div>
+        <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-gray-400">Performa per Toko</h2>
+        <div className="overflow-hidden rounded-xl border border-gray-200 bg-white">
+          <table className="w-full text-sm">
+            <thead className="border-b border-gray-100 bg-gray-50">
+              <tr>
+                <th className="px-4 py-3 text-left text-xs font-medium uppercase text-gray-500">Toko</th>
+                <th className="px-4 py-3 text-right text-xs font-medium uppercase text-gray-500">Pendapatan</th>
+                <th className="px-4 py-3 text-right text-xs font-medium uppercase text-gray-500">Transaksi</th>
+                <th className="px-4 py-3 text-right text-xs font-medium uppercase text-gray-500">Pertumbuhan</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-50">
+              {performanceTokoMock.map((toko) => (
+                <tr key={toko.nama} className="hover:bg-gray-50">
+                  <td className="px-4 py-3 font-medium text-gray-900">{toko.nama}</td>
+                  <td className="px-4 py-3 text-right text-gray-700">{formatRupiah(toko.pendapatan)}</td>
+                  <td className="px-4 py-3 text-right text-gray-700">{toko.transaksi}</td>
+                  <td className="px-4 py-3 text-right">
+                    <span className={`flex items-center justify-end gap-1 font-medium ${toko.pertumbuhan >= 0 ? 'text-green-600' : 'text-red-500'}`}>
+                      {toko.pertumbuhan >= 0
+                        ? <TrendingUp className="h-3.5 w-3.5" />
+                        : <TrendingDown className="h-3.5 w-3.5" />}
+                      {Math.abs(toko.pertumbuhan)}%
+                    </span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export default function DashboardPage() {
   const { user } = useAuthStore()
+  const isSuperadmin = user?.role === 'superadmin'
   const isGudang = user?.tipeCabang === 'gudang'
 
   return (
@@ -393,7 +549,7 @@ export default function DashboardPage() {
         </p>
       </div>
 
-      {isGudang ? <DashboardGudang /> : <DashboardToko />}
+      {isSuperadmin ? <DashboardSuperadmin /> : isGudang ? <DashboardGudang /> : <DashboardToko />}
     </div>
   )
 }

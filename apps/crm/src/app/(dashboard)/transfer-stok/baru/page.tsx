@@ -15,25 +15,13 @@ import {
 } from '@/components/ui'
 import { useCreateTransferStok } from '@/hooks/use-transfer-stok'
 import { useProducts } from '@/hooks/use-products'
-import type { Produk } from '@/types'
+import { useCabangList } from '@/hooks/use-cabang'
+import type { Produk, Cabang } from '@/types'
 
 // Satuan umum produk pertanian
 const SATUAN_OPTIONS = [
   'kg', 'gram', 'liter', 'ml', 'buah', 'pak', 'karung',
   'dus', 'botol', 'sachet', 'roll', 'lembar', 'set', 'unit',
-]
-
-// Mock gudang — ganti dengan API ketika endpoint tersedia
-interface Gudang {
-  id: string
-  nama: string
-  lokasi: string
-}
-
-const GUDANG_OPTIONS: Gudang[] = [
-  { id: 'gudang-1', nama: 'Gudang Pusat', lokasi: 'Jakarta' },
-  { id: 'gudang-2', nama: 'Gudang Utara', lokasi: 'Bogor' },
-  { id: 'gudang-3', nama: 'Gudang Selatan', lokasi: 'Depok' },
 ]
 
 interface ItemBaris {
@@ -51,6 +39,8 @@ export default function BuatTransferStokPage() {
   const router = useRouter()
   const { mutateAsync: create, isPending } = useCreateTransferStok()
   const { data: produksData } = useProducts({ page: 1, limit: 200 })
+  const { data: cabangData } = useCabangList({ tipe: 'gudang', aktif: true })
+  const gudangList: Cabang[] = cabangData?.data ?? []
 
   const produkList: Produk[] = useMemo(() => produksData?.data ?? [], [produksData])
 
@@ -145,8 +135,8 @@ export default function BuatTransferStokPage() {
         <Card>
           <CardHeader><CardTitle>Gudang Tujuan</CardTitle></CardHeader>
           <CardContent>
-            <Combobox<Gudang>
-              options={GUDANG_OPTIONS}
+            <Combobox<Cabang>
+              options={gudangList}
               value={gudangId}
               onChange={setGudangId}
               getOptionValue={(g) => g.id}

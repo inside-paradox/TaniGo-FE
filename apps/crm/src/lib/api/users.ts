@@ -6,13 +6,13 @@ export interface CreateUserDto {
   email: string
   password: string
   role: string
-  cabang: string
+  cabangId: string | null
 }
 
 export interface UpdateUserDto {
   nama?: string
   role?: string
-  cabang?: string
+  cabangId?: string | null
   aktif?: boolean
 }
 

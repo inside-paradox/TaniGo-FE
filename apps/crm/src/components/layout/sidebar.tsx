@@ -18,6 +18,7 @@ import {
   Star,
   Sprout,
   ArrowLeftRight,
+  Store,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useUIStore } from '@/store/ui-store'
@@ -37,8 +38,22 @@ const navItems: NavItem[] = [
     href: '/dashboard',
     label: 'Dashboard',
     icon: <LayoutDashboard className="h-5 w-5" />,
-    roles: ['admin', 'manajer', 'kasir', 'staf_gudang'],
+    roles: ['superadmin', 'admin', 'manajer', 'kasir', 'staf_gudang'],
   },
+  // ── Superadmin only ──
+  {
+    href: '/cabang',
+    label: 'Cabang',
+    icon: <Store className="h-5 w-5" />,
+    roles: ['superadmin'],
+  },
+  {
+    href: '/pengguna',
+    label: 'Pengguna',
+    icon: <Users className="h-5 w-5" />,
+    roles: ['superadmin'],
+  },
+  // ── Operasional ──
   {
     href: '/produk',
     label: 'Produk',
@@ -119,7 +134,7 @@ export function Sidebar() {
   const visibleItems = navItems.filter((item) => {
     if (!user) return false
     if (!item.roles.includes(user.role)) return false
-    if (item.tipeCabang && !item.tipeCabang.includes(user.tipeCabang)) return false
+    if (item.tipeCabang && user.tipeCabang && !item.tipeCabang.includes(user.tipeCabang)) return false
     return true
   })
 
