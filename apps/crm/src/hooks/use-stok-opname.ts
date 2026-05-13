@@ -5,7 +5,7 @@ import type { CreateStokOpnameDto, TableParams } from '@/types'
 
 export const STOK_OPNAME_KEY = 'stok-opname'
 
-export function useStokOpnameList(params: TableParams & { status?: string }) {
+export function useStokOpnameList(params: TableParams & { status?: string; cabangId?: string }) {
   return useQuery({
     queryKey: [STOK_OPNAME_KEY, params],
     queryFn: () => stokOpnameApi.getAll(params),

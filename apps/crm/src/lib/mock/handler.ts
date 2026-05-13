@@ -12,9 +12,11 @@ import {
   mockTagihanVIP,
   mockStokOpname,
   mockCabangInventory,
+  mockSuppliers,
+  mockPergerakanStok,
   paginate,
 } from './data'
-import type { Cabang, User, TransferStok, Pengiriman, PurchaseOrder, PembayaranPO, Pesanan, PelangganVIP, TagihanVIP, StokOpname, CabangInventory, StatusPenerimaanItem } from '@/types'
+import type { Cabang, User, TransferStok, Pengiriman, PurchaseOrder, PembayaranPO, Pesanan, PelangganVIP, TagihanVIP, StokOpname, CabangInventory, Supplier, PergerakanStok, StatusPenerimaanItem } from '@/types'
 
 // In-memory mutable state for demo mutations
 let cabang = [...mockCabang] as Cabang[]
@@ -28,6 +30,8 @@ const pelangganVIP = [...mockPelangganVIP] as PelangganVIP[]
 const tagihanVIP = [...mockTagihanVIP] as TagihanVIP[]
 const stokOpname = [...mockStokOpname] as StokOpname[]
 const cabangInventory = [...mockCabangInventory] as CabangInventory[]
+let suppliers = [...mockSuppliers] as Supplier[]
+const pergerakanStok = [...mockPergerakanStok] as PergerakanStok[]
 
 function upsertInventory(branchId: string, produkId: string, stok: number, now: string) {
   const produk = mockProduk.find((p) => p.id === produkId)
@@ -187,6 +191,93 @@ export function getMockResponse(config: AxiosRequestConfig): Omit<AxiosResponse,
     }
     if (method === 'delete' && idx !== -1) {
       users = users.filter((_, i) => i !== idx)
+      return ok({})
+    }
+  }
+
+  // ── Inventory dashboard / pergerakan / penyesuaian ───────────────────────
+  if (rawUrl === '/inventory/dashboard' && method === 'get') {
+    const storedUser = typeof window !== 'undefined' ? localStorage.getItem('user') : null
+    const currentUser = storedUser ? JSON.parse(storedUser) : null
+    const cabangId = currentUser?.cabangId
+    const inv = cabangId ? cabangInventory.filter((i) => i.cabangId === cabangId) : cabangInventory
+    const produkIds = new Set(inv.map((i) => i.produkId))
+    const produkMap = Object.fromEntries(mockProduk.map((p) => [p.id, p]))
+    let menipis = 0, habis = 0
+    for (const i of inv) {
+      const p = produkMap[i.produkId]
+      if (!p) continue
+      if (i.stok === 0) habis++
+      else if (i.stok <= p.thresholdStok) menipis++
+    }
+    return ok({ totalProduk: produkIds.size, produkMenipis: menipis, produkHabis: habis, produkKedaluwarsa30Hari: 0 })
+  }
+
+  if (rawUrl === '/inventory/pergerakan' || rawUrl.startsWith('/inventory/pergerakan?')) {
+    if (method === 'get') {
+      let list = [...pergerakanStok]
+      const q = params.search as string | undefined
+      if (q) list = list.filter((p) => p.produkNama.toLowerCase().includes(q.toLowerCase()) || p.produkSku.toLowerCase().includes(q.toLowerCase()))
+      if (params.produkId) list = list.filter((p) => p.produkId === params.produkId)
+      if (params.jenis) list = list.filter((p) => p.jenis === params.jenis)
+      list = list.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+      return ok(paginate(list, Number(params.page ?? 1), Number(params.limit ?? 25)))
+    }
+  }
+
+  if (rawUrl === '/inventory/penyesuaian' && method === 'post') {
+    const produk = mockProduk.find((p) => p.id === body.produkId)
+    if (!produk) return ok(null)
+    const storedUser = typeof window !== 'undefined' ? localStorage.getItem('user') : null
+    const currentUser = storedUser ? JSON.parse(storedUser) : null
+    const cabangId = currentUser?.cabangId ?? 'gudang-1'
+    const invIdx = cabangInventory.findIndex((i) => i.cabangId === cabangId && i.produkId === body.produkId)
+    const stokSebelum = invIdx !== -1 ? cabangInventory[invIdx].stok : 0
+    const stokSesudah = Math.max(0, stokSebelum + body.jumlah)
+    if (invIdx !== -1) cabangInventory[invIdx] = { ...cabangInventory[invIdx], stok: stokSesudah, updatedAt: new Date().toISOString() }
+    const entry: PergerakanStok = {
+      id: `pg-s-${Date.now()}`,
+      produkId: produk.id, produkNama: produk.nama, produkSku: produk.sku,
+      jenis: 'penyesuaian', jumlah: body.jumlah, stokSebelum, stokSesudah,
+      referensi: null, userId: currentUser?.id ?? '', userNama: currentUser?.nama ?? '',
+      catatan: body.catatan, alasan: body.alasan,
+      createdAt: new Date().toISOString(),
+    }
+    pergerakanStok.unshift(entry)
+    return ok(entry, 201)
+  }
+
+  // ── Suppliers ─────────────────────────────────────────────────────────────
+  if (rawUrl === '/suppliers' || rawUrl.startsWith('/suppliers?')) {
+    if (method === 'get') {
+      let list = [...suppliers]
+      const q = params.search as string | undefined
+      if (q) list = list.filter((s) => s.nama.toLowerCase().includes(q.toLowerCase()) || s.kontak.includes(q))
+      return ok(paginate(list, Number(params.page ?? 1), Number(params.limit ?? 25)))
+    }
+    if (method === 'post') {
+      const newSupplier: Supplier = {
+        id: `sup-${Date.now()}`,
+        nama: body.nama, kontak: body.kontak, alamat: body.alamat,
+        produkDisuplai: body.produkDisuplai ?? [],
+        createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(),
+      }
+      suppliers = [...suppliers, newSupplier]
+      return ok(newSupplier, 201)
+    }
+  }
+
+  const supplierIdMatch = matchPath(rawUrl, /^\/suppliers\/([^/]+)$/)
+  if (supplierIdMatch) {
+    const id = supplierIdMatch[1]
+    const idx = suppliers.findIndex((s) => s.id === id)
+    if (method === 'get') return ok(suppliers[idx] ?? null)
+    if (method === 'patch' && idx !== -1) {
+      suppliers[idx] = { ...suppliers[idx], ...body, updatedAt: new Date().toISOString() }
+      return ok(suppliers[idx])
+    }
+    if (method === 'delete' && idx !== -1) {
+      suppliers = suppliers.filter((_, i) => i !== idx)
       return ok({})
     }
   }
@@ -681,6 +772,7 @@ export function getMockResponse(config: AxiosRequestConfig): Omit<AxiosResponse,
   if (rawUrl === '/stok-opname' || rawUrl.startsWith('/stok-opname?')) {
     if (method === 'get') {
       let list = [...stokOpname]
+      if (params.cabangId) list = list.filter((s) => s.cabangId === params.cabangId)
       if (params.status) list = list.filter((s) => s.status === params.status)
       list = list.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
       return ok(paginate(list, Number(params.page ?? 1), Number(params.limit ?? 25)))

@@ -3,7 +3,7 @@ import type { StokOpname, CreateStokOpnameDto, PaginatedResponse, TableParams } 
 
 export const stokOpnameApi = {
   getAll: async (
-    params: TableParams & { status?: string }
+    params: TableParams & { status?: string; cabangId?: string }
   ): Promise<PaginatedResponse<StokOpname>> => {
     const { data } = await api.get('/stok-opname', { params })
     return data.data

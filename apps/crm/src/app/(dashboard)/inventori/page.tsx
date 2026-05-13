@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Plus, Package, AlertTriangle, XCircle, CalendarClock, SlidersHorizontal, Truck } from 'lucide-react'
+import { Plus, Package, AlertTriangle, XCircle, CalendarClock, History, Truck } from 'lucide-react'
 import type { SortingState } from '@tanstack/react-table'
 import type { ColumnDef } from '@tanstack/react-table'
 import { PageHeader } from '@/components/shared/page-header'
@@ -13,7 +13,6 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
 import { ConfirmModal } from '@/components/ui/modal'
-import { PenyesuaianStokModal } from '@/components/inventori/penyesuaian-stok-modal'
 import { SupplierForm } from '@/components/inventori/supplier-form'
 import {
   useDashboardInventori,
@@ -21,6 +20,7 @@ import {
   useSuppliers,
   useDeleteSupplier,
 } from '@/hooks/use-inventory'
+import { useAuthStore } from '@/store/auth-store'
 import { formatTanggalWaktu, formatTanggal } from '@/lib/utils'
 import type { PergerakanStok, Supplier } from '@/types'
 
@@ -171,8 +171,10 @@ function getSupplierColumns(
 }
 
 export default function InventoriPage() {
+  const { user } = useAuthStore()
+  const isGudang = user?.tipeCabang === 'gudang' || user?.role === 'superadmin'
+
   const [tab, setTab] = useState<TabKey>('stok')
-  const [penyesuaianOpen, setPenyesuaianOpen] = useState(false)
   const [supplierFormOpen, setSupplierFormOpen] = useState(false)
   const [editSupplier, setEditSupplier] = useState<Supplier | null>(null)
   const [deleteSupplier, setDeleteSupplier] = useState<Supplier | null>(null)
@@ -199,21 +201,15 @@ export default function InventoriPage() {
 
   const TABS: { key: TabKey; label: string; icon: React.ReactNode }[] = [
     { key: 'stok', label: 'Dashboard Stok', icon: <Package className="h-4 w-4" /> },
-    { key: 'riwayat', label: 'Riwayat Pergerakan', icon: <SlidersHorizontal className="h-4 w-4" /> },
-    { key: 'supplier', label: 'Supplier', icon: <Truck className="h-4 w-4" /> },
+    { key: 'riwayat', label: 'Riwayat Pergerakan', icon: <History className="h-4 w-4" /> },
+    ...(isGudang ? [{ key: 'supplier' as TabKey, label: 'Supplier', icon: <Truck className="h-4 w-4" /> }] : []),
   ]
 
   return (
     <div className="space-y-6">
       <PageHeader
         title="Manajemen Inventori"
-        subtitle="Monitor stok, pergerakan barang, dan supplier"
-        actions={
-          <Button onClick={() => setPenyesuaianOpen(true)}>
-            <SlidersHorizontal className="h-4 w-4" />
-            Penyesuaian Stok
-          </Button>
-        }
+        subtitle={isGudang ? 'Monitor stok, pergerakan barang, dan supplier' : 'Monitor stok dan pergerakan barang'}
       />
 
       <div className="flex border-b border-gray-200">
@@ -258,17 +254,16 @@ export default function InventoriPage() {
           <Card>
             <CardHeader><CardTitle>Aksi Cepat</CardTitle></CardHeader>
             <CardContent>
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 {[
-                  { icon: <SlidersHorizontal className="h-5 w-5 text-green-600" />, bg: 'bg-green-100', label: 'Penyesuaian Stok', desc: 'Koreksi stok secara manual', action: () => setPenyesuaianOpen(true), hover: 'hover:border-green-300 hover:bg-green-50' },
-                  { icon: <Package className="h-5 w-5 text-blue-600" />, bg: 'bg-blue-100', label: 'Riwayat Pergerakan', desc: 'Lacak masuk & keluar barang', action: () => setTab('riwayat'), hover: 'hover:border-blue-300 hover:bg-blue-50' },
-                  { icon: <Truck className="h-5 w-5 text-purple-600" />, bg: 'bg-purple-100', label: 'Manajemen Supplier', desc: 'Kelola data supplier', action: () => setTab('supplier'), hover: 'hover:border-purple-300 hover:bg-purple-50' },
-                ].map((item) => (
-                  <button key={item.label} onClick={item.action} className={`flex items-center gap-3 rounded-xl border border-gray-200 bg-white p-4 text-left ${item.hover} transition-colors`}>
-                    <div className={`rounded-lg ${item.bg} p-2`}>{item.icon}</div>
+                  { icon: <History className="h-5 w-5 text-blue-600" />, bg: 'bg-blue-100', label: 'Riwayat Pergerakan', desc: 'Lacak masuk & keluar barang', action: () => setTab('riwayat'), hover: 'hover:border-blue-300 hover:bg-blue-50' },
+                  isGudang ? { icon: <Truck className="h-5 w-5 text-purple-600" />, bg: 'bg-purple-100', label: 'Manajemen Supplier', desc: 'Kelola data supplier', action: () => setTab('supplier'), hover: 'hover:border-purple-300 hover:bg-purple-50' } : null,
+                ].filter(Boolean).map((item) => (
+                  <button key={item!.label} onClick={item!.action} className={`flex items-center gap-3 rounded-xl border border-gray-200 bg-white p-4 text-left ${item!.hover} transition-colors`}>
+                    <div className={`rounded-lg ${item!.bg} p-2`}>{item!.icon}</div>
                     <div>
-                      <p className="font-medium text-gray-900">{item.label}</p>
-                      <p className="text-xs text-gray-500">{item.desc}</p>
+                      <p className="font-medium text-gray-900">{item!.label}</p>
+                      <p className="text-xs text-gray-500">{item!.desc}</p>
                     </div>
                   </button>
                 ))}
@@ -327,7 +322,6 @@ export default function InventoriPage() {
         </div>
       )}
 
-      <PenyesuaianStokModal open={penyesuaianOpen} onClose={() => setPenyesuaianOpen(false)} />
       <SupplierForm open={supplierFormOpen} onClose={() => { setSupplierFormOpen(false); setEditSupplier(null) }} supplier={editSupplier} />
       <ConfirmModal
         open={!!deleteSupplier}

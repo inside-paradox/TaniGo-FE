@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Plus, ClipboardCheck, Trash2 } from 'lucide-react'
+import { Plus, ClipboardCheck, Printer, Trash2 } from 'lucide-react'
 import { PageHeader } from '@/components/shared/page-header'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -10,8 +10,11 @@ import { Card, CardContent } from '@/components/ui/card'
 import { ConfirmModal } from '@/components/ui/modal'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useStokOpnameList, useDeleteStokOpname } from '@/hooks/use-stok-opname'
+import { useProducts } from '@/hooks/use-products'
+import { useCabangInventory } from '@/hooks/use-inventory'
 import { useAuthStore } from '@/store/auth-store'
 import { formatTanggal } from '@/lib/utils'
+import { printFormulirStokOpname } from '@/lib/print'
 import type { StatusStokOpname, StokOpname } from '@/types'
 
 const STATUS_TABS: { id: StatusStokOpname | 'semua'; label: string }[] = [
@@ -44,11 +47,23 @@ export default function StokOpnamePage() {
   const [tab, setTab] = useState<StatusStokOpname | 'semua'>('semua')
   const [deleteTarget, setDeleteTarget] = useState<StokOpname | null>(null)
 
+  const isSuperadmin = user?.role === 'superadmin'
+
   const { data, isLoading } = useStokOpnameList({
     status: tab === 'semua' ? undefined : tab,
+    cabangId: isSuperadmin ? undefined : (user?.cabangId ?? undefined),
     page: 1, limit: 50,
   })
   const { mutate: hapus, isPending: isDeleting } = useDeleteStokOpname()
+
+  const { data: produkData } = useProducts({ page: 1, limit: 200 })
+  const { data: inventoryData } = useCabangInventory(user?.cabangId ?? undefined)
+
+  const handleCetakFormulir = () => {
+    const produkList = produkData?.data ?? []
+    const inventory = inventoryData ?? []
+    printFormulirStokOpname(user?.cabang ?? 'Cabang', produkList, inventory)
+  }
 
   const list = data?.data ?? []
   const totalSelisih = (items: StokOpname['items']) =>
@@ -60,10 +75,20 @@ export default function StokOpnamePage() {
         title="Stok Opname"
         subtitle="Rekonsiliasi stok fisik dengan data sistem"
         actions={
-          <Button onClick={() => router.push('/stok-opname/baru')}>
-            <Plus className="h-4 w-4" />
-            Buat Stok Opname
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              onClick={handleCetakFormulir}
+              disabled={!produkData}
+            >
+              <Printer className="h-4 w-4" />
+              Cetak Formulir
+            </Button>
+            <Button onClick={() => router.push('/stok-opname/baru')}>
+              <Plus className="h-4 w-4" />
+              Buat Stok Opname
+            </Button>
+          </div>
         }
       />
 

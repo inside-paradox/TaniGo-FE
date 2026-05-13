@@ -11,6 +11,8 @@ import type {
   User,
   Produk,
   CabangInventory,
+  PergerakanStok,
+  Supplier,
 } from '@/types'
 
 const now = new Date().toISOString()
@@ -758,6 +760,30 @@ export const mockCabangInventory: CabangInventory[] = [
   { id: 'ci-t1-p1', cabangId: 'toko-1', produkId: 'p-1', produkNama: 'Pupuk Urea 50kg',       produkSku: 'PUP-001', satuan: 'karung', stok: 20, updatedAt: d(9) },
   { id: 'ci-t1-p3', cabangId: 'toko-1', produkId: 'p-3', produkNama: 'Pestisida Roundup 1L',  produkSku: 'PES-001', satuan: 'botol',  stok: 10, updatedAt: d(9) },
   { id: 'ci-t1-p6', cabangId: 'toko-1', produkId: 'p-6', produkNama: 'Pupuk Kandang Organik', produkSku: 'PUP-003', satuan: 'karung', stok: 25, updatedAt: d(9) },
+]
+
+// ─── Supplier ────────────────────────────────────────────────────────────────
+
+export const mockSuppliers: Supplier[] = [
+  { id: 'sup-1', nama: 'PT Agro Makmur', kontak: '021-5551234', alamat: 'Jl. Industri No.12, Bekasi', produkDisuplai: ['Pupuk Urea 50kg', 'Pupuk NPK Mutiara', 'Pupuk Kandang Organik'], createdAt: d(120), updatedAt: d(10) },
+  { id: 'sup-2', nama: 'CV Pestisida Jaya', kontak: '022-7778899', alamat: 'Jl. Kimia No.5, Bandung', produkDisuplai: ['Pestisida Roundup 1L'], createdAt: d(90), updatedAt: d(20) },
+  { id: 'sup-3', nama: 'UD Benih Unggul', kontak: '0274-334455', alamat: 'Jl. Pertanian No.8, Yogyakarta', produkDisuplai: ['Benih Padi IR64'], createdAt: d(60), updatedAt: d(5) },
+  { id: 'sup-4', nama: 'PT Alat Tani Nusantara', kontak: '031-9990011', alamat: 'Jl. Rungkut Industri No.3, Surabaya', produkDisuplai: ['Sprayer Manual 16L'], createdAt: d(45), updatedAt: d(15) },
+]
+
+// ─── Riwayat Pergerakan Stok ──────────────────────────────────────────────────
+
+export const mockPergerakanStok: PergerakanStok[] = [
+  { id: 'pg-s-1', produkId: 'p-1', produkNama: 'Pupuk Urea 50kg', produkSku: 'PUP-001', jenis: 'masuk', jumlah: 50, stokSebelum: 70, stokSesudah: 120, referensi: 'PO-2026-001', userId: 'demo-admin', userNama: 'Admin Demo', catatan: 'Penerimaan PO dari PT Agro Makmur', createdAt: d(15) },
+  { id: 'pg-s-2', produkId: 'p-2', produkNama: 'Pupuk NPK Mutiara', produkSku: 'PUP-002', jenis: 'masuk', jumlah: 100, stokSebelum: 0, stokSesudah: 100, referensi: 'PO-2026-001', userId: 'demo-admin', userNama: 'Admin Demo', catatan: 'Penerimaan PO dari PT Agro Makmur', createdAt: d(15) },
+  { id: 'pg-s-3', produkId: 'p-6', produkNama: 'Pupuk Kandang Organik', produkSku: 'PUP-003', jenis: 'masuk', jumlah: 100, stokSebelum: 0, stokSesudah: 100, referensi: 'PO-2026-004', userId: 'demo-admin', userNama: 'Admin Demo', catatan: 'Penerimaan PO dari PT Agro Makmur', createdAt: d(12) },
+  { id: 'pg-s-4', produkId: 'p-3', produkNama: 'Pestisida Roundup 1L', produkSku: 'PES-001', jenis: 'masuk', jumlah: 20, stokSebelum: 17, stokSesudah: 37, referensi: 'PO-2026-004', userId: 'demo-admin', userNama: 'Admin Demo', catatan: 'Penerimaan PO dari CV Pestisida Jaya', createdAt: d(12) },
+  { id: 'pg-s-5', produkId: 'p-1', produkNama: 'Pupuk Urea 50kg', produkSku: 'PUP-001', jenis: 'keluar', jumlah: 10, stokSebelum: 120, stokSesudah: 110, referensi: 'TS-2026-002', userId: 'demo-admin', userNama: 'Admin Demo', catatan: 'Transfer ke Toko Utama', createdAt: d(8) },
+  { id: 'pg-s-6', produkId: 'p-6', produkNama: 'Pupuk Kandang Organik', produkSku: 'PUP-003', jenis: 'keluar', jumlah: 10, stokSebelum: 68, stokSesudah: 58, referensi: 'TS-2026-002', userId: 'demo-admin', userNama: 'Admin Demo', catatan: 'Transfer ke Toko Utama', createdAt: d(8) },
+  { id: 'pg-s-7', produkId: 'p-2', produkNama: 'Pupuk NPK Mutiara', produkSku: 'PUP-002', jenis: 'penyesuaian', jumlah: -2, stokSebelum: 10, stokSesudah: 8, referensi: null, userId: 'demo-admin', userNama: 'Admin Demo', catatan: 'Stok rusak saat penyimpanan', alasan: 'Rusak', createdAt: d(6) },
+  { id: 'pg-s-8', produkId: 'p-1', produkNama: 'Pupuk Urea 50kg', produkSku: 'PUP-001', jenis: 'penyesuaian', jumlah: -10, stokSebelum: 130, stokSesudah: 120, referensi: 'SO-2026-001', userId: 'u-2', userNama: 'Budi Manajer', catatan: 'Koreksi hasil stok opname', alasan: 'Koreksi', createdAt: d(4) },
+  { id: 'pg-s-9', produkId: 'p-3', produkNama: 'Pestisida Roundup 1L', produkSku: 'PES-001', jenis: 'penyesuaian', jumlah: 2, stokSebelum: 35, stokSesudah: 37, referensi: 'SO-2026-001', userId: 'u-2', userNama: 'Budi Manajer', catatan: 'Koreksi hasil stok opname', alasan: 'Koreksi', createdAt: d(4) },
+  { id: 'pg-s-10', produkId: 'p-5', produkNama: 'Sprayer Manual 16L', produkSku: 'ALT-001', jenis: 'masuk', jumlah: 5, stokSebelum: 10, stokSesudah: 15, referensi: 'TS-2026-003', userId: 'demo-admin', userNama: 'Admin Demo', catatan: 'Transfer dari Gudang Pusat', createdAt: d(3) },
 ]
 
 // ─── Paginated wrapper ────────────────────────────────────────────────────────

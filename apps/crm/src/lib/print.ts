@@ -1,4 +1,5 @@
-import type { Pengiriman, TransferStok } from '@/types'
+import type { Pengiriman, TransferStok, CabangInventory } from '@/types'
+import type { Produk } from '@/types'
 
 // ─── Core ─────────────────────────────────────────────────────────────────────
 
@@ -46,6 +47,113 @@ function formatTgl(dateStr: string) {
   return new Date(dateStr).toLocaleDateString('id-ID', {
     day: '2-digit', month: 'long', year: 'numeric',
   })
+}
+
+// ─── Formulir Stok Opname ─────────────────────────────────────────────────────
+
+export function printFormulirStokOpname(
+  cabangNama: string,
+  produkList: Produk[],
+  inventory: CabangInventory[],
+) {
+  const invMap: Record<string, number> = {}
+  inventory.forEach((inv) => { invMap[inv.produkId] = inv.stok })
+
+  const byKategori = produkList.reduce<Record<string, Produk[]>>((acc, p) => {
+    ;(acc[p.kategori] ??= []).push(p)
+    return acc
+  }, {})
+
+  const tanggal = new Date().toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' })
+  let rowNo = 0
+
+  const tableRows = Object.entries(byKategori).map(([kategori, items]) => {
+    const produkRows = items.map((p) => {
+      rowNo++
+      const stokSistem = invMap[p.id] ?? 0
+      return `
+        <tr>
+          <td style="text-align:center;color:#6b7280">${rowNo}</td>
+          <td><b>${p.nama}</b></td>
+          <td style="color:#6b7280;font-size:10px">${p.sku}</td>
+          <td style="text-align:center">${stokSistem}</td>
+          <td>${p.satuan}</td>
+          <td style="background:#fafafa"></td>
+          <td style="background:#fafafa"></td>
+        </tr>`
+    }).join('')
+
+    return `
+      <tr>
+        <td colspan="7" style="background:#f3f4f6;font-weight:700;font-size:11px;text-transform:uppercase;letter-spacing:.04em;padding:6px 10px;color:#374151;border:1px solid #d1d5db">
+          ${kategori}
+        </td>
+      </tr>
+      ${produkRows}`
+  }).join('')
+
+  const html = `<!DOCTYPE html><html><head><meta charset="utf-8">
+  <title>Formulir Stok Opname — ${cabangNama}</title>
+  <style>${BASE_CSS}
+    th, td { font-size: 11px; }
+    td:nth-child(6), td:nth-child(7) { min-width: 80px; }
+  </style></head><body>
+
+  <div class="header">
+    <div>
+      <div class="logo">🌱 TaniGo</div>
+      <div style="font-size:10px;color:#6b7280;margin-top:2px">Sistem Manajemen Toko Perlengkapan Pertanian</div>
+    </div>
+    <div style="text-align:right">
+      <div class="doc-title">Formulir Stok Opname</div>
+      <div class="doc-meta">Cabang: <b>${cabangNama}</b></div>
+      <div class="doc-meta">Dicetak: ${tanggal}</div>
+    </div>
+  </div>
+
+  <div class="info-grid" style="margin-bottom:16px">
+    <div class="info-block"><label>Tanggal Opname</label><span>___________________________</span></div>
+    <div class="info-block"><label>Petugas</label><span>___________________________</span></div>
+  </div>
+
+  <div class="section-title" style="margin-bottom:8px">Daftar Produk (${produkList.length} item)</div>
+  <table>
+    <thead>
+      <tr>
+        <th style="width:32px;text-align:center">No</th>
+        <th>Nama Produk</th>
+        <th style="width:90px">SKU</th>
+        <th style="width:80px;text-align:center">Stok Sistem</th>
+        <th style="width:60px">Satuan</th>
+        <th style="width:90px;text-align:center">Stok Fisik</th>
+        <th style="width:70px;text-align:center">Paraf</th>
+      </tr>
+    </thead>
+    <tbody>${tableRows}</tbody>
+  </table>
+
+  <div class="sig-grid" style="margin-top:32px">
+    <div class="sig-block">
+      <div class="sig-label">Petugas Penghitung</div>
+      <div class="sig-name">( _________________________ )</div>
+    </div>
+    <div class="sig-block">
+      <div class="sig-label">Diperiksa oleh</div>
+      <div class="sig-name">( _________________________ )</div>
+    </div>
+    <div class="sig-block">
+      <div class="sig-label">Disetujui oleh</div>
+      <div class="sig-name">( _________________________ )</div>
+    </div>
+  </div>
+
+  <div class="footer-note">
+    Formulir ini dicetak dari sistem TaniGo pada ${tanggal}.
+    Setelah selesai dihitung, input data ke sistem melalui menu Stok Opname → Buat Stok Opname.
+  </div>
+  </body></html>`
+
+  printHTML(html)
 }
 
 // ─── Surat Jalan Pengiriman ────────────────────────────────────────────────────
