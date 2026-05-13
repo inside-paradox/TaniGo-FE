@@ -7,9 +7,12 @@ import {
   mockPengiriman,
   mockPurchaseOrders,
   mockPembayaranPO,
+  mockPesanan,
+  mockPelangganVIP,
+  mockTagihanVIP,
   paginate,
 } from './data'
-import type { Cabang, User, TransferStok, Pengiriman, PurchaseOrder, PembayaranPO, StatusPenerimaanItem } from '@/types'
+import type { Cabang, User, TransferStok, Pengiriman, PurchaseOrder, PembayaranPO, Pesanan, PelangganVIP, TagihanVIP, StatusPenerimaanItem } from '@/types'
 
 // In-memory mutable state for demo mutations
 let cabang = [...mockCabang] as Cabang[]
@@ -18,6 +21,9 @@ const transferStok = [...mockTransferStok] as TransferStok[]
 const pengiriman = [...mockPengiriman] as Pengiriman[]
 const purchaseOrders = [...mockPurchaseOrders] as PurchaseOrder[]
 const pembayaranPO = [...mockPembayaranPO] as PembayaranPO[]
+const pesanan = [...mockPesanan] as Pesanan[]
+const pelangganVIP = [...mockPelangganVIP] as PelangganVIP[]
+const tagihanVIP = [...mockTagihanVIP] as TagihanVIP[]
 
 function ok(data: unknown, status = 200): Omit<AxiosResponse, 'config'> {
   return { data: { data }, status, statusText: 'OK', headers: {} }
@@ -437,6 +443,168 @@ export function getMockResponse(config: AxiosRequestConfig): Omit<AxiosResponse,
         purchaseOrders[idx] = po
         return ok(newBayar, 201)
       }
+    }
+  }
+
+  // ── Pesanan ───────────────────────────────────────────────────────────────
+  if (rawUrl === '/orders' || rawUrl.startsWith('/orders?')) {
+    if (method === 'get') {
+      let list = [...pesanan]
+      if (params.status) list = list.filter((o) => o.status === params.status)
+      if (params.pelangganId) list = list.filter((o) => o.pelangganId === params.pelangganId)
+      if (params.kasirId) list = list.filter((o) => o.kasirId === params.kasirId)
+      const q = params.search as string | undefined
+      if (q) list = list.filter((o) => o.nomorPesanan.toLowerCase().includes(q.toLowerCase()) || o.pelangganNama.toLowerCase().includes(q.toLowerCase()))
+      // sort newest first
+      list = list.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+      return ok(paginate(list, Number(params.page ?? 1), Number(params.limit ?? 25)))
+    }
+    if (method === 'post') {
+      const items = (body.items as Array<{ produkId: string; qty: number; hargaSatuan: number }>).map((item, i) => {
+        const produk = mockProduk.find((p) => p.id === item.produkId)
+        return {
+          id: `oi-new-${i}`,
+          produkId: item.produkId,
+          produkNama: produk?.nama ?? item.produkId,
+          produkSku: produk?.sku ?? '',
+          qty: item.qty,
+          hargaSatuan: item.hargaSatuan,
+          subtotal: item.qty * item.hargaSatuan,
+        }
+      })
+      const subtotal = items.reduce((s, i) => s + i.subtotal, 0)
+      const diskon = body.diskon ?? 0
+      const newOrder: Pesanan = {
+        id: `ord-${Date.now()}`,
+        nomorPesanan: `ORD-2026-${String(pesanan.length + 48).padStart(3, '0')}`,
+        pelangganId: body.pelangganId,
+        pelangganNama: body.pelangganNama,
+        pelangganTelepon: body.pelangganTelepon,
+        items,
+        subtotal,
+        diskon,
+        total: subtotal - diskon,
+        metodePembayaran: body.metodePembayaran,
+        metodePengiriman: body.metodePengiriman,
+        alamatPengiriman: body.alamatPengiriman,
+        status: 'Baru',
+        catatan: body.catatan,
+        kasirId: 'u-3',
+        kasirNama: 'Siti Kasir',
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      }
+      pesanan.unshift(newOrder)
+      return ok(newOrder, 201)
+    }
+  }
+
+  const orderActionMatch = matchPath(rawUrl, /^\/orders\/([^/]+)(?:\/(.+))?$/)
+  if (orderActionMatch) {
+    const id = orderActionMatch[1]
+    const action = orderActionMatch[2]
+    const idx = pesanan.findIndex((o) => o.id === id)
+
+    if (method === 'get' && !action) return ok(pesanan[idx] ?? null)
+
+    // struk & surat-jalan: return empty blob stub
+    if (method === 'get' && (action === 'struk' || action === 'surat-jalan')) {
+      return ok(new Blob([''], { type: 'application/pdf' }))
+    }
+
+    if (action === 'status' && method === 'patch' && idx !== -1) {
+      const now = new Date().toISOString()
+      pesanan[idx] = { ...pesanan[idx], status: body.status, catatan: body.catatan ?? pesanan[idx].catatan, updatedAt: now }
+      return ok(pesanan[idx])
+    }
+  }
+
+  // ── Pelanggan VIP ─────────────────────────────────────────────────────────
+  if (rawUrl === '/customers/vip' || rawUrl.startsWith('/customers/vip?')) {
+    if (method === 'get') {
+      let list = [...pelangganVIP]
+      if (params.status) list = list.filter((c) => c.status === params.status)
+      if (params.statusKredit) list = list.filter((c) => c.statusKredit === params.statusKredit)
+      const q = params.search as string | undefined
+      if (q) list = list.filter((c) => c.namaLengkap.toLowerCase().includes(q.toLowerCase()) || c.nomorTelepon.includes(q))
+      return ok(paginate(list, Number(params.page ?? 1), Number(params.limit ?? 25)))
+    }
+    if (method === 'post') {
+      const newVIP: PelangganVIP = {
+        id: `vip-${Date.now()}`,
+        namaLengkap: body.namaLengkap,
+        nomorTelepon: body.nomorTelepon,
+        alamat: body.alamat,
+        creditLimit: body.creditLimit,
+        kreditTerpakai: 0,
+        sisaKredit: body.creditLimit,
+        statusKredit: 'aman',
+        status: body.status ?? 'aktif',
+        catatan: body.catatan,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      }
+      pelangganVIP.push(newVIP)
+      return ok(newVIP, 201)
+    }
+  }
+
+  // POST catat pembayaran tagihan (no ID in URL)
+  if (rawUrl === '/customers/vip/pembayaran' && method === 'post') {
+    const tIdx = tagihanVIP.findIndex((t) => t.id === body.tagihanId)
+    if (tIdx !== -1) {
+      const t = tagihanVIP[tIdx]
+      const bayar = Math.min(body.nominal, t.sisaTagihan)
+      tagihanVIP[tIdx] = {
+        ...t,
+        jumlahDibayar: t.jumlahDibayar + bayar,
+        sisaTagihan: t.sisaTagihan - bayar,
+        status: t.sisaTagihan - bayar === 0 ? 'Lunas' : 'Sebagian',
+      }
+      // update kredit pelanggan
+      const cIdx = pelangganVIP.findIndex((c) => c.id === t.pelangganId)
+      if (cIdx !== -1) {
+        const c = pelangganVIP[cIdx]
+        const kreditTerpakai = Math.max(0, c.kreditTerpakai - bayar)
+        const sisaKredit = c.creditLimit - kreditTerpakai
+        pelangganVIP[cIdx] = {
+          ...c,
+          kreditTerpakai,
+          sisaKredit,
+          statusKredit: kreditTerpakai > c.creditLimit ? 'melebihi_limit' : kreditTerpakai > c.creditLimit * 0.85 ? 'mendekati_limit' : 'aman',
+          updatedAt: new Date().toISOString(),
+        }
+      }
+    }
+    return ok({})
+  }
+
+  const vipActionMatch = matchPath(rawUrl, /^\/customers\/vip\/([^/]+)(?:\/(.+))?$/)
+  if (vipActionMatch) {
+    const id = vipActionMatch[1]
+    const action = vipActionMatch[2]
+    const idx = pelangganVIP.findIndex((c) => c.id === id)
+
+    if (method === 'get' && !action) return ok(pelangganVIP[idx] ?? null)
+
+    if (action === 'tagihan' && method === 'get') {
+      const list = tagihanVIP.filter((t) => t.pelangganId === id)
+      return ok(paginate(list, Number(params.page ?? 1), Number(params.limit ?? 25)))
+    }
+
+    if (action === 'transaksi' && method === 'get') {
+      const list = pesanan.filter((o) => o.pelangganId === id)
+      return ok(paginate(list, Number(params.page ?? 1), Number(params.limit ?? 25)))
+    }
+
+    if (method === 'patch' && idx !== -1) {
+      pelangganVIP[idx] = { ...pelangganVIP[idx], ...body, updatedAt: new Date().toISOString() }
+      return ok(pelangganVIP[idx])
+    }
+
+    if (method === 'delete' && idx !== -1) {
+      pelangganVIP.splice(idx, 1)
+      return ok({})
     }
   }
 
