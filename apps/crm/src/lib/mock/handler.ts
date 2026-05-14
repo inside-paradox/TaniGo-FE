@@ -842,6 +842,94 @@ export function getMockResponse(config: AxiosRequestConfig): Omit<AxiosResponse,
     }
   }
 
+  // ── Laporan ───────────────────────────────────────────────────────────────
+  const reportPath = rawUrl.split('?')[0]
+
+  if (reportPath === '/reports/penjualan') {
+    const dari = params.tanggalDari ? new Date(params.tanggalDari as string) : new Date(Date.now() - 7 * 86400000)
+    const sampai = params.tanggalSampai ? new Date(params.tanggalSampai as string) : new Date()
+    sampai.setHours(23, 59, 59)
+    const filtered = pesanan.filter((o) => { const d = new Date(o.createdAt); return d >= dari && d <= sampai })
+    const totalTransaksi = filtered.length
+    const totalPendapatan = filtered.reduce((s, o) => s + o.total, 0)
+    const rataRataTransaksi = totalTransaksi > 0 ? Math.round(totalPendapatan / totalTransaksi) : 0
+    const dailyMap: Record<string, number> = {}
+    filtered.forEach((o) => { const k = o.createdAt.slice(0, 10); dailyMap[k] = (dailyMap[k] ?? 0) + o.total })
+    const harian: { tanggal: string; total: number }[] = []
+    const cur = new Date(dari)
+    while (cur <= sampai) {
+      const k = cur.toISOString().slice(0, 10)
+      harian.push({ tanggal: k.slice(5), total: dailyMap[k] ?? 0 })
+      cur.setDate(cur.getDate() + 1)
+    }
+    const metodeCounts: Record<string, number> = {}
+    filtered.forEach((o) => { if (o.metodePembayaran) metodeCounts[o.metodePembayaran] = (metodeCounts[o.metodePembayaran] ?? 0) + 1 })
+    const mTotal = Object.values(metodeCounts).reduce((s, v) => s + v, 0)
+    const metodePembayaran = Object.entries(metodeCounts).map(([name, count]) => ({ name, value: mTotal > 0 ? Math.round((count / mTotal) * 100) : 0 }))
+    const produkMap: Record<string, number> = {}
+    filtered.forEach((o) => o.items.forEach((i) => { produkMap[i.produkNama] = (produkMap[i.produkNama] ?? 0) + i.qty }))
+    const topProduk = Object.entries(produkMap).sort((a, b) => b[1] - a[1]).slice(0, 5).map(([nama, qty]) => ({ nama, qty }))
+    return ok({ totalTransaksi, totalPendapatan, rataRataTransaksi, harian, metodePembayaran, topProduk })
+  }
+
+  if (reportPath === '/reports/stok') {
+    const storedUser = typeof window !== 'undefined' ? localStorage.getItem('user') : null
+    const currentUser = storedUser ? JSON.parse(storedUser) : null
+    const cId = currentUser?.cabangId
+    const inv = cId ? cabangInventory.filter((i) => i.cabangId === cId) : cabangInventory
+    const produkMap = Object.fromEntries(mockProduk.map((p) => [p.id, p]))
+    let menipis = 0, habis = 0
+    const itemsMenipis: { nama: string; sku: string; stok: number; threshold: number; satuan: string }[] = []
+    const itemsHabis: { nama: string; sku: string; satuan: string }[] = []
+    for (const i of inv) {
+      const p = produkMap[i.produkId]
+      if (!p) continue
+      if (i.stok === 0) { habis++; itemsHabis.push({ nama: p.nama, sku: p.sku, satuan: p.satuan }) }
+      else if (i.stok <= p.thresholdStok) { menipis++; itemsMenipis.push({ nama: p.nama, sku: p.sku, stok: i.stok, threshold: p.thresholdStok, satuan: p.satuan }) }
+    }
+    return ok({ produkMenipis: menipis, produkHabis: habis, produkKedaluwarsa: 0, itemsMenipis, itemsHabis })
+  }
+
+  if (reportPath === '/reports/pembelian') {
+    const totalPO = purchaseOrders.length
+    const totalNilai = purchaseOrders.reduce((s, po) => s + po.totalKeseluruhan, 0)
+    const totalDibayar = purchaseOrders.reduce((s, po) => s + (po.totalDibayar ?? 0), 0)
+    const statusMap: Record<string, number> = {}
+    purchaseOrders.forEach((po) => { statusMap[po.status] = (statusMap[po.status] ?? 0) + 1 })
+    const statusBreakdown = Object.entries(statusMap).map(([status, count]) => ({ status, count }))
+    const supplierMap: Record<string, number> = {}
+    purchaseOrders.forEach((po) => { supplierMap[po.supplierNama] = (supplierMap[po.supplierNama] ?? 0) + po.totalKeseluruhan })
+    const topSupplier = Object.entries(supplierMap).sort((a, b) => b[1] - a[1]).slice(0, 3).map(([nama, nilai]) => ({ nama, nilai }))
+    return ok({ totalPO, totalNilai, totalDibayar, sisaHutang: totalNilai - totalDibayar, statusBreakdown, topSupplier })
+  }
+
+  if (reportPath === '/reports/pelanggan-vip') {
+    const totalPelanggan = pelangganVIP.length
+    const totalKreditTerpakai = pelangganVIP.reduce((s, c) => s + c.kreditTerpakai, 0)
+    const totalKreditLimit = pelangganVIP.reduce((s, c) => s + c.creditLimit, 0)
+    const totalTagihanOutstanding = tagihanVIP.filter((t) => t.status !== 'Lunas').reduce((s, t) => s + t.sisaTagihan, 0)
+    const statusMap: Record<string, number> = {}
+    pelangganVIP.forEach((c) => { statusMap[c.statusKredit] = (statusMap[c.statusKredit] ?? 0) + 1 })
+    const statusKredit = Object.entries(statusMap).map(([status, count]) => ({ status, count }))
+    return ok({ totalPelanggan, totalKreditTerpakai, totalKreditLimit, totalTagihanOutstanding, statusKredit })
+  }
+
+  if (reportPath === '/reports/pengiriman') {
+    const total = pengiriman.length
+    const selesai = pengiriman.filter((p) => p.status === 'Selesai').length
+    const gagal = pengiriman.filter((p) => p.status === 'Gagal').length
+    const berlangsung = total - selesai - gagal
+    return ok({ totalPengiriman: total, selesai, gagal, berlangsung, successRate: total > 0 ? Math.round((selesai / total) * 100) : 0 })
+  }
+
+  if (reportPath === '/reports/shift') {
+    return ok({ total: 0, pesan: 'Data shift tersedia di aplikasi POS' })
+  }
+
+  if (reportPath.startsWith('/reports/') && (reportPath.endsWith('/export/pdf') || reportPath.endsWith('/export/excel'))) {
+    return ok(new Blob([''], { type: 'application/octet-stream' }))
+  }
+
   // ── Unmatched ─────────────────────────────────────────────────────────────
   return null
 }

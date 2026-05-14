@@ -140,11 +140,13 @@ export default function LaporanPage() {
     setEnabled(false)
   }
 
-  // Type-safe data accessors
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const penjualanData = activeTab === 'penjualan' ? (data as any) : null
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const stokData = activeTab === 'stok' ? (data as any) : null
+  const d = data as any
+  const penjualanData = activeTab === 'penjualan' ? d : null
+  const stokData = activeTab === 'stok' ? d : null
+  const pembelianData = activeTab === 'pembelian' ? d : null
+  const vipData = activeTab === 'pelangganVIP' ? d : null
+  const pengirimanData = activeTab === 'pengiriman' ? d : null
 
   return (
     <div className="space-y-6">
@@ -391,25 +393,175 @@ export default function LaporanPage() {
         </div>
       )}
 
-      {/* Other tabs placeholder */}
-      {(['shift', 'pembelian', 'pelangganVIP', 'pengiriman'] as TabId[]).includes(activeTab) &&
-        data && (
+      {/* Stok — detail tables */}
+      {activeTab === 'stok' && data && stokData && (
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+          {stokData.itemsMenipis?.length > 0 && (
+            <Card>
+              <CardHeader><CardTitle className="text-yellow-700">Produk Menipis</CardTitle></CardHeader>
+              <CardContent className="p-0">
+                <table className="w-full text-sm">
+                  <thead><tr className="border-b bg-gray-50 text-xs font-semibold uppercase text-gray-500">
+                    <th className="px-4 py-2 text-left">Produk</th>
+                    <th className="px-4 py-2 text-center">Stok</th>
+                    <th className="px-4 py-2 text-center">Min</th>
+                  </tr></thead>
+                  <tbody className="divide-y">
+                    {stokData.itemsMenipis.map((i: { nama: string; sku: string; stok: number; threshold: number; satuan: string }) => (
+                      <tr key={i.sku}>
+                        <td className="px-4 py-2"><p className="font-medium">{i.nama}</p><p className="text-xs text-gray-400">{i.sku}</p></td>
+                        <td className="px-4 py-2 text-center text-yellow-700 font-semibold">{i.stok} {i.satuan}</td>
+                        <td className="px-4 py-2 text-center text-gray-400">{i.threshold}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </CardContent>
+            </Card>
+          )}
+          {stokData.itemsHabis?.length > 0 && (
+            <Card>
+              <CardHeader><CardTitle className="text-red-700">Produk Habis</CardTitle></CardHeader>
+              <CardContent className="p-0">
+                <table className="w-full text-sm">
+                  <thead><tr className="border-b bg-gray-50 text-xs font-semibold uppercase text-gray-500">
+                    <th className="px-4 py-2 text-left">Produk</th>
+                    <th className="px-4 py-2 text-left">SKU</th>
+                    <th className="px-4 py-2 text-left">Satuan</th>
+                  </tr></thead>
+                  <tbody className="divide-y">
+                    {stokData.itemsHabis.map((i: { nama: string; sku: string; satuan: string }) => (
+                      <tr key={i.sku}>
+                        <td className="px-4 py-2 font-medium">{i.nama}</td>
+                        <td className="px-4 py-2 text-gray-400 text-xs">{i.sku}</td>
+                        <td className="px-4 py-2 text-gray-500">{i.satuan}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </CardContent>
+            </Card>
+          )}
+        </div>
+      )}
+
+      {/* Penjualan — top produk */}
+      {activeTab === 'penjualan' && data && penjualanData?.topProduk?.length > 0 && (
+        <Card>
+          <CardHeader><CardTitle>Top Produk Terjual</CardTitle></CardHeader>
+          <CardContent className="p-0">
+            <table className="w-full text-sm">
+              <thead><tr className="border-b bg-gray-50 text-xs font-semibold uppercase text-gray-500">
+                <th className="px-4 py-3 text-left">Produk</th>
+                <th className="px-4 py-3 text-center">Qty Terjual</th>
+              </tr></thead>
+              <tbody className="divide-y">
+                {penjualanData.topProduk.map((p: { nama: string; qty: number }, i: number) => (
+                  <tr key={p.nama}>
+                    <td className="px-4 py-3"><span className="mr-2 text-gray-400">#{i + 1}</span>{p.nama}</td>
+                    <td className="px-4 py-3 text-center font-semibold">{p.qty}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Pembelian */}
+      {activeTab === 'pembelian' && data && pembelianData && (
+        <div className="space-y-6">
+          <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+            <SummaryCard label="Total PO" value={pembelianData.totalPO ?? 0} sub="Purchase order" />
+            <SummaryCard label="Total Nilai" value={formatRupiah(pembelianData.totalNilai ?? 0)} sub="Nilai pembelian" />
+            <SummaryCard label="Total Dibayar" value={formatRupiah(pembelianData.totalDibayar ?? 0)} sub="Sudah dilunasi" />
+            <SummaryCard label="Sisa Hutang" value={formatRupiah(pembelianData.sisaHutang ?? 0)} sub="Belum dibayar" />
+          </div>
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+            <Card>
+              <CardHeader><CardTitle>Status Purchase Order</CardTitle></CardHeader>
+              <CardContent className="p-0">
+                <table className="w-full text-sm">
+                  <thead><tr className="border-b bg-gray-50 text-xs font-semibold uppercase text-gray-500">
+                    <th className="px-4 py-2 text-left">Status</th><th className="px-4 py-2 text-center">Jumlah</th>
+                  </tr></thead>
+                  <tbody className="divide-y">
+                    {(pembelianData.statusBreakdown ?? []).map((s: { status: string; count: number }) => (
+                      <tr key={s.status}><td className="px-4 py-2 font-medium">{s.status}</td><td className="px-4 py-2 text-center">{s.count}</td></tr>
+                    ))}
+                  </tbody>
+                </table>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader><CardTitle>Top Supplier</CardTitle></CardHeader>
+              <CardContent className="p-0">
+                <table className="w-full text-sm">
+                  <thead><tr className="border-b bg-gray-50 text-xs font-semibold uppercase text-gray-500">
+                    <th className="px-4 py-2 text-left">Supplier</th><th className="px-4 py-2 text-right">Total Nilai</th>
+                  </tr></thead>
+                  <tbody className="divide-y">
+                    {(pembelianData.topSupplier ?? []).map((s: { nama: string; nilai: number }) => (
+                      <tr key={s.nama}><td className="px-4 py-2 font-medium">{s.nama}</td><td className="px-4 py-2 text-right">{formatRupiah(s.nilai)}</td></tr>
+                    ))}
+                  </tbody>
+                </table>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      )}
+
+      {/* Pelanggan VIP */}
+      {activeTab === 'pelangganVIP' && data && vipData && (
+        <div className="space-y-6">
+          <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+            <SummaryCard label="Total Pelanggan VIP" value={vipData.totalPelanggan ?? 0} />
+            <SummaryCard label="Total Kredit Limit" value={formatRupiah(vipData.totalKreditLimit ?? 0)} />
+            <SummaryCard label="Kredit Terpakai" value={formatRupiah(vipData.totalKreditTerpakai ?? 0)} />
+            <SummaryCard label="Tagihan Outstanding" value={formatRupiah(vipData.totalTagihanOutstanding ?? 0)} sub="Belum lunas" />
+          </div>
           <Card>
-            <CardContent className="flex flex-col items-center justify-center gap-3 py-16 text-gray-500">
-              <FileText className="h-10 w-10 text-gray-300" />
-              <p className="text-sm">
-                Data laporan{' '}
-                <span className="font-medium">
-                  {TABS.find((t) => t.id === activeTab)?.label}
-                </span>{' '}
-                berhasil dimuat.
-              </p>
-              <p className="text-xs text-gray-400">
-                Gunakan tombol Ekspor PDF atau Ekspor Excel untuk mengunduh laporan.
-              </p>
+            <CardHeader><CardTitle>Status Kredit Pelanggan</CardTitle></CardHeader>
+            <CardContent className="p-0">
+              <table className="w-full text-sm">
+                <thead><tr className="border-b bg-gray-50 text-xs font-semibold uppercase text-gray-500">
+                  <th className="px-4 py-3 text-left">Status</th><th className="px-4 py-3 text-center">Jumlah Pelanggan</th>
+                </tr></thead>
+                <tbody className="divide-y">
+                  {(vipData.statusKredit ?? []).map((s: { status: string; count: number }) => (
+                    <tr key={s.status}>
+                      <td className="px-4 py-3 font-medium capitalize">{s.status.replace('_', ' ')}</td>
+                      <td className="px-4 py-3 text-center">{s.count}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </CardContent>
           </Card>
-        )}
+        </div>
+      )}
+
+      {/* Pengiriman */}
+      {activeTab === 'pengiriman' && data && pengirimanData && (
+        <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+          <SummaryCard label="Total Pengiriman" value={pengirimanData.totalPengiriman ?? 0} />
+          <SummaryCard label="Selesai" value={pengirimanData.selesai ?? 0} sub="Terkirim sukses" />
+          <SummaryCard label="Gagal" value={pengirimanData.gagal ?? 0} sub="Tidak terkirim" />
+          <SummaryCard label="Success Rate" value={`${pengirimanData.successRate ?? 0}%`} sub="Tingkat keberhasilan" />
+        </div>
+      )}
+
+      {/* Shift */}
+      {activeTab === 'shift' && data && (
+        <Card>
+          <CardContent className="flex flex-col items-center justify-center gap-3 py-16 text-gray-400">
+            <FileText className="h-10 w-10" />
+            <p className="text-sm font-medium">Data shift tersedia di aplikasi POS</p>
+            <p className="text-xs">Laporan shift kasir dikelola langsung dari aplikasi kasir.</p>
+          </CardContent>
+        </Card>
+      )}
     </div>
   )
 }
