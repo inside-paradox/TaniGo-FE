@@ -20,16 +20,17 @@ import { PageHeader } from '@/components/shared/page-header'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { reportsApi } from '@/lib/api'
+import { useAuthStore } from '@/store/auth-store'
 import { formatRupiah, formatTanggalWaktu, downloadBlob } from '@/lib/utils'
 import type { Shift } from '@/types'
 
 type TabId = 'penjualan' | 'stok' | 'shift' | 'pembelian' | 'pelangganVIP' | 'pengiriman'
 
-const TABS: { id: TabId; label: string }[] = [
+const ALL_TABS: { id: TabId; label: string; gudangOnly?: boolean }[] = [
   { id: 'penjualan', label: 'Penjualan' },
   { id: 'stok', label: 'Stok' },
   { id: 'shift', label: 'Shift' },
-  { id: 'pembelian', label: 'Pembelian' },
+  { id: 'pembelian', label: 'Pembelian', gudangOnly: true },
   { id: 'pelangganVIP', label: 'Pelanggan VIP' },
   { id: 'pengiriman', label: 'Pengiriman' },
 ]
@@ -76,6 +77,10 @@ function SummaryCard({
 }
 
 export default function LaporanPage() {
+  const { user } = useAuthStore()
+  const isGudang = user?.tipeCabang === 'gudang' || user?.role === 'superadmin'
+  const TABS = ALL_TABS.filter((t) => !t.gudangOnly || isGudang)
+
   const [activeTab, setActiveTab] = useState<TabId>('penjualan')
   const [tanggalDari, setTanggalDari] = useState(get7DaysAgoStr())
   const [tanggalSampai, setTanggalSampai] = useState(getTodayStr())
