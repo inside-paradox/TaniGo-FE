@@ -13,6 +13,7 @@ import type {
   CabangInventory,
   PergerakanStok,
   Supplier,
+  Shift,
 } from '@/types'
 
 const now = new Date().toISOString()
@@ -760,6 +761,23 @@ export const mockCabangInventory: CabangInventory[] = [
   { id: 'ci-t1-p1', cabangId: 'toko-1', produkId: 'p-1', produkNama: 'Pupuk Urea 50kg',       produkSku: 'PUP-001', satuan: 'karung', stok: 20, updatedAt: d(9) },
   { id: 'ci-t1-p3', cabangId: 'toko-1', produkId: 'p-3', produkNama: 'Pestisida Roundup 1L',  produkSku: 'PES-001', satuan: 'botol',  stok: 10, updatedAt: d(9) },
   { id: 'ci-t1-p6', cabangId: 'toko-1', produkId: 'p-6', produkNama: 'Pupuk Kandang Organik', produkSku: 'PUP-003', satuan: 'karung', stok: 25, updatedAt: d(9) },
+]
+
+// ─── Shift ───────────────────────────────────────────────────────────────────
+
+function dh(daysAgo: number, hour: number) {
+  const dt = new Date(Date.now() - daysAgo * 86400000)
+  dt.setHours(hour, 0, 0, 0)
+  return dt.toISOString()
+}
+
+export const mockShift: Shift[] = [
+  { id: 'sh-1', kasirId: 'u-3', kasirNama: 'Siti Kasir', cabangId: 'toko-1', cabangNama: 'Toko Utama', modalAwal: 500000, totalTransaksi: 12, totalPendapatan: 4250000, totalTunai: 2800000, totalNonTunai: 1450000, totalDiskon: 150000, status: 'Selesai', mulaiAt: dh(1, 8), selesaiAt: dh(1, 16), catatanPenutupan: 'Shift berjalan normal.', createdAt: dh(1, 8), updatedAt: dh(1, 16) },
+  { id: 'sh-2', kasirId: 'u-3', kasirNama: 'Siti Kasir', cabangId: 'toko-1', cabangNama: 'Toko Utama', modalAwal: 500000, totalTransaksi: 9, totalPendapatan: 3100000, totalTunai: 1900000, totalNonTunai: 1200000, totalDiskon: 80000, status: 'Selesai', mulaiAt: dh(2, 8), selesaiAt: dh(2, 16), createdAt: dh(2, 8), updatedAt: dh(2, 16) },
+  { id: 'sh-3', kasirId: 'u-5', kasirNama: 'Rina Kasir', cabangId: 'toko-2', cabangNama: 'Toko Selatan', modalAwal: 500000, totalTransaksi: 7, totalPendapatan: 2750000, totalTunai: 1500000, totalNonTunai: 1250000, totalDiskon: 50000, status: 'Selesai', mulaiAt: dh(1, 8), selesaiAt: dh(1, 16), createdAt: dh(1, 8), updatedAt: dh(1, 16) },
+  { id: 'sh-4', kasirId: 'u-3', kasirNama: 'Siti Kasir', cabangId: 'toko-1', cabangNama: 'Toko Utama', modalAwal: 500000, totalTransaksi: 15, totalPendapatan: 5800000, totalTunai: 3200000, totalNonTunai: 2600000, totalDiskon: 200000, status: 'Selesai', mulaiAt: dh(3, 8), selesaiAt: dh(3, 16), catatanPenutupan: 'Ramai, banyak pembelian pupuk.', createdAt: dh(3, 8), updatedAt: dh(3, 16) },
+  { id: 'sh-5', kasirId: 'u-5', kasirNama: 'Rina Kasir', cabangId: 'toko-2', cabangNama: 'Toko Selatan', modalAwal: 500000, totalTransaksi: 5, totalPendapatan: 1800000, totalTunai: 1200000, totalNonTunai: 600000, totalDiskon: 0, status: 'Selesai', mulaiAt: dh(2, 8), selesaiAt: dh(2, 16), createdAt: dh(2, 8), updatedAt: dh(2, 16) },
+  { id: 'sh-6', kasirId: 'u-3', kasirNama: 'Siti Kasir', cabangId: 'toko-1', cabangNama: 'Toko Utama', modalAwal: 500000, totalTransaksi: 3, totalPendapatan: 980000, totalTunai: 980000, totalNonTunai: 0, totalDiskon: 0, status: 'Aktif', mulaiAt: dh(0, 8), selesaiAt: null, createdAt: dh(0, 8), updatedAt: dh(0, 8) },
 ]
 
 // ─── Supplier ────────────────────────────────────────────────────────────────

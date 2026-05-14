@@ -14,9 +14,10 @@ import {
   mockCabangInventory,
   mockSuppliers,
   mockPergerakanStok,
+  mockShift,
   paginate,
 } from './data'
-import type { Cabang, User, TransferStok, Pengiriman, PurchaseOrder, PembayaranPO, Pesanan, PelangganVIP, TagihanVIP, StokOpname, CabangInventory, Supplier, PergerakanStok, StatusPenerimaanItem } from '@/types'
+import type { Cabang, User, TransferStok, Pengiriman, PurchaseOrder, PembayaranPO, Pesanan, PelangganVIP, TagihanVIP, StokOpname, CabangInventory, Supplier, PergerakanStok, Shift, StatusPenerimaanItem } from '@/types'
 
 // In-memory mutable state for demo mutations
 let cabang = [...mockCabang] as Cabang[]
@@ -32,6 +33,7 @@ const stokOpname = [...mockStokOpname] as StokOpname[]
 const cabangInventory = [...mockCabangInventory] as CabangInventory[]
 let suppliers = [...mockSuppliers] as Supplier[]
 const pergerakanStok = [...mockPergerakanStok] as PergerakanStok[]
+const shifts = [...mockShift] as Shift[]
 
 function upsertInventory(branchId: string, produkId: string, stok: number, now: string) {
   const produk = mockProduk.find((p) => p.id === produkId)
@@ -923,7 +925,27 @@ export function getMockResponse(config: AxiosRequestConfig): Omit<AxiosResponse,
   }
 
   if (reportPath === '/reports/shift') {
-    return ok({ total: 0, pesan: 'Data shift tersedia di aplikasi POS' })
+    const dari = params.tanggalDari ? new Date(params.tanggalDari as string) : new Date(Date.now() - 7 * 86400000)
+    const sampai = params.tanggalSampai ? new Date(params.tanggalSampai as string) : new Date()
+    sampai.setHours(23, 59, 59)
+    const storedUser = typeof window !== 'undefined' ? localStorage.getItem('user') : null
+    const currentUser = storedUser ? JSON.parse(storedUser) : null
+    const isSuperadmin = currentUser?.role === 'superadmin'
+    let list = shifts.filter((s) => {
+      const d = new Date(s.mulaiAt)
+      return d >= dari && d <= sampai
+    })
+    if (!isSuperadmin && currentUser?.cabangId) {
+      list = list.filter((s) => s.cabangId === currentUser.cabangId)
+    }
+    list = list.sort((a, b) => new Date(b.mulaiAt).getTime() - new Date(a.mulaiAt).getTime())
+    const totalShift = list.length
+    const totalTransaksi = list.reduce((s, sh) => s + sh.totalTransaksi, 0)
+    const totalPendapatan = list.reduce((s, sh) => s + sh.totalPendapatan, 0)
+    const totalTunai = list.reduce((s, sh) => s + sh.totalTunai, 0)
+    const totalNonTunai = list.reduce((s, sh) => s + sh.totalNonTunai, 0)
+    const totalDiskon = list.reduce((s, sh) => s + sh.totalDiskon, 0)
+    return ok({ totalShift, totalTransaksi, totalPendapatan, totalTunai, totalNonTunai, totalDiskon, shifts: list })
   }
 
   if (reportPath.startsWith('/reports/') && (reportPath.endsWith('/export/pdf') || reportPath.endsWith('/export/excel'))) {

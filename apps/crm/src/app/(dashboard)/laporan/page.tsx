@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { FileText, FileSpreadsheet, RefreshCw, AlertTriangle, Package, Clock } from 'lucide-react'
+import { FileText, FileSpreadsheet, RefreshCw, AlertTriangle, Package, Clock, CheckCircle } from 'lucide-react'
 import {
   AreaChart,
   Area,
@@ -20,7 +20,8 @@ import { PageHeader } from '@/components/shared/page-header'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { reportsApi } from '@/lib/api'
-import { formatRupiah, downloadBlob } from '@/lib/utils'
+import { formatRupiah, formatTanggalWaktu, downloadBlob } from '@/lib/utils'
+import type { Shift } from '@/types'
 
 type TabId = 'penjualan' | 'stok' | 'shift' | 'pembelian' | 'pelangganVIP' | 'pengiriman'
 
@@ -147,6 +148,7 @@ export default function LaporanPage() {
   const pembelianData = activeTab === 'pembelian' ? d : null
   const vipData = activeTab === 'pelangganVIP' ? d : null
   const pengirimanData = activeTab === 'pengiriman' ? d : null
+  const shiftData = activeTab === 'shift' ? d : null
 
   return (
     <div className="space-y-6">
@@ -553,14 +555,55 @@ export default function LaporanPage() {
       )}
 
       {/* Shift */}
-      {activeTab === 'shift' && data && (
-        <Card>
-          <CardContent className="flex flex-col items-center justify-center gap-3 py-16 text-gray-400">
-            <FileText className="h-10 w-10" />
-            <p className="text-sm font-medium">Data shift tersedia di aplikasi POS</p>
-            <p className="text-xs">Laporan shift kasir dikelola langsung dari aplikasi kasir.</p>
-          </CardContent>
-        </Card>
+      {activeTab === 'shift' && data && shiftData && (
+        <div className="space-y-6">
+          <div className="grid grid-cols-2 gap-4 lg:grid-cols-3">
+            <SummaryCard label="Total Shift" value={shiftData.totalShift ?? 0} sub="Dalam periode ini" />
+            <SummaryCard label="Total Transaksi" value={shiftData.totalTransaksi ?? 0} sub="Semua kasir" />
+            <SummaryCard label="Total Pendapatan" value={formatRupiah(shiftData.totalPendapatan ?? 0)} sub="Dalam periode ini" />
+            <SummaryCard label="Tunai" value={formatRupiah(shiftData.totalTunai ?? 0)} />
+            <SummaryCard label="Non-Tunai" value={formatRupiah(shiftData.totalNonTunai ?? 0)} />
+            <SummaryCard label="Total Diskon" value={formatRupiah(shiftData.totalDiskon ?? 0)} />
+          </div>
+          <Card>
+            <CardHeader><CardTitle>Riwayat Shift</CardTitle></CardHeader>
+            <CardContent className="p-0">
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b bg-gray-50 text-xs font-semibold uppercase text-gray-500">
+                      <th className="px-4 py-3 text-left">Kasir</th>
+                      <th className="px-4 py-3 text-left">Cabang</th>
+                      <th className="px-4 py-3 text-left">Mulai</th>
+                      <th className="px-4 py-3 text-left">Selesai</th>
+                      <th className="px-4 py-3 text-center">Transaksi</th>
+                      <th className="px-4 py-3 text-right">Pendapatan</th>
+                      <th className="px-4 py-3 text-center">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y">
+                    {(shiftData.shifts ?? []).map((sh: Shift) => (
+                      <tr key={sh.id} className="hover:bg-gray-50">
+                        <td className="px-4 py-3 font-medium">{sh.kasirNama}</td>
+                        <td className="px-4 py-3 text-gray-500">{sh.cabangNama}</td>
+                        <td className="px-4 py-3 text-gray-600">{formatTanggalWaktu(sh.mulaiAt)}</td>
+                        <td className="px-4 py-3 text-gray-600">{sh.selesaiAt ? formatTanggalWaktu(sh.selesaiAt) : '—'}</td>
+                        <td className="px-4 py-3 text-center">{sh.totalTransaksi}</td>
+                        <td className="px-4 py-3 text-right font-semibold">{formatRupiah(sh.totalPendapatan)}</td>
+                        <td className="px-4 py-3 text-center">
+                          {sh.status === 'Aktif'
+                            ? <span className="inline-flex items-center gap-1 rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700"><span className="h-1.5 w-1.5 rounded-full bg-green-500 animate-pulse inline-block" />Aktif</span>
+                            : <span className="inline-flex items-center gap-1 rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-600"><CheckCircle className="h-3 w-3" />Selesai</span>
+                          }
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
       )}
     </div>
   )
