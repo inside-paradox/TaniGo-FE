@@ -60,11 +60,6 @@ const columnsPOS: ColumnDef<Pesanan>[] = [
     ),
   },
   {
-    accessorKey: 'pelangganNama',
-    header: 'Pelanggan',
-    cell: ({ getValue }) => <span className="text-gray-900">{getValue<string>()}</span>,
-  },
-  {
     accessorKey: 'kasirNama',
     header: 'Kasir',
     cell: ({ getValue }) => <span className="text-gray-600">{getValue<string>()}</span>,
@@ -241,7 +236,7 @@ export default function PesananPage() {
             <SearchInput
               value={search}
               onChange={(v) => { setSearch(v); setPage(1) }}
-              placeholder={activeTab === 'pos' ? 'Cari no. transaksi atau pelanggan...' : 'Cari no. pesanan atau pelanggan...'}
+              placeholder={activeTab === 'pos' ? 'Cari no. transaksi atau kasir...' : 'Cari no. pesanan atau pelanggan...'}
               className="w-full sm:w-72"
             />
             <select
