@@ -44,6 +44,7 @@ export interface Pesanan {
   kasirNama: string
   sumber: 'pos' | 'vip'
   hasRetur?: boolean
+  returNominal?: number
   createdAt: string
   updatedAt: string
 }

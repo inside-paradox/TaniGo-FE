@@ -725,12 +725,15 @@ export function getMockResponse(config: AxiosRequestConfig): Omit<AxiosResponse,
       const kasirUser = users.find((u) => u.id === order.kasirId)
       const branchId = kasirUser?.cabangId ?? 'toko-1'
 
-      // Restore stock for each returned item
+      // Restore stock and calculate refund amount
+      let returNominal = 0
       for (const ri of returnItems) {
         addInventory(branchId, ri.produkId, ri.qty, now)
+        const orderItem = order.items.find((i) => i.produkId === ri.produkId)
+        if (orderItem) returNominal += orderItem.hargaSatuan * ri.qty
       }
 
-      pesanan[idx] = { ...order, hasRetur: true, updatedAt: now }
+      pesanan[idx] = { ...order, hasRetur: true, returNominal, updatedAt: now }
       return ok(pesanan[idx])
     }
   }

@@ -131,8 +131,8 @@ function ReturModal({
               <tr className="border-b border-gray-200">
                 <th className="pb-2 w-8"></th>
                 <th className="pb-2 text-left font-medium text-gray-500">Produk</th>
-                <th className="pb-2 text-center font-medium text-gray-500">Qty Asli</th>
-                <th className="pb-2 text-center font-medium text-gray-500">Qty Retur</th>
+                <th className="pb-2 text-center font-medium text-gray-500">Qty Beli</th>
+                <th className="pb-2 text-center font-medium text-gray-500">Qty Dikembalikan</th>
                 <th className="pb-2 text-right font-medium text-gray-500">Subtotal</th>
               </tr>
             </thead>
@@ -261,9 +261,21 @@ function DetailPOS({ pesanan, refetch }: { pesanan: Pesanan; refetch: () => void
                 </div>
               )}
               <div className="border-t border-gray-200 pt-3 flex justify-between">
-                <dt className="text-base font-semibold text-gray-900">Total</dt>
+                <dt className="text-base font-semibold text-gray-900">Total Dibayar</dt>
                 <dd className="text-xl font-bold text-green-700">{formatRupiah(pesanan.total)}</dd>
               </div>
+              {pesanan.returNominal && pesanan.returNominal > 0 ? (
+                <>
+                  <div className="flex justify-between">
+                    <dt className="text-gray-500">Retur</dt>
+                    <dd className="font-medium text-orange-600">- {formatRupiah(pesanan.returNominal)}</dd>
+                  </div>
+                  <div className="border-t border-gray-200 pt-3 flex justify-between">
+                    <dt className="text-base font-semibold text-gray-900">Net Diterima</dt>
+                    <dd className="text-xl font-bold text-gray-900">{formatRupiah(pesanan.total - pesanan.returNominal)}</dd>
+                  </div>
+                </>
+              ) : null}
             </dl>
           </CardContent>
         </Card>
@@ -276,7 +288,7 @@ function DetailPOS({ pesanan, refetch }: { pesanan: Pesanan; refetch: () => void
   )
 }
 
-// ── Detail Pesanan Manual ─────────────────────────────────────────────────────
+// ── Detail Pesanan VIP ────────────────────────────────────────────────────────
 
 function DetailManual({ pesanan, refetch }: { pesanan: Pesanan; refetch: () => void }) {
   const router = useRouter()
@@ -402,6 +414,18 @@ function DetailManual({ pesanan, refetch }: { pesanan: Pesanan; refetch: () => v
                 <dt className="text-base font-semibold text-gray-900">Total</dt>
                 <dd className="text-xl font-bold text-green-700">{formatRupiah(pesanan.total)}</dd>
               </div>
+              {pesanan.returNominal && pesanan.returNominal > 0 ? (
+                <>
+                  <div className="flex justify-between">
+                    <dt className="text-gray-500">Retur</dt>
+                    <dd className="font-medium text-orange-600">- {formatRupiah(pesanan.returNominal)}</dd>
+                  </div>
+                  <div className="border-t border-gray-200 pt-3 flex justify-between">
+                    <dt className="text-base font-semibold text-gray-900">Net Diterima</dt>
+                    <dd className="text-xl font-bold text-gray-900">{formatRupiah(pesanan.total - pesanan.returNominal)}</dd>
+                  </div>
+                </>
+              ) : null}
             </dl>
           </CardContent>
         </Card>
