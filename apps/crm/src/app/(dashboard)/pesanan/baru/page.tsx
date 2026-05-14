@@ -242,6 +242,7 @@ export default function PesananBaruPage() {
       metodePengiriman,
       alamatPengiriman: metodePengiriman === 'dikirim' ? alamatPengiriman : undefined,
       catatan: catatan || undefined,
+      sumber: 'vip',
     })
 
     router.push('/pesanan')
@@ -255,7 +256,7 @@ export default function PesananBaruPage() {
     <div className="space-y-6">
       <PageHeader
         title="Buat Pesanan Baru"
-        subtitle="Pesanan manual melalui telepon atau WhatsApp"
+        subtitle="Transaksi VIP melalui telepon atau WhatsApp"
         actions={
           <Button variant="outline" onClick={() => router.push('/pesanan')}>
             <ArrowLeft className="h-4 w-4" />

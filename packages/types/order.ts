@@ -42,7 +42,7 @@ export interface Pesanan {
   catatan?: string | null
   kasirId: string
   kasirNama: string
-  sumber: 'pos' | 'manual'
+  sumber: 'pos' | 'vip'
   hasRetur?: boolean
   createdAt: string
   updatedAt: string
@@ -58,5 +58,5 @@ export interface CreatePesananDto {
   metodePengiriman: MetodePengiriman
   alamatPengiriman?: string
   catatan?: string
-  sumber?: 'pos' | 'manual'
+  sumber?: 'pos' | 'vip'
 }

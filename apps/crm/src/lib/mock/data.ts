@@ -549,7 +549,7 @@ export const mockPesanan: Pesanan[] = [
     catatan: 'Antar pagi sebelum jam 10.',
     kasirId: 'u-3',
     kasirNama: 'Siti Kasir',
-    sumber: 'manual',
+    sumber: 'vip',
     createdAt: d(1), updatedAt: d(0),
   },
   {
@@ -591,7 +591,7 @@ export const mockPesanan: Pesanan[] = [
     status: 'Selesai',
     kasirId: 'u-3',
     kasirNama: 'Siti Kasir',
-    sumber: 'manual',
+    sumber: 'vip',
     createdAt: d(3), updatedAt: d(2),
   },
   {
@@ -631,7 +631,7 @@ export const mockPesanan: Pesanan[] = [
     status: 'Diproses',
     kasirId: 'u-2',
     kasirNama: 'Budi Manajer',
-    sumber: 'manual',
+    sumber: 'vip',
     createdAt: d(1), updatedAt: d(0),
   },
   {
@@ -654,7 +654,7 @@ export const mockPesanan: Pesanan[] = [
     status: 'Selesai',
     kasirId: 'u-3',
     kasirNama: 'Siti Kasir',
-    sumber: 'manual',
+    sumber: 'vip',
     createdAt: d(7), updatedAt: d(6),
   },
   {
@@ -677,28 +677,8 @@ export const mockPesanan: Pesanan[] = [
     status: 'Selesai',
     kasirId: 'u-3',
     kasirNama: 'Siti Kasir',
-    sumber: 'manual',
+    sumber: 'vip',
     createdAt: d(10), updatedAt: d(9),
-  },
-  {
-    id: 'ord-8',
-    nomorPesanan: 'ORD-2026-035',
-    pelangganNama: 'Ibu Lastri',
-    pelangganTelepon: '0855-7777-8888',
-    items: [
-      { id: 'oi-8a', produkId: 'p-2', produkNama: 'Pupuk NPK Mutiara', produkSku: 'PUP-002', qty: 5, hargaSatuan: 16000, subtotal: 80000 },
-    ],
-    subtotal: 80000,
-    diskon: 0,
-    total: 80000,
-    metodePembayaran: 'Tunai',
-    metodePengiriman: 'ambil_sendiri',
-    status: 'Dibatalkan',
-    catatan: 'Pelanggan batal karena stok habis.',
-    kasirId: 'u-3',
-    kasirNama: 'Siti Kasir',
-    sumber: 'pos',
-    createdAt: d(5), updatedAt: d(5),
   },
 ]
 
