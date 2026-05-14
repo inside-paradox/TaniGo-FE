@@ -1,5 +1,5 @@
 import { openDB, type DBSchema, type IDBPDatabase } from 'idb'
-import type { Produk } from '@tanigo/types'
+import type { POSInventoryItem } from '@/lib/demo/inventory'
 import type { CreateTransaksiDto } from '@/types/pos'
 
 export interface OfflineQueueItem {
@@ -12,7 +12,7 @@ export interface OfflineQueueItem {
 interface TaniGoPOSDB extends DBSchema {
   products: {
     key: string
-    value: Produk
+    value: POSInventoryItem
     indexes: {
       'by-nama': string
       'by-sku': string
@@ -30,27 +30,34 @@ let dbInstance: IDBPDatabase<TaniGoPOSDB> | null = null
 export async function getDB(): Promise<IDBPDatabase<TaniGoPOSDB>> {
   if (dbInstance) return dbInstance
 
-  dbInstance = await openDB<TaniGoPOSDB>('tanigo-pos', 1, {
+  dbInstance = await openDB<TaniGoPOSDB>('tanigo-pos', 2, {
     upgrade(db) {
-      const productStore = db.createObjectStore('products', { keyPath: 'id' })
-      productStore.createIndex('by-nama', 'nama')
-      productStore.createIndex('by-sku', 'sku')
+      // Drop old stores if upgrading from version 1
+      if (db.objectStoreNames.contains('products')) {
+        db.deleteObjectStore('products')
+      }
 
-      db.createObjectStore('offline_queue', { keyPath: 'id', autoIncrement: true })
+      const productStore = db.createObjectStore('products', { keyPath: 'id' })
+      productStore.createIndex('by-nama', 'produkNama')
+      productStore.createIndex('by-sku', 'produkSku')
+
+      if (!db.objectStoreNames.contains('offline_queue')) {
+        db.createObjectStore('offline_queue', { keyPath: 'id', autoIncrement: true })
+      }
     },
   })
 
   return dbInstance
 }
 
-export async function cacheProducts(products: Produk[]): Promise<void> {
+export async function cacheInventory(items: POSInventoryItem[]): Promise<void> {
   const db = await getDB()
   const tx = db.transaction('products', 'readwrite')
-  await Promise.all(products.map((p) => tx.store.put(p)))
+  await Promise.all(items.map((p) => tx.store.put(p)))
   await tx.done
 }
 
-export async function getCachedProducts(search = ''): Promise<Produk[]> {
+export async function getCachedInventory(search = ''): Promise<POSInventoryItem[]> {
   const db = await getDB()
   const all = await db.getAll('products')
   if (!search.trim()) return all
@@ -58,9 +65,8 @@ export async function getCachedProducts(search = ''): Promise<Produk[]> {
   const q = search.toLowerCase()
   return all.filter(
     (p) =>
-      p.nama.toLowerCase().includes(q) ||
-      p.sku.toLowerCase().includes(q) ||
-      p.kategori.toLowerCase().includes(q)
+      p.produkNama.toLowerCase().includes(q) ||
+      p.produkSku.toLowerCase().includes(q)
   )
 }
 

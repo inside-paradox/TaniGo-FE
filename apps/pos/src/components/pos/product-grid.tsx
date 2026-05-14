@@ -2,7 +2,7 @@
 
 import { useRef, useEffect, useState } from 'react'
 import { Search, PackageSearch } from 'lucide-react'
-import type { Produk } from '@tanigo/types'
+import type { POSInventoryItem } from '@/lib/demo/inventory'
 import { Input } from '@/components/ui/input'
 import { Spinner } from '@/components/ui/spinner'
 import { ProductCard } from './product-card'
@@ -20,23 +20,24 @@ export function ProductGrid() {
     limit: 50,
   })
 
-  const products = data?.data ?? []
+  const products = data ?? []
 
-  const handleAdd = (produk: Produk) => {
+  const handleAdd = (item: POSInventoryItem) => {
+    if (item.stok === 0) return
     addItem({
-      produkId: produk.id,
-      nama: produk.nama,
-      sku: produk.sku,
-      satuan: produk.satuan,
-      hargaSatuan: produk.hargaJual,
+      produkId: item.produkId,
+      nama: item.produkNama,
+      sku: item.produkSku,
+      satuan: item.satuan,
+      hargaSatuan: item.hargaJual,
       qty: 1,
     })
-    toast.success(`${produk.nama} ditambahkan`)
+    toast.success(`${item.produkNama} ditambahkan`)
   }
 
   // Barcode scanner support: focus input on keydown if not already focused
   useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
+    const onKey = () => {
       const active = document.activeElement
       const isTyping =
         active instanceof HTMLInputElement ||
@@ -76,8 +77,8 @@ export function ProductGrid() {
           </div>
         ) : (
           <div className="grid grid-cols-2 gap-3 xl:grid-cols-3">
-            {products.map((produk) => (
-              <ProductCard key={produk.id} produk={produk} onAdd={handleAdd} />
+            {products.map((item) => (
+              <ProductCard key={item.id} item={item} onAdd={handleAdd} />
             ))}
           </div>
         )}

@@ -1,29 +1,29 @@
 'use client'
 
 import { ShoppingCart } from 'lucide-react'
-import type { Produk } from '@tanigo/types'
+import type { POSInventoryItem } from '@/lib/demo/inventory'
 import { formatRupiah } from '@tanigo/utils'
 import { cn } from '@/lib/utils/cn'
 import { Badge } from '@/components/ui/badge'
 
 interface ProductCardProps {
-  produk: Produk
-  onAdd: (produk: Produk) => void
+  item: POSInventoryItem
+  onAdd: (item: POSInventoryItem) => void
 }
 
-const statusBadgeMap = {
-  normal: { label: 'Stok OK', variant: 'success' as const },
-  menipis: { label: 'Menipis', variant: 'warning' as const },
-  habis: { label: 'Habis', variant: 'danger' as const },
+function getStokStatus(stok: number): { label: string; variant: 'success' | 'warning' | 'danger' } {
+  if (stok === 0) return { label: 'Habis', variant: 'danger' }
+  if (stok <= 5) return { label: 'Menipis', variant: 'warning' }
+  return { label: 'Stok OK', variant: 'success' }
 }
 
-export function ProductCard({ produk, onAdd }: ProductCardProps) {
-  const isHabis = produk.stok === 0 || produk.statusStok === 'habis'
-  const { label, variant } = statusBadgeMap[produk.statusStok]
+export function ProductCard({ item, onAdd }: ProductCardProps) {
+  const isHabis = item.stok === 0
+  const { label, variant } = getStokStatus(item.stok)
 
   return (
     <button
-      onClick={() => !isHabis && onAdd(produk)}
+      onClick={() => !isHabis && onAdd(item)}
       disabled={isHabis}
       className={cn(
         'group relative flex flex-col rounded-xl border bg-white p-3 text-left shadow-sm transition-all',
@@ -32,19 +32,19 @@ export function ProductCard({ produk, onAdd }: ProductCardProps) {
       )}
     >
       <div className="mb-2 flex items-start justify-between gap-1">
-        <p className="line-clamp-2 text-sm font-semibold text-gray-900 leading-snug">{produk.nama}</p>
+        <p className="line-clamp-2 text-sm font-semibold text-gray-900 leading-snug">{item.produkNama}</p>
         <Badge variant={variant} className="flex-shrink-0">
           {label}
         </Badge>
       </div>
 
-      <p className="text-xs text-gray-400 mb-1">{produk.sku}</p>
+      <p className="text-xs text-gray-400 mb-1">{item.produkSku}</p>
 
       <div className="mt-auto pt-2 flex items-end justify-between">
         <div>
-          <p className="text-base font-bold text-green-700">{formatRupiah(produk.hargaJual)}</p>
+          <p className="text-base font-bold text-green-700">{formatRupiah(item.hargaJual)}</p>
           <p className="text-xs text-gray-500">
-            Stok: {produk.stok} {produk.satuan}
+            Stok: {item.stok} {item.satuan}
           </p>
         </div>
         {!isHabis && (

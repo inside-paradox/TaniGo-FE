@@ -51,6 +51,7 @@ export interface CreateTransaksiDto {
     diskon?: number
   }[]
   pembayaran: PembayaranSplit[]
+  sumber: 'pos'
 }
 
 export interface Shift {

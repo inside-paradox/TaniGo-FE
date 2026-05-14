@@ -26,6 +26,13 @@ const STATUS_OPTIONS: { value: string; label: string }[] = [
   { value: 'Dibatalkan', label: 'Dibatalkan' },
 ]
 
+const SUMBER_OPTIONS: { value: string; label: string }[] = [
+  { value: '', label: 'Semua Sumber' },
+  { value: 'pos', label: 'POS' },
+  { value: 'vip', label: 'VIP' },
+  { value: 'manual', label: 'Manual' },
+]
+
 function statusBadgeVariant(status: StatusPesanan) {
   switch (status) {
     case 'Baru':
@@ -45,17 +52,43 @@ function statusBadgeVariant(status: StatusPesanan) {
   }
 }
 
+function SumberBadge({ sumber }: { sumber: 'pos' | 'vip' | 'manual' | undefined }) {
+  if (!sumber) return null
+  if (sumber === 'pos') {
+    return (
+      <span className="inline-flex items-center rounded px-1.5 py-0.5 text-xs font-medium bg-blue-100 text-blue-700">
+        POS
+      </span>
+    )
+  }
+  if (sumber === 'vip') {
+    return (
+      <span className="inline-flex items-center rounded px-1.5 py-0.5 text-xs font-medium bg-purple-100 text-purple-700">
+        VIP
+      </span>
+    )
+  }
+  return (
+    <span className="inline-flex items-center rounded px-1.5 py-0.5 text-xs font-medium bg-gray-100 text-gray-600">
+      Manual
+    </span>
+  )
+}
+
 const columns: ColumnDef<Pesanan>[] = [
   {
     accessorKey: 'nomorPesanan',
     header: 'No. Pesanan',
     cell: ({ row }) => (
-      <Link
-        href={`/pesanan/${row.original.id}`}
-        className="font-medium text-green-700 hover:underline"
-      >
-        {row.original.nomorPesanan}
-      </Link>
+      <div className="flex items-center gap-2">
+        <Link
+          href={`/pesanan/${row.original.id}`}
+          className="font-medium text-green-700 hover:underline"
+        >
+          {row.original.nomorPesanan}
+        </Link>
+        <SumberBadge sumber={row.original.sumber} />
+      </div>
     ),
   },
   {
@@ -106,12 +139,14 @@ export default function PesananPage() {
   const [sorting, setSorting] = useState<SortingState>([])
   const [search, setSearch] = useState('')
   const [status, setStatus] = useState('')
+  const [sumber, setSumber] = useState('')
 
   const { data, isLoading } = useOrders({
     page,
     limit,
     search: search || undefined,
     status: status || undefined,
+    sumber: sumber || undefined,
     sortBy: sorting[0]?.id,
     sortOrder: sorting[0] ? (sorting[0].desc ? 'desc' : 'asc') : undefined,
   })
@@ -131,6 +166,11 @@ export default function PesananPage() {
 
   const handleStatus = (val: string) => {
     setStatus(val)
+    setPage(1)
+  }
+
+  const handleSumber = (val: string) => {
+    setSumber(val)
     setPage(1)
   }
 
@@ -162,6 +202,17 @@ export default function PesananPage() {
               className="h-10 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:border-green-500 focus:outline-none focus:ring-1 focus:ring-green-500"
             >
               {STATUS_OPTIONS.map((opt) => (
+                <option key={opt.value} value={opt.value}>
+                  {opt.label}
+                </option>
+              ))}
+            </select>
+            <select
+              value={sumber}
+              onChange={(e) => handleSumber(e.target.value)}
+              className="h-10 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:border-green-500 focus:outline-none focus:ring-1 focus:ring-green-500"
+            >
+              {SUMBER_OPTIONS.map((opt) => (
                 <option key={opt.value} value={opt.value}>
                   {opt.label}
                 </option>

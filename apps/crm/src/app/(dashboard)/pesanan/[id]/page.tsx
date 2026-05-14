@@ -3,7 +3,8 @@
 import { useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft, AlertCircle } from 'lucide-react'
+import { ArrowLeft, AlertCircle, Printer, RotateCcw } from 'lucide-react'
+import { toast } from 'sonner'
 import { PageHeader } from '@/components/shared'
 import {
   Button,
@@ -18,8 +19,11 @@ import {
   Textarea,
 } from '@/components/ui'
 import { useOrder, useUpdateOrderStatus } from '@/hooks/use-orders'
+import { useAuthStore } from '@/store/auth-store'
+import { ordersApi } from '@/lib/api'
+import { printStrukPOS } from '@/lib/print'
 import { formatRupiah, formatTanggalWaktu } from '@/lib/utils'
-import type { StatusPesanan } from '@/types'
+import type { StatusPesanan, ItemPesanan } from '@/types'
 
 function StatusBadge({ status }: { status: StatusPesanan }) {
   const variantMap: Record<StatusPesanan, 'info' | 'warning' | 'purple' | 'default' | 'success' | 'danger'> = {
@@ -37,12 +41,18 @@ function MetodePengirimanLabel({ metode }: { metode: string }) {
   return <span>{metode === 'ambil_sendiri' ? 'Ambil Sendiri' : 'Dikirim'}</span>
 }
 
+interface ReturItemState {
+  checked: boolean
+  qty: number
+}
+
 export default function DetailPesananPage() {
   const params = useParams()
   const router = useRouter()
   const id = params.id as string
+  const user = useAuthStore((s) => s.user)
 
-  const { data: pesanan, isLoading, isError } = useOrder(id)
+  const { data: pesanan, isLoading, isError, refetch } = useOrder(id)
   const { mutateAsync: updateStatus, isPending: isUpdating } = useUpdateOrderStatus()
 
   const [showBatalModal, setShowBatalModal] = useState(false)
@@ -50,6 +60,13 @@ export default function DetailPesananPage() {
   const [batalError, setBatalError] = useState('')
   const [showProsesConfirm, setShowProsesConfirm] = useState(false)
   const [showSiapKirimConfirm, setShowSiapKirimConfirm] = useState(false)
+
+  // Retur state
+  const [showReturModal, setShowReturModal] = useState(false)
+  const [returItems, setReturItems] = useState<Record<string, ReturItemState>>({})
+  const [alasanRetur, setAlasanRetur] = useState('')
+  const [returError, setReturError] = useState('')
+  const [isProsesingRetur, setIsProsesingRetur] = useState(false)
 
   const handleProsesPesanan = async () => {
     await updateStatus({ id, status: 'Diproses' })
@@ -70,6 +87,63 @@ export default function DetailPesananPage() {
     setShowBatalModal(false)
     setAlasanBatal('')
     setBatalError('')
+  }
+
+  const handleOpenRetur = () => {
+    if (!pesanan) return
+    const initial: Record<string, ReturItemState> = {}
+    pesanan.items.forEach((item) => {
+      initial[item.id] = { checked: false, qty: item.qty }
+    })
+    setReturItems(initial)
+    setAlasanRetur('')
+    setReturError('')
+    setShowReturModal(true)
+  }
+
+  const handleConfirmRetur = async () => {
+    if (!pesanan) return
+    if (!alasanRetur.trim()) {
+      setReturError('Alasan retur wajib diisi')
+      return
+    }
+    const selectedItems = pesanan.items
+      .filter((item) => returItems[item.id]?.checked)
+      .map((item) => ({
+        produkId: item.produkId,
+        qty: returItems[item.id]?.qty ?? item.qty,
+      }))
+    if (selectedItems.length === 0) {
+      setReturError('Pilih minimal satu item untuk diretur')
+      return
+    }
+    // Validate qty
+    for (const item of pesanan.items) {
+      const state = returItems[item.id]
+      if (state?.checked) {
+        if (!state.qty || state.qty <= 0 || state.qty > item.qty) {
+          setReturError(`Qty retur untuk "${item.produkNama}" tidak valid (maks: ${item.qty})`)
+          return
+        }
+      }
+    }
+
+    try {
+      setIsProsesingRetur(true)
+      await ordersApi.prosesRetur(id, { items: selectedItems, alasan: alasanRetur })
+      toast.success('Retur berhasil diproses')
+      setShowReturModal(false)
+      refetch()
+    } catch {
+      toast.error('Gagal memproses retur')
+    } finally {
+      setIsProsesingRetur(false)
+    }
+  }
+
+  const handleCetakStruk = () => {
+    if (!pesanan) return
+    printStrukPOS(pesanan)
   }
 
   // Loading state
@@ -132,6 +206,12 @@ export default function DetailPesananPage() {
 
   const statusFinal = pesanan.status === 'Selesai' || pesanan.status === 'Dibatalkan'
   const dalamPengiriman = pesanan.status === 'Dalam Pengiriman'
+  const canRetur =
+    pesanan.status === 'Selesai' &&
+    pesanan.sumber === 'pos' &&
+    !pesanan.hasRetur &&
+    (user?.role === 'manajer' || user?.role === 'admin' || user?.role === 'superadmin')
+  const canCetakStruk = pesanan.sumber === 'pos'
 
   return (
     <div className="space-y-6">
@@ -156,10 +236,49 @@ export default function DetailPesananPage() {
             <div className="flex items-center gap-2">
               <span className="text-sm font-medium text-gray-600">Status:</span>
               <StatusBadge status={pesanan.status} />
+              {pesanan.sumber === 'pos' && (
+                <span className="inline-flex items-center rounded px-1.5 py-0.5 text-xs font-medium bg-blue-100 text-blue-700">
+                  POS
+                </span>
+              )}
+              {pesanan.sumber === 'vip' && (
+                <span className="inline-flex items-center rounded px-1.5 py-0.5 text-xs font-medium bg-purple-100 text-purple-700">
+                  VIP
+                </span>
+              )}
+              {pesanan.sumber === 'manual' && (
+                <span className="inline-flex items-center rounded px-1.5 py-0.5 text-xs font-medium bg-gray-100 text-gray-600">
+                  Manual
+                </span>
+              )}
+              {pesanan.hasRetur && (
+                <span className="inline-flex items-center rounded px-1.5 py-0.5 text-xs font-medium bg-orange-100 text-orange-700">
+                  Ada Retur
+                </span>
+              )}
             </div>
 
             {/* Tombol aksi berdasarkan status */}
             <div className="ml-auto flex flex-wrap gap-2">
+              {canCetakStruk && (
+                <Button variant="outline" size="sm" onClick={handleCetakStruk}>
+                  <Printer className="h-4 w-4" />
+                  Cetak Struk
+                </Button>
+              )}
+
+              {canRetur && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleOpenRetur}
+                  className="border-orange-300 text-orange-700 hover:bg-orange-50"
+                >
+                  <RotateCcw className="h-4 w-4" />
+                  Proses Retur
+                </Button>
+              )}
+
               {pesanan.status === 'Baru' && (
                 <Button
                   onClick={() => setShowProsesConfirm(true)}
@@ -386,6 +505,104 @@ export default function DetailPesananPage() {
               loading={isUpdating}
             >
               Batalkan Pesanan
+            </Button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Modal Proses Retur */}
+      <Modal
+        open={showReturModal}
+        onClose={() => setShowReturModal(false)}
+        title="Proses Retur"
+        description={`Pilih item yang ingin diretur dari pesanan ${pesanan.nomorPesanan}`}
+        size="lg"
+      >
+        <div className="space-y-4">
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-gray-200">
+                  <th className="pb-2 text-left font-medium text-gray-500 w-8"></th>
+                  <th className="pb-2 text-left font-medium text-gray-500">Produk</th>
+                  <th className="pb-2 text-center font-medium text-gray-500">Qty Asli</th>
+                  <th className="pb-2 text-center font-medium text-gray-500">Qty Retur</th>
+                  <th className="pb-2 text-right font-medium text-gray-500">Subtotal</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {pesanan.items.map((item: ItemPesanan) => {
+                  const state = returItems[item.id]
+                  return (
+                    <tr key={item.id} className={state?.checked ? 'bg-orange-50' : ''}>
+                      <td className="py-2">
+                        <input
+                          type="checkbox"
+                          checked={state?.checked ?? false}
+                          onChange={(e) =>
+                            setReturItems((prev) => ({
+                              ...prev,
+                              [item.id]: { ...prev[item.id], checked: e.target.checked },
+                            }))
+                          }
+                          className="h-4 w-4 rounded border-gray-300 text-green-600"
+                        />
+                      </td>
+                      <td className="py-2 font-medium text-gray-900">{item.produkNama}</td>
+                      <td className="py-2 text-center text-gray-700">{item.qty}</td>
+                      <td className="py-2 text-center">
+                        <input
+                          type="number"
+                          min={1}
+                          max={item.qty}
+                          value={state?.qty ?? item.qty}
+                          disabled={!state?.checked}
+                          onChange={(e) =>
+                            setReturItems((prev) => ({
+                              ...prev,
+                              [item.id]: { ...prev[item.id], qty: Number(e.target.value) },
+                            }))
+                          }
+                          className="w-16 rounded border border-gray-300 px-2 py-1 text-center text-sm disabled:opacity-50 focus:border-green-500 focus:outline-none"
+                        />
+                      </td>
+                      <td className="py-2 text-right text-gray-700">
+                        {formatRupiah(item.subtotal)}
+                      </td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
+
+          <Textarea
+            label="Alasan Retur"
+            required
+            placeholder="Masukkan alasan retur..."
+            value={alasanRetur}
+            onChange={(e) => {
+              setAlasanRetur(e.target.value)
+              if (returError) setReturError('')
+            }}
+            error={returError}
+            rows={3}
+          />
+
+          <div className="flex justify-end gap-3">
+            <Button
+              variant="outline"
+              onClick={() => setShowReturModal(false)}
+              disabled={isProsesingRetur}
+            >
+              Batal
+            </Button>
+            <Button
+              onClick={handleConfirmRetur}
+              loading={isProsesingRetur}
+              className="bg-orange-600 hover:bg-orange-700 text-white"
+            >
+              Proses Retur
             </Button>
           </div>
         </div>

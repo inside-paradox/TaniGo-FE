@@ -2,17 +2,19 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { ShoppingCart, RotateCcw, Clock, LogOut, Sprout } from 'lucide-react'
+import { ShoppingCart, Clock, LogOut, Sprout, RefreshCw } from 'lucide-react'
 import { cn } from '@/lib/utils/cn'
 import { useAuthStore } from '@/store/authStore'
 import { useShiftStore } from '@/store/shiftStore'
 import { useLogout } from '@/hooks/useAuth'
+import { useOfflineStore } from '@/store/offlineStore'
+import { useOnlineStatus } from '@/hooks/useOnlineStatus'
+import { useSync } from '@/hooks/useSync'
 import { Badge } from '@/components/ui/badge'
 import { formatTanggalWaktu } from '@tanigo/utils'
 
 const navItems = [
   { href: '/transaksi', label: 'Transaksi', icon: ShoppingCart },
-  { href: '/retur', label: 'Retur', icon: RotateCcw },
   { href: '/shift', label: 'Shift', icon: Clock },
 ]
 
@@ -21,6 +23,9 @@ export function Sidebar() {
   const user = useAuthStore((s) => s.user)
   const activeShift = useShiftStore((s) => s.activeShift)
   const { mutate: doLogout, isPending } = useLogout()
+  const { queueCount, isSyncing, lastSynced } = useOfflineStore()
+  const isOnline = useOnlineStatus()
+  const { manualSync } = useSync()
 
   return (
     <aside className="flex h-screen w-56 flex-col border-r border-gray-200 bg-white">
@@ -53,6 +58,36 @@ export function Sidebar() {
       </nav>
 
       <div className="border-t border-gray-100 p-4 space-y-3">
+        {/* Sync button */}
+        <div className="rounded-lg bg-gray-50 px-3 py-2 space-y-1.5">
+          <button
+            onClick={manualSync}
+            disabled={isSyncing || !isOnline}
+            className={cn(
+              'flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-xs font-medium transition-colors',
+              isSyncing || !isOnline
+                ? 'cursor-not-allowed text-gray-400'
+                : 'text-green-700 hover:bg-green-100'
+            )}
+          >
+            <RefreshCw size={13} className={isSyncing ? 'animate-spin' : ''} />
+            {isSyncing ? 'Menyinkronkan...' : 'Sync Sekarang'}
+            {queueCount > 0 && !isSyncing && (
+              <span className="ml-auto rounded-full bg-orange-100 px-1.5 py-0.5 text-orange-700">
+                {queueCount}
+              </span>
+            )}
+          </button>
+          {lastSynced && (
+            <p className="text-[10px] text-gray-400 px-2">
+              Terakhir: {formatTanggalWaktu(lastSynced)}
+            </p>
+          )}
+          {!isOnline && (
+            <p className="text-[10px] text-orange-500 px-2">Offline — sync saat koneksi pulih</p>
+          )}
+        </div>
+
         {activeShift ? (
           <div className="rounded-lg bg-green-50 px-3 py-2">
             <div className="flex items-center gap-1.5">

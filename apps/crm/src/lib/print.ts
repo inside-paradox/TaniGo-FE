@@ -1,4 +1,4 @@
-import type { Pengiriman, TransferStok, CabangInventory, Shift } from '@/types'
+import type { Pengiriman, TransferStok, CabangInventory, Shift, Pesanan } from '@/types'
 import type { Produk } from '@/types'
 
 // ─── Core ─────────────────────────────────────────────────────────────────────
@@ -47,6 +47,83 @@ function formatTgl(dateStr: string) {
   return new Date(dateStr).toLocaleDateString('id-ID', {
     day: '2-digit', month: 'long', year: 'numeric',
   })
+}
+
+// ─── Struk POS ────────────────────────────────────────────────────────────────
+
+export function printStrukPOS(pesanan: Pesanan, namaToko = 'TaniGo') {
+  const fmtRpStruk = (n: number) =>
+    new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(n)
+
+  const tanggal = new Date(pesanan.createdAt).toLocaleString('id-ID', {
+    day: '2-digit', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit',
+  })
+
+  const itemRows = pesanan.items.map((item) => `
+    <tr>
+      <td style="padding:3px 0;font-size:12px">${item.produkNama}</td>
+      <td style="padding:3px 0;text-align:center;font-size:12px">${item.qty}</td>
+      <td style="padding:3px 0;text-align:right;font-size:12px">${fmtRpStruk(item.hargaSatuan)}</td>
+      <td style="padding:3px 0;text-align:right;font-size:12px;font-weight:600">${fmtRpStruk(item.subtotal)}</td>
+    </tr>`).join('')
+
+  const html = `<!DOCTYPE html><html><head><meta charset="utf-8">
+  <title>Struk ${pesanan.nomorPesanan}</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: monospace; font-size: 12px; color: #111; background: #fff; padding: 16px; max-width: 320px; margin: 0 auto; }
+    .store-name { font-size: 16px; font-weight: 800; text-align: center; color: #16a34a; margin-bottom: 2px; }
+    .center { text-align: center; }
+    .divider { border-top: 1px dashed #9ca3af; margin: 8px 0; }
+    table { width: 100%; border-collapse: collapse; }
+    .total-row td { font-size: 14px; font-weight: 700; padding-top: 6px; border-top: 1px dashed #9ca3af; }
+    .footer { text-align: center; margin-top: 12px; font-size: 11px; color: #6b7280; }
+    @media print { body { padding: 4px; } @page { margin: 4mm; size: 80mm auto; } }
+  </style></head><body>
+  <div class="store-name">${namaToko}</div>
+  <div class="center" style="font-size:10px;color:#6b7280">Toko Perlengkapan Pertanian</div>
+  <div class="divider"></div>
+  <div style="font-size:11px;margin-bottom:4px">
+    <div>No: <b>${pesanan.nomorPesanan}</b></div>
+    <div>Tanggal: ${tanggal}</div>
+    <div>Kasir: ${pesanan.kasirNama}</div>
+    <div>Pelanggan: ${pesanan.pelangganNama}</div>
+  </div>
+  <div class="divider"></div>
+  <table>
+    <thead>
+      <tr>
+        <th style="text-align:left;font-size:11px;padding-bottom:4px">Item</th>
+        <th style="text-align:center;font-size:11px;padding-bottom:4px">Qty</th>
+        <th style="text-align:right;font-size:11px;padding-bottom:4px">Harga</th>
+        <th style="text-align:right;font-size:11px;padding-bottom:4px">Total</th>
+      </tr>
+    </thead>
+    <tbody>${itemRows}</tbody>
+    ${pesanan.diskon > 0 ? `<tr><td colspan="3" style="padding-top:6px;font-size:12px">Diskon</td><td style="text-align:right;font-size:12px;color:#dc2626">- ${fmtRpStruk(pesanan.diskon)}</td></tr>` : ''}
+    <tr class="total-row">
+      <td colspan="3">TOTAL</td>
+      <td style="text-align:right">${fmtRpStruk(pesanan.total)}</td>
+    </tr>
+  </table>
+  <div class="divider"></div>
+  <div style="font-size:11px">Pembayaran: <b>${pesanan.metodePembayaran}</b></div>
+  <div class="footer">
+    <div style="margin-top:8px">--- Terima kasih ---</div>
+    <div>Barang yang sudah dibeli</div>
+    <div>tidak dapat dikembalikan</div>
+  </div>
+  </body></html>`
+
+  const win = window.open('', '_blank', 'width=400,height=600')
+  if (!win) return
+  win.document.write(html)
+  win.document.close()
+  win.focus()
+  setTimeout(() => {
+    win.print()
+    win.close()
+  }, 300)
 }
 
 // ─── Formulir Stok Opname ─────────────────────────────────────────────────────

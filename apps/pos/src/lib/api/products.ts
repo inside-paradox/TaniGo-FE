@@ -1,19 +1,19 @@
-import type { Produk, PaginatedResponse } from '@tanigo/types'
+import type { POSInventoryItem } from '@/lib/demo/inventory'
 import { api } from './axios'
 
 export interface ProductSearchParams {
   search?: string
-  category?: string
-  page?: number
+  cabangId?: string
   limit?: number
 }
 
-export async function fetchProducts(params: ProductSearchParams = {}): Promise<PaginatedResponse<Produk>> {
-  const { data } = await api.get<{ data: PaginatedResponse<Produk> }>('/api/products', { params })
-  return data.data
-}
-
-export async function fetchProduct(id: string): Promise<Produk> {
-  const { data } = await api.get<{ data: Produk }>(`/api/products/${id}`)
+/**
+ * Fetch branch inventory from the backend.
+ * The API returns CabangInventory enriched with hargaJual (from the product catalog join).
+ */
+export async function fetchCabangInventory(cabangId: string): Promise<POSInventoryItem[]> {
+  const { data } = await api.get<{ data: POSInventoryItem[] }>('/cabang-inventory', {
+    params: { cabangId },
+  })
   return data.data
 }

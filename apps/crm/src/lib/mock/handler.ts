@@ -647,6 +647,7 @@ export function getMockResponse(config: AxiosRequestConfig): Omit<AxiosResponse,
     if (method === 'get') {
       let list = [...pesanan]
       if (params.status) list = list.filter((o) => o.status === params.status)
+      if (params.sumber) list = list.filter((o) => o.sumber === params.sumber)
       if (params.pelangganId) list = list.filter((o) => o.pelangganId === params.pelangganId)
       if (params.kasirId) list = list.filter((o) => o.kasirId === params.kasirId)
       const q = params.search as string | undefined
@@ -687,6 +688,7 @@ export function getMockResponse(config: AxiosRequestConfig): Omit<AxiosResponse,
         catatan: body.catatan,
         kasirId: 'u-3',
         kasirNama: 'Siti Kasir',
+        sumber: (body.sumber as 'pos' | 'vip' | 'manual') ?? 'manual',
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       }
@@ -711,6 +713,24 @@ export function getMockResponse(config: AxiosRequestConfig): Omit<AxiosResponse,
     if (action === 'status' && method === 'patch' && idx !== -1) {
       const now = new Date().toISOString()
       pesanan[idx] = { ...pesanan[idx], status: body.status, catatan: body.catatan ?? pesanan[idx].catatan, updatedAt: now }
+      return ok(pesanan[idx])
+    }
+
+    if (action === 'retur' && method === 'post' && idx !== -1) {
+      const now = new Date().toISOString()
+      const order = pesanan[idx]
+      const returnItems = body.items as Array<{ produkId: string; qty: number }>
+
+      // Get the branch where this order was handled (use kasir's cabang or default toko-1)
+      const kasirUser = users.find((u) => u.id === order.kasirId)
+      const branchId = kasirUser?.cabangId ?? 'toko-1'
+
+      // Restore stock for each returned item
+      for (const ri of returnItems) {
+        addInventory(branchId, ri.produkId, ri.qty, now)
+      }
+
+      pesanan[idx] = { ...order, hasRetur: true, updatedAt: now }
       return ok(pesanan[idx])
     }
   }

@@ -6,7 +6,6 @@ import { FlaskConical, WifiOff, RefreshCw } from 'lucide-react'
 import { useAuthStore } from '@/store/authStore'
 import { useOfflineStore } from '@/store/offlineStore'
 import { useOnlineStatus } from '@/hooks/useOnlineStatus'
-import { useSync } from '@/hooks/useSync'
 import { Sidebar } from '@/components/shared/sidebar'
 
 export default function POSLayout({ children }: { children: React.ReactNode }) {
@@ -16,8 +15,6 @@ export default function POSLayout({ children }: { children: React.ReactNode }) {
   const isOnline = useOnlineStatus()
   const { queueCount, isSyncing } = useOfflineStore()
   const [mounted, setMounted] = useState(false)
-
-  useSync()
 
   useEffect(() => {
     setMounted(true)

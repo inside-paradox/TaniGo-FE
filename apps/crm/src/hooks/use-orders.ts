@@ -6,7 +6,7 @@ import type { CreatePesananDto, TableParams } from '@/types'
 export const ORDERS_KEY = 'orders'
 
 export function useOrders(params: TableParams & {
-  status?: string; pelangganId?: string; kasirId?: string
+  status?: string; sumber?: string; pelangganId?: string; kasirId?: string
   tanggalDari?: string; tanggalSampai?: string
 }) {
   return useQuery({
