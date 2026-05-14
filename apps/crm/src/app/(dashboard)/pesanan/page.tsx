@@ -30,9 +30,9 @@ const STATUS_OPTIONS: { value: string; label: string }[] = [
 ]
 
 const STATUS_POS_OPTIONS: { value: string; label: string }[] = [
-  { value: '', label: 'Semua Status' },
+  { value: '', label: 'Semua' },
   { value: 'Selesai', label: 'Selesai' },
-  { value: 'Dibatalkan', label: 'Dibatalkan' },
+  { value: 'ada_retur', label: 'Ada Retur' },
 ]
 
 function statusBadgeVariant(status: StatusPesanan) {
@@ -77,12 +77,14 @@ const columnsPOS: ColumnDef<Pesanan>[] = [
     ),
   },
   {
-    accessorKey: 'status',
+    id: 'status',
     header: 'Status',
-    cell: ({ getValue }) => {
-      const status = getValue<StatusPesanan>()
-      return <Badge variant={statusBadgeVariant(status)}>{status}</Badge>
-    },
+    cell: ({ row }) => (
+      <div className="flex items-center gap-1.5">
+        <Badge variant="success">Selesai</Badge>
+        {row.original.hasRetur && <Badge variant="warning">Ada Retur</Badge>}
+      </div>
+    ),
   },
   {
     accessorKey: 'createdAt',

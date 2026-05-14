@@ -646,7 +646,8 @@ export function getMockResponse(config: AxiosRequestConfig): Omit<AxiosResponse,
   if (rawUrl === '/orders' || rawUrl.startsWith('/orders?')) {
     if (method === 'get') {
       let list = [...pesanan]
-      if (params.status) list = list.filter((o) => o.status === params.status)
+      if (params.status === 'ada_retur') list = list.filter((o) => o.hasRetur)
+      else if (params.status) list = list.filter((o) => o.status === params.status)
       if (params.sumber) list = list.filter((o) => o.sumber === params.sumber)
       if (params.pelangganId) list = list.filter((o) => o.pelangganId === params.pelangganId)
       if (params.kasirId) list = list.filter((o) => o.kasirId === params.kasirId)
