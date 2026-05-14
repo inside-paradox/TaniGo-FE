@@ -688,7 +688,7 @@ export function getMockResponse(config: AxiosRequestConfig): Omit<AxiosResponse,
         catatan: body.catatan,
         kasirId: 'u-3',
         kasirNama: 'Siti Kasir',
-        sumber: (body.sumber as 'pos' | 'vip' | 'manual') ?? 'manual',
+        sumber: (body.sumber as 'pos' | 'manual') ?? 'manual',
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       }

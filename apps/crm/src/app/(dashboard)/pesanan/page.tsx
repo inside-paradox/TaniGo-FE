@@ -29,7 +29,6 @@ const STATUS_OPTIONS: { value: string; label: string }[] = [
 const SUMBER_OPTIONS: { value: string; label: string }[] = [
   { value: '', label: 'Semua Sumber' },
   { value: 'pos', label: 'POS' },
-  { value: 'vip', label: 'VIP' },
   { value: 'manual', label: 'Manual' },
 ]
 
@@ -52,19 +51,12 @@ function statusBadgeVariant(status: StatusPesanan) {
   }
 }
 
-function SumberBadge({ sumber }: { sumber: 'pos' | 'vip' | 'manual' | undefined }) {
+function SumberBadge({ sumber }: { sumber: 'pos' | 'manual' | undefined }) {
   if (!sumber) return null
   if (sumber === 'pos') {
     return (
       <span className="inline-flex items-center rounded px-1.5 py-0.5 text-xs font-medium bg-blue-100 text-blue-700">
         POS
-      </span>
-    )
-  }
-  if (sumber === 'vip') {
-    return (
-      <span className="inline-flex items-center rounded px-1.5 py-0.5 text-xs font-medium bg-purple-100 text-purple-700">
-        VIP
       </span>
     )
   }

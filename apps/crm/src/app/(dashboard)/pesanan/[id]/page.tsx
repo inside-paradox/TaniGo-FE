@@ -241,11 +241,6 @@ export default function DetailPesananPage() {
                   POS
                 </span>
               )}
-              {pesanan.sumber === 'vip' && (
-                <span className="inline-flex items-center rounded px-1.5 py-0.5 text-xs font-medium bg-purple-100 text-purple-700">
-                  VIP
-                </span>
-              )}
               {pesanan.sumber === 'manual' && (
                 <span className="inline-flex items-center rounded px-1.5 py-0.5 text-xs font-medium bg-gray-100 text-gray-600">
                   Manual
