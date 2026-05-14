@@ -549,7 +549,7 @@ export const mockPesanan: Pesanan[] = [
     catatan: 'Antar pagi sebelum jam 10.',
     kasirId: 'u-3',
     kasirNama: 'Siti Kasir',
-    sumber: 'vip',
+    sumber: 'manual',
     createdAt: d(1), updatedAt: d(0),
   },
   {
@@ -591,7 +591,7 @@ export const mockPesanan: Pesanan[] = [
     status: 'Selesai',
     kasirId: 'u-3',
     kasirNama: 'Siti Kasir',
-    sumber: 'vip',
+    sumber: 'manual',
     createdAt: d(3), updatedAt: d(2),
   },
   {
@@ -631,7 +631,7 @@ export const mockPesanan: Pesanan[] = [
     status: 'Diproses',
     kasirId: 'u-2',
     kasirNama: 'Budi Manajer',
-    sumber: 'vip',
+    sumber: 'manual',
     createdAt: d(1), updatedAt: d(0),
   },
   {
@@ -654,7 +654,7 @@ export const mockPesanan: Pesanan[] = [
     status: 'Selesai',
     kasirId: 'u-3',
     kasirNama: 'Siti Kasir',
-    sumber: 'vip',
+    sumber: 'manual',
     createdAt: d(7), updatedAt: d(6),
   },
   {
@@ -677,7 +677,7 @@ export const mockPesanan: Pesanan[] = [
     status: 'Selesai',
     kasirId: 'u-3',
     kasirNama: 'Siti Kasir',
-    sumber: 'vip',
+    sumber: 'manual',
     createdAt: d(10), updatedAt: d(9),
   },
 ]

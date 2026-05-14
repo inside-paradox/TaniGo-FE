@@ -17,7 +17,7 @@ import { formatRupiah, formatTanggalWaktu } from '@/lib/utils'
 import { printStrukPOS } from '@/lib/print'
 import type { Pesanan, StatusPesanan } from '@/types'
 
-type TabId = 'pos' | 'vip'
+type TabId = 'pos' | 'manual'
 
 const STATUS_OPTIONS: { value: string; label: string }[] = [
   { value: '', label: 'Semua Status' },
@@ -107,9 +107,9 @@ const columnsPOS: ColumnDef<Pesanan>[] = [
   },
 ]
 
-// ── Kolom Transaksi VIP ───────────────────────────────────────────────────────
+// ── Kolom Transaksi Manual ────────────────────────────────────────────────────
 
-const columnsVIP: ColumnDef<Pesanan>[] = [
+const columnsManual: ColumnDef<Pesanan>[] = [
   {
     accessorKey: 'nomorPesanan',
     header: 'No. Pesanan',
@@ -162,7 +162,7 @@ const columnsVIP: ColumnDef<Pesanan>[] = [
 
 export default function PesananPage() {
   const router = useRouter()
-  const [activeTab, setActiveTab] = useState<TabId>('vip')
+  const [activeTab, setActiveTab] = useState<TabId>('manual')
   const [page, setPage] = useState(1)
   const [limit, setLimit] = useState(25)
   const [sorting, setSorting] = useState<SortingState>([])
@@ -193,7 +193,7 @@ export default function PesananPage() {
     setPage(1)
   }
 
-  const statusOpts = activeTab === 'vip' ? STATUS_OPTIONS : STATUS_POS_OPTIONS
+  const statusOpts = activeTab === 'manual' ? STATUS_OPTIONS : STATUS_POS_OPTIONS
 
   return (
     <div className="space-y-6">
@@ -201,7 +201,7 @@ export default function PesananPage() {
         title="Pesanan"
         subtitle={`${data?.meta.total ?? 0} pesanan ditemukan`}
         actions={
-          activeTab === 'vip' && (
+          activeTab === 'manual' && (
             <Button onClick={() => router.push('/pesanan/baru')}>
               <Plus className="h-4 w-4" />
               Buat Pesanan
@@ -214,7 +214,7 @@ export default function PesananPage() {
       <div className="flex gap-1 rounded-xl border border-gray-200 bg-gray-50 p-1 w-fit">
         {([
           { id: 'pos', label: 'Transaksi POS' },
-          { id: 'vip', label: 'Transaksi VIP' },
+          { id: 'manual', label: 'Transaksi Manual' },
         ] as { id: TabId; label: string }[]).map((tab) => (
           <button
             key={tab.id}
@@ -236,7 +236,7 @@ export default function PesananPage() {
             <SearchInput
               value={search}
               onChange={(v) => { setSearch(v); setPage(1) }}
-              placeholder={activeTab === 'vip' ? 'Cari no. pesanan atau pelanggan...' : 'Cari no. transaksi atau kasir...'}
+              placeholder={activeTab === 'manual' ? 'Cari no. pesanan atau pelanggan...' : 'Cari no. transaksi atau kasir...'}
               className="w-full sm:w-72"
             />
             <select
@@ -251,12 +251,12 @@ export default function PesananPage() {
           </div>
 
           <DataTable
-            columns={activeTab === 'vip' ? columnsVIP : columnsPOS}
+            columns={activeTab === 'manual' ? columnsManual : columnsPOS}
             data={data?.data ?? []}
             loading={isLoading}
             sorting={sorting}
             onSortingChange={handleSortingChange}
-            emptyText={activeTab === 'vip' ? 'Belum ada transaksi VIP' : 'Belum ada transaksi POS'}
+            emptyText={activeTab === 'manual' ? 'Belum ada transaksi manual' : 'Belum ada transaksi POS'}
           />
 
           {data && data.meta.total > 0 && (

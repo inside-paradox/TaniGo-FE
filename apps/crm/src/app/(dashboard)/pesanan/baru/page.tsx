@@ -242,7 +242,7 @@ export default function PesananBaruPage() {
       metodePengiriman,
       alamatPengiriman: metodePengiriman === 'dikirim' ? alamatPengiriman : undefined,
       catatan: catatan || undefined,
-      sumber: 'vip',
+      sumber: 'manual',
     })
 
     router.push('/pesanan')
