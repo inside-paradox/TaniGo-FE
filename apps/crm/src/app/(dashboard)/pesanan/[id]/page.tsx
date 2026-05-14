@@ -194,44 +194,36 @@ function DetailPOS({ pesanan, refetch }: { pesanan: Pesanan; refetch: () => void
     <div className="space-y-6">
       <PageHeader
         title={pesanan.nomorPesanan}
-        subtitle={`${formatTanggalWaktu(pesanan.createdAt)} · Kasir: ${pesanan.kasirNama}`}
+        subtitle={
+          <span className="flex items-center gap-2 flex-wrap">
+            <span>{formatTanggalWaktu(pesanan.createdAt)} · Kasir: {pesanan.kasirNama}</span>
+            {pesanan.hasRetur && (
+              <span className="inline-flex items-center rounded px-1.5 py-0.5 text-xs font-medium bg-orange-100 text-orange-700">
+                Ada Retur
+              </span>
+            )}
+          </span>
+        }
         actions={
-          <Button variant="outline" onClick={() => router.push('/pesanan')}>
-            <ArrowLeft className="h-4 w-4" />
-            Kembali
-          </Button>
+          <div className="flex gap-2">
+            {canRetur && (
+              <Button variant="outline" size="sm" onClick={() => setShowRetur(true)}
+                className="border-orange-300 text-orange-700 hover:bg-orange-50">
+                <RotateCcw className="h-4 w-4" />
+                Proses Retur
+              </Button>
+            )}
+            <Button variant="outline" size="sm" onClick={() => printStrukPOS(pesanan)}>
+              <Printer className="h-4 w-4" />
+              Cetak Struk
+            </Button>
+            <Button variant="outline" onClick={() => router.push('/pesanan')}>
+              <ArrowLeft className="h-4 w-4" />
+              Kembali
+            </Button>
+          </div>
         }
       />
-
-      {/* Status + Aksi */}
-      <Card>
-        <CardContent className="pt-6">
-          <div className="flex flex-wrap items-center gap-4">
-            <div className="flex items-center gap-2">
-              <span className="text-sm font-medium text-gray-600">Status:</span>
-              <StatusBadge status={pesanan.status} />
-              {pesanan.hasRetur && (
-                <span className="inline-flex items-center rounded px-1.5 py-0.5 text-xs font-medium bg-orange-100 text-orange-700">
-                  Ada Retur
-                </span>
-              )}
-            </div>
-            <div className="ml-auto flex gap-2">
-              <Button variant="outline" size="sm" onClick={() => printStrukPOS(pesanan)}>
-                <Printer className="h-4 w-4" />
-                Cetak Struk
-              </Button>
-              {canRetur && (
-                <Button variant="outline" size="sm" onClick={() => setShowRetur(true)}
-                  className="border-orange-300 text-orange-700 hover:bg-orange-50">
-                  <RotateCcw className="h-4 w-4" />
-                  Proses Retur
-                </Button>
-              )}
-            </div>
-          </div>
-        </CardContent>
-      </Card>
 
       {/* Info Transaksi + Pembayaran */}
       <div className="grid gap-6 lg:grid-cols-2">
