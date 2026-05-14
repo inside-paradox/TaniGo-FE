@@ -21,6 +21,11 @@ export const authApi = {
     return data.data
   },
 
+  updateProfile: async (payload: { nama: string; email: string }): Promise<import('@/types').User> => {
+    const { data } = await api.patch('/auth/me', payload)
+    return data.data
+  },
+
   changePassword: async (payload: {
     passwordLama: string
     passwordBaru: string

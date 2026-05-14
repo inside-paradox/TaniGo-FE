@@ -21,7 +21,8 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { reportsApi } from '@/lib/api'
 import { useAuthStore } from '@/store/auth-store'
-import { formatRupiah, formatTanggalWaktu, downloadBlob } from '@/lib/utils'
+import { formatRupiah, formatTanggalWaktu } from '@/lib/utils'
+import { printLaporanPdf, downloadLaporanCsv } from '@/lib/print'
 import type { Shift } from '@/types'
 
 type TabId = 'penjualan' | 'stok' | 'shift' | 'pembelian' | 'pelangganVIP' | 'pengiriman'
@@ -121,21 +122,22 @@ export default function LaporanPage() {
     }
   }
 
-  const handleExportPdf = async () => {
+  const handleExportPdf = () => {
+    if (!data) return
     setExportingPdf(true)
     try {
-      const blob = await reportsApi.exportPdf(tabToJenis[activeTab], params)
-      downloadBlob(blob, `laporan-${tabToJenis[activeTab]}-${tanggalDari}-${tanggalSampai}.pdf`)
+      printLaporanPdf(activeTab, data, { tanggalDari, tanggalSampai })
     } finally {
       setExportingPdf(false)
     }
   }
 
-  const handleExportExcel = async () => {
+  const handleExportExcel = () => {
+    if (!data) return
     setExportingExcel(true)
     try {
-      const blob = await reportsApi.exportExcel(tabToJenis[activeTab], params)
-      downloadBlob(blob, `laporan-${tabToJenis[activeTab]}-${tanggalDari}-${tanggalSampai}.xlsx`)
+      const fileName = `laporan-${tabToJenis[activeTab]}-${tanggalDari}-${tanggalSampai}.csv`
+      downloadLaporanCsv(activeTab, data, fileName)
     } finally {
       setExportingExcel(false)
     }

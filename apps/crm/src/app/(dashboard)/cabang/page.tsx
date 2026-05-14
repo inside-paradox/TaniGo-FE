@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Plus, Store, Warehouse, MapPin, MoreHorizontal } from 'lucide-react'
+import { Plus, Store, Warehouse, MapPin, Phone, MoreHorizontal } from 'lucide-react'
 import { PageHeader } from '@/components/shared/page-header'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -27,9 +27,10 @@ interface CabangForm {
   nama: string
   tipe: string
   lokasi: string
+  telepon: string
 }
 
-const EMPTY_FORM: CabangForm = { nama: '', tipe: 'toko', lokasi: '' }
+const EMPTY_FORM: CabangForm = { nama: '', tipe: 'toko', lokasi: '', telepon: '' }
 
 function tipeBadge(tipe: TipeCabang) {
   return tipe === 'toko' ? 'info' : 'warning'
@@ -91,9 +92,17 @@ function CabangCard({ cabang, onEdit, onToggle }: { cabang: Cabang; onEdit: (c: 
         </div>
         <div>
           <p className="font-semibold text-gray-900">{cabang.nama}</p>
-          <div className="flex items-center gap-1.5 text-xs text-gray-500">
-            <MapPin className="h-3 w-3" />
-            {cabang.lokasi}
+          <div className="flex items-center gap-3 text-xs text-gray-500">
+            <span className="flex items-center gap-1">
+              <MapPin className="h-3 w-3" />
+              {cabang.lokasi}
+            </span>
+            {cabang.telepon && (
+              <span className="flex items-center gap-1">
+                <Phone className="h-3 w-3" />
+                {cabang.telepon}
+              </span>
+            )}
           </div>
         </div>
       </div>
@@ -140,7 +149,7 @@ export default function CabangPage() {
 
   function openEdit(c: Cabang) {
     setEditCabang(c)
-    setForm({ nama: c.nama, tipe: c.tipe, lokasi: c.lokasi })
+    setForm({ nama: c.nama, tipe: c.tipe, lokasi: c.lokasi, telepon: c.telepon ?? '' })
     setFormErrors({})
     setFormOpen(true)
   }
@@ -156,6 +165,7 @@ export default function CabangPage() {
     const errs: Partial<CabangForm> = {}
     if (!form.nama.trim()) errs.nama = 'Nama wajib diisi'
     if (!form.lokasi.trim()) errs.lokasi = 'Lokasi wajib diisi'
+    if (!form.telepon.trim()) errs.telepon = 'Nomor telepon wajib diisi'
     setFormErrors(errs)
     return Object.keys(errs).length === 0
   }
@@ -166,13 +176,14 @@ export default function CabangPage() {
     if (editCabang) {
       await updateMutation.mutateAsync({
         id: editCabang.id,
-        payload: { nama: form.nama, lokasi: form.lokasi },
+        payload: { nama: form.nama, lokasi: form.lokasi, telepon: form.telepon },
       })
     } else {
       await createMutation.mutateAsync({
         nama: form.nama,
         tipe: form.tipe as TipeCabang,
         lokasi: form.lokasi,
+        telepon: form.telepon,
       })
     }
     closeForm()
@@ -314,6 +325,14 @@ export default function CabangPage() {
             onChange={(e) => setForm((f) => ({ ...f, lokasi: e.target.value }))}
             error={formErrors.lokasi}
             placeholder="cth. Jakarta Selatan"
+          />
+          <Input
+            label="Nomor Telepon"
+            required
+            value={form.telepon}
+            onChange={(e) => setForm((f) => ({ ...f, telepon: e.target.value }))}
+            error={formErrors.telepon}
+            placeholder="cth. 021-7812345"
           />
           <div className="flex justify-end gap-3 pt-2">
             <Button type="button" variant="outline" onClick={closeForm}>Batal</Button>

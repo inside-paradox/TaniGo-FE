@@ -22,12 +22,12 @@ const d = (daysAgo: number) => new Date(Date.now() - daysAgo * 86400000).toISOSt
 // ─── Cabang ───────────────────────────────────────────────────────────────────
 
 export const mockCabang: Cabang[] = [
-  { id: 'toko-1', nama: 'Toko Utama', tipe: 'toko', lokasi: 'Jakarta Selatan', aktif: true, createdAt: d(90), updatedAt: d(2) },
-  { id: 'toko-2', nama: 'Toko Selatan', tipe: 'toko', lokasi: 'Depok', aktif: true, createdAt: d(60), updatedAt: d(5) },
-  { id: 'toko-3', nama: 'Toko Barat', tipe: 'toko', lokasi: 'Tangerang', aktif: true, createdAt: d(45), updatedAt: d(1) },
-  { id: 'toko-4', nama: 'Toko Timur', tipe: 'toko', lokasi: 'Bekasi', aktif: false, createdAt: d(30), updatedAt: d(10) },
-  { id: 'gudang-1', nama: 'Gudang Pusat', tipe: 'gudang', lokasi: 'Cibitung, Bekasi', aktif: true, createdAt: d(120), updatedAt: d(1) },
-  { id: 'gudang-2', nama: 'Gudang Utara', tipe: 'gudang', lokasi: 'Bogor', aktif: true, createdAt: d(80), updatedAt: d(3) },
+  { id: 'toko-1', nama: 'Toko Utama', tipe: 'toko', lokasi: 'Jakarta Selatan', telepon: '021-7812345', aktif: true, createdAt: d(90), updatedAt: d(2) },
+  { id: 'toko-2', nama: 'Toko Selatan', tipe: 'toko', lokasi: 'Depok', telepon: '021-7756789', aktif: true, createdAt: d(60), updatedAt: d(5) },
+  { id: 'toko-3', nama: 'Toko Barat', tipe: 'toko', lokasi: 'Tangerang', telepon: '021-5534567', aktif: true, createdAt: d(45), updatedAt: d(1) },
+  { id: 'toko-4', nama: 'Toko Timur', tipe: 'toko', lokasi: 'Bekasi', telepon: '021-8812345', aktif: false, createdAt: d(30), updatedAt: d(10) },
+  { id: 'gudang-1', nama: 'Gudang Pusat', tipe: 'gudang', lokasi: 'Cibitung, Bekasi', telepon: '021-8901234', aktif: true, createdAt: d(120), updatedAt: d(1) },
+  { id: 'gudang-2', nama: 'Gudang Utara', tipe: 'gudang', lokasi: 'Bogor', telepon: '0251-123456', aktif: true, createdAt: d(80), updatedAt: d(3) },
 ]
 
 // ─── Users ────────────────────────────────────────────────────────────────────

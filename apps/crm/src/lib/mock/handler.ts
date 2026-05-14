@@ -35,6 +35,21 @@ let suppliers = [...mockSuppliers] as Supplier[]
 const pergerakanStok = [...mockPergerakanStok] as PergerakanStok[]
 const shifts = [...mockShift] as Shift[]
 
+// Settings state
+let infoToko = {
+  nama: 'TaniGo Luwu',
+  alamat: 'Jl. Poros Palopo - Makassar No. 12, Luwu, Sulawesi Selatan',
+  telepon: '0853-4567-8901',
+}
+interface KategoriSetting { id: string; nama: string; deskripsi?: string | null }
+let kategoriProduk: KategoriSetting[] = [
+  { id: 'kat-1', nama: 'Pupuk', deskripsi: 'Pupuk organik dan anorganik' },
+  { id: 'kat-2', nama: 'Pestisida', deskripsi: 'Herbisida, insektisida, fungisida' },
+  { id: 'kat-3', nama: 'Benih', deskripsi: 'Benih padi, jagung, sayuran' },
+  { id: 'kat-4', nama: 'Alat & Mesin', deskripsi: 'Peralatan dan mesin pertanian' },
+  { id: 'kat-5', nama: 'Irigasi', deskripsi: 'Selang, pompa, sprinkler' },
+]
+
 function upsertInventory(branchId: string, produkId: string, stok: number, now: string) {
   const produk = mockProduk.find((p) => p.id === produkId)
   const idx = cabangInventory.findIndex((inv) => inv.cabangId === branchId && inv.produkId === produkId)
@@ -99,6 +114,24 @@ export function getMockResponse(config: AxiosRequestConfig): Omit<AxiosResponse,
     return ok(user)
   }
 
+  if (rawUrl === '/auth/me' && method === 'patch') {
+    const stored = typeof window !== 'undefined' ? localStorage.getItem('user') : null
+    const current = stored ? JSON.parse(stored) : users[0]
+    const updated = { ...current, ...body, updatedAt: new Date().toISOString() }
+    const idx = users.findIndex((u) => u.id === current.id)
+    if (idx !== -1) users[idx] = updated
+    if (typeof window !== 'undefined') localStorage.setItem('user', JSON.stringify(updated))
+    return ok(updated)
+  }
+
+  if (rawUrl === '/auth/change-password' && method === 'post') {
+    // Demo mode: accept any non-empty values
+    if (!body.passwordLama || !body.passwordBaru) {
+      return { status: 400, statusText: 'Bad Request', data: { message: 'Password lama dan baru wajib diisi' }, headers: {} }
+    }
+    return ok({})
+  }
+
   if (rawUrl === '/auth/logout' && method === 'post') {
     return ok({})
   }
@@ -119,6 +152,7 @@ export function getMockResponse(config: AxiosRequestConfig): Omit<AxiosResponse,
         nama: body.nama,
         tipe: body.tipe,
         lokasi: body.lokasi,
+        telepon: body.telepon ?? '',
         aktif: true,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
@@ -855,13 +889,18 @@ export function getMockResponse(config: AxiosRequestConfig): Omit<AxiosResponse,
     const totalTransaksi = filtered.length
     const totalPendapatan = filtered.reduce((s, o) => s + o.total, 0)
     const rataRataTransaksi = totalTransaksi > 0 ? Math.round(totalPendapatan / totalTransaksi) : 0
-    const dailyMap: Record<string, number> = {}
-    filtered.forEach((o) => { const k = o.createdAt.slice(0, 10); dailyMap[k] = (dailyMap[k] ?? 0) + o.total })
-    const harian: { tanggal: string; total: number }[] = []
+    const dailyMap: Record<string, { total: number; count: number }> = {}
+    filtered.forEach((o) => {
+      const k = o.createdAt.slice(0, 10)
+      if (!dailyMap[k]) dailyMap[k] = { total: 0, count: 0 }
+      dailyMap[k].total += o.total
+      dailyMap[k].count += 1
+    })
+    const harian: { tanggal: string; total: number; transaksi: number }[] = []
     const cur = new Date(dari)
     while (cur <= sampai) {
       const k = cur.toISOString().slice(0, 10)
-      harian.push({ tanggal: k.slice(5), total: dailyMap[k] ?? 0 })
+      harian.push({ tanggal: k.slice(5), total: dailyMap[k]?.total ?? 0, transaksi: dailyMap[k]?.count ?? 0 })
       cur.setDate(cur.getDate() + 1)
     }
     const metodeCounts: Record<string, number> = {}
@@ -950,6 +989,81 @@ export function getMockResponse(config: AxiosRequestConfig): Omit<AxiosResponse,
 
   if (reportPath.startsWith('/reports/') && (reportPath.endsWith('/export/pdf') || reportPath.endsWith('/export/excel'))) {
     return ok(new Blob([''], { type: 'application/octet-stream' }))
+  }
+
+  // ── Settings ──────────────────────────────────────────────────────────────
+  if (rawUrl === '/settings/toko') {
+    if (method === 'get') return ok(infoToko)
+    if (method === 'patch') {
+      infoToko = { ...infoToko, ...body }
+      return ok(infoToko)
+    }
+  }
+
+  if (rawUrl === '/settings/kategori') {
+    if (method === 'get') return ok(kategoriProduk)
+    if (method === 'post') {
+      const newKat: KategoriSetting = { id: `kat-${Date.now()}`, nama: body.nama, deskripsi: body.deskripsi ?? null }
+      kategoriProduk = [...kategoriProduk, newKat]
+      return ok(newKat, 201)
+    }
+  }
+
+  const katIdMatch = matchPath(rawUrl, /^\/settings\/kategori\/([^/]+)$/)
+  if (katIdMatch) {
+    const id = katIdMatch[1]
+    const idx = kategoriProduk.findIndex((k) => k.id === id)
+    if (method === 'patch' && idx !== -1) {
+      kategoriProduk[idx] = { ...kategoriProduk[idx], ...body }
+      return ok(kategoriProduk[idx])
+    }
+    if (method === 'delete' && idx !== -1) {
+      kategoriProduk = kategoriProduk.filter((k) => k.id !== id)
+      return ok({})
+    }
+  }
+
+  if (rawUrl === '/settings/cabang') {
+    if (method === 'get') return ok(cabang)
+  }
+
+  const settingsCabangIdMatch = matchPath(rawUrl, /^\/settings\/cabang\/([^/]+)$/)
+  if (settingsCabangIdMatch) {
+    const id = settingsCabangIdMatch[1]
+    const idx = cabang.findIndex((c) => c.id === id)
+    if (method === 'patch' && idx !== -1) {
+      cabang[idx] = { ...cabang[idx], ...body, updatedAt: new Date().toISOString() }
+      return ok(cabang[idx])
+    }
+    if (method === 'post') {
+      const newCabang: Cabang = {
+        id: `cabang-${Date.now()}`,
+        nama: body.nama,
+        tipe: body.tipe,
+        lokasi: body.lokasi,
+        telepon: body.telepon ?? '',
+        aktif: true,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      }
+      cabang = [...cabang, newCabang]
+      return ok(newCabang, 201)
+    }
+  }
+
+  if (rawUrl === '/settings/cabang/baru' && method === 'post') {
+    const newCabang: Cabang = {
+      id: `cabang-${Date.now()}`,
+      nama: body.nama,
+      tipe: body.tipe,
+      lokasi: body.lokasi,
+      telepon: body.telepon ?? '',
+      aktif: true,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    }
+    cabang = [...cabang, newCabang]
+    return ok(newCabang, 201)
   }
 
   // ── Unmatched ─────────────────────────────────────────────────────────────

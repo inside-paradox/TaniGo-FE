@@ -4,14 +4,13 @@ export interface InfoToko {
   nama: string
   alamat: string
   telepon: string
-  logo?: string | null
 }
 
-export interface Cabang {
+export interface CabangSetting {
   id: string
   nama: string
-  alamat: string
-  telepon: string
+  tipe: 'toko' | 'gudang'
+  lokasi: string
   aktif: boolean
 }
 
@@ -28,29 +27,21 @@ export const settingsApi = {
   },
 
   updateInfoToko: async (payload: InfoToko): Promise<InfoToko> => {
-    const formData = new FormData()
-    Object.entries(payload).forEach(([key, value]) => {
-      if (value !== null && value !== undefined) {
-        formData.append(key, value instanceof File ? value : String(value))
-      }
-    })
-    const { data } = await api.patch('/settings/toko', formData, {
-      headers: { 'Content-Type': 'multipart/form-data' },
-    })
+    const { data } = await api.patch('/settings/toko', payload)
     return data.data
   },
 
-  getCabang: async (): Promise<Cabang[]> => {
+  getCabang: async (): Promise<CabangSetting[]> => {
     const { data } = await api.get('/settings/cabang')
     return data.data
   },
 
-  createCabang: async (payload: Omit<Cabang, 'id'>): Promise<Cabang> => {
-    const { data } = await api.post('/settings/cabang', payload)
+  createCabang: async (payload: Omit<CabangSetting, 'id' | 'aktif'>): Promise<CabangSetting> => {
+    const { data } = await api.post('/settings/cabang/baru', payload)
     return data.data
   },
 
-  updateCabang: async (id: string, payload: Partial<Omit<Cabang, 'id'>>): Promise<Cabang> => {
+  updateCabang: async (id: string, payload: Partial<Omit<CabangSetting, 'id'>>): Promise<CabangSetting> => {
     const { data } = await api.patch(`/settings/cabang/${id}`, payload)
     return data.data
   },
