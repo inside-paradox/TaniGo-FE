@@ -69,6 +69,47 @@ function ItemsTable({ items }: { items: ItemPesanan[] }) {
   )
 }
 
+// ── Retur info section (shared) ──────────────────────────────────────────────
+
+function ReturSection({ pesanan }: { pesanan: Pesanan }) {
+  if (!pesanan.hasRetur || !pesanan.returItems?.length) return null
+  return (
+    <Card className="border-orange-200 bg-orange-50">
+      <CardHeader>
+        <CardTitle className="text-orange-700 text-base">Detail Retur</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-orange-200">
+                <th className="pb-2 text-left font-medium text-orange-600">Produk</th>
+                <th className="pb-2 text-center font-medium text-orange-600">Qty Dikembalikan</th>
+                <th className="pb-2 text-right font-medium text-orange-600">Nilai Retur</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-orange-100">
+              {pesanan.returItems.map((item) => (
+                <tr key={item.produkId}>
+                  <td className="py-2 font-medium text-gray-900">{item.produkNama}</td>
+                  <td className="py-2 text-center text-gray-700">{item.qty}</td>
+                  <td className="py-2 text-right text-orange-700 font-medium">{formatRupiah(item.nominal)}</td>
+                </tr>
+              ))}
+            </tbody>
+            <tfoot>
+              <tr className="border-t border-orange-200">
+                <td colSpan={2} className="pt-2 text-sm font-semibold text-gray-700">Total Retur</td>
+                <td className="pt-2 text-right text-base font-bold text-orange-700">{formatRupiah(pesanan.returNominal ?? 0)}</td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      </CardContent>
+    </Card>
+  )
+}
+
 // ── Retur modal (shared) ──────────────────────────────────────────────────────
 
 interface ReturItemState { checked: boolean; qty: number }
@@ -86,7 +127,7 @@ function ReturModal({
   useEffect(() => {
     if (open) {
       const initial: Record<string, ReturItemState> = {}
-      pesanan.items.forEach((item) => { initial[item.id] = { checked: false, qty: item.qty } })
+      pesanan.items.forEach((item) => { initial[item.id] = { checked: false, qty: 0 } })
       setReturItems(initial)
       setAlasan('')
       setError('')
@@ -97,7 +138,7 @@ function ReturModal({
     if (!alasan.trim()) { setError('Alasan retur wajib diisi'); return }
     const selected = pesanan.items
       .filter((item) => returItems[item.id]?.checked)
-      .map((item) => ({ produkId: item.produkId, qty: returItems[item.id]?.qty ?? item.qty }))
+      .map((item) => ({ produkId: item.produkId, qty: returItems[item.id]?.qty ?? 0 }))
     if (selected.length === 0) { setError('Pilih minimal satu item'); return }
     for (const item of pesanan.items) {
       const s = returItems[item.id]
@@ -282,6 +323,7 @@ function DetailPOS({ pesanan, refetch }: { pesanan: Pesanan; refetch: () => void
       </div>
 
       <ItemsTable items={pesanan.items} />
+      <ReturSection pesanan={pesanan} />
 
       <ReturModal open={showRetur} onClose={() => setShowRetur(false)} pesanan={pesanan} onSuccess={refetch} />
     </div>
@@ -432,6 +474,7 @@ function DetailManual({ pesanan, refetch }: { pesanan: Pesanan; refetch: () => v
       </div>
 
       <ItemsTable items={pesanan.items} />
+      <ReturSection pesanan={pesanan} />
 
       {pesanan.catatan && (
         <Card>

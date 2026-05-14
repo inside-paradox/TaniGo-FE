@@ -45,6 +45,7 @@ export interface Pesanan {
   sumber: 'pos' | 'vip'
   hasRetur?: boolean
   returNominal?: number
+  returItems?: { produkId: string; produkNama: string; qty: number; nominal: number }[]
   createdAt: string
   updatedAt: string
 }

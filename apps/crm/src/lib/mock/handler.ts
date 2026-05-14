@@ -727,13 +727,18 @@ export function getMockResponse(config: AxiosRequestConfig): Omit<AxiosResponse,
 
       // Restore stock and calculate refund amount
       let returNominal = 0
+      const returItemsDetail: { produkId: string; produkNama: string; qty: number; nominal: number }[] = []
       for (const ri of returnItems) {
         addInventory(branchId, ri.produkId, ri.qty, now)
         const orderItem = order.items.find((i) => i.produkId === ri.produkId)
-        if (orderItem) returNominal += orderItem.hargaSatuan * ri.qty
+        if (orderItem) {
+          const nominal = orderItem.hargaSatuan * ri.qty
+          returNominal += nominal
+          returItemsDetail.push({ produkId: ri.produkId, produkNama: orderItem.produkNama, qty: ri.qty, nominal })
+        }
       }
 
-      pesanan[idx] = { ...order, hasRetur: true, returNominal, updatedAt: now }
+      pesanan[idx] = { ...order, hasRetur: true, returNominal, returItems: returItemsDetail, updatedAt: now }
       return ok(pesanan[idx])
     }
   }
