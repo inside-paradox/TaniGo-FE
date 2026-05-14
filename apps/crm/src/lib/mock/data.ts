@@ -566,7 +566,7 @@ export const mockPesanan: Pesanan[] = [
     total: 575000,
     metodePembayaran: 'QRIS',
     metodePengiriman: 'ambil_sendiri',
-    status: 'Siap Kirim',
+    status: 'Selesai',
     kasirId: 'u-3',
     kasirNama: 'Siti Kasir',
     sumber: 'pos',
@@ -677,7 +677,7 @@ export const mockPesanan: Pesanan[] = [
     status: 'Selesai',
     kasirId: 'u-3',
     kasirNama: 'Siti Kasir',
-    sumber: 'pos',
+    sumber: 'manual',
     createdAt: d(10), updatedAt: d(9),
   },
   {

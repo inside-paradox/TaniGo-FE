@@ -186,7 +186,6 @@ function DetailPOS({ pesanan, refetch }: { pesanan: Pesanan; refetch: () => void
   const [showRetur, setShowRetur] = useState(false)
 
   const canRetur =
-    pesanan.status === 'Selesai' &&
     !pesanan.hasRetur &&
     (user?.role === 'manajer' || user?.role === 'admin' || user?.role === 'superadmin')
 
