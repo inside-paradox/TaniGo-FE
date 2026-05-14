@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { Plus } from 'lucide-react'
+import { Plus, Printer } from 'lucide-react'
 import type { ColumnDef, SortingState } from '@tanstack/react-table'
 import { PageHeader } from '@/components/shared/page-header'
 import { DataTable } from '@/components/shared/data-table'
@@ -14,7 +14,10 @@ import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { useOrders } from '@/hooks/use-orders'
 import { formatRupiah, formatTanggalWaktu } from '@/lib/utils'
+import { printStrukPOS } from '@/lib/print'
 import type { Pesanan, StatusPesanan } from '@/types'
+
+type TabId = 'pos' | 'manual'
 
 const STATUS_OPTIONS: { value: string; label: string }[] = [
   { value: '', label: 'Semua Status' },
@@ -26,81 +29,117 @@ const STATUS_OPTIONS: { value: string; label: string }[] = [
   { value: 'Dibatalkan', label: 'Dibatalkan' },
 ]
 
-const SUMBER_OPTIONS: { value: string; label: string }[] = [
-  { value: '', label: 'Semua Sumber' },
-  { value: 'pos', label: 'POS' },
-  { value: 'manual', label: 'Manual' },
+const STATUS_POS_OPTIONS: { value: string; label: string }[] = [
+  { value: '', label: 'Semua Status' },
+  { value: 'Selesai', label: 'Selesai' },
+  { value: 'Dibatalkan', label: 'Dibatalkan' },
 ]
 
 function statusBadgeVariant(status: StatusPesanan) {
   switch (status) {
-    case 'Baru':
-      return 'info'
-    case 'Diproses':
-      return 'warning'
-    case 'Siap Kirim':
-      return 'purple'
-    case 'Dalam Pengiriman':
-      return 'info'
-    case 'Selesai':
-      return 'success'
-    case 'Dibatalkan':
-      return 'danger'
-    default:
-      return 'default'
+    case 'Baru': return 'info'
+    case 'Diproses': return 'warning'
+    case 'Siap Kirim': return 'purple'
+    case 'Dalam Pengiriman': return 'info'
+    case 'Selesai': return 'success'
+    case 'Dibatalkan': return 'danger'
+    default: return 'default'
   }
 }
 
-function SumberBadge({ sumber }: { sumber: 'pos' | 'manual' | undefined }) {
-  if (!sumber) return null
-  if (sumber === 'pos') {
-    return (
-      <span className="inline-flex items-center rounded px-1.5 py-0.5 text-xs font-medium bg-blue-100 text-blue-700">
-        POS
-      </span>
-    )
-  }
-  return (
-    <span className="inline-flex items-center rounded px-1.5 py-0.5 text-xs font-medium bg-gray-100 text-gray-600">
-      Manual
-    </span>
-  )
-}
+// ── Kolom Transaksi POS ───────────────────────────────────────────────────────
 
-const columns: ColumnDef<Pesanan>[] = [
+const columnsPOS: ColumnDef<Pesanan>[] = [
   {
     accessorKey: 'nomorPesanan',
-    header: 'No. Pesanan',
+    header: 'No. Transaksi',
     cell: ({ row }) => (
-      <div className="flex items-center gap-2">
-        <Link
-          href={`/pesanan/${row.original.id}`}
-          className="font-medium text-green-700 hover:underline"
-        >
-          {row.original.nomorPesanan}
-        </Link>
-        <SumberBadge sumber={row.original.sumber} />
-      </div>
+      <Link href={`/pesanan/${row.original.id}`} className="font-medium text-green-700 hover:underline">
+        {row.original.nomorPesanan}
+      </Link>
     ),
   },
   {
     accessorKey: 'pelangganNama',
     header: 'Pelanggan',
-    cell: ({ getValue }) => (
-      <span className="text-gray-900">{getValue<string>()}</span>
-    ),
+    cell: ({ getValue }) => <span className="text-gray-900">{getValue<string>()}</span>,
+  },
+  {
+    accessorKey: 'kasirNama',
+    header: 'Kasir',
+    cell: ({ getValue }) => <span className="text-gray-600">{getValue<string>()}</span>,
+  },
+  {
+    accessorKey: 'metodePembayaran',
+    header: 'Pembayaran',
+    cell: ({ getValue }) => <span className="text-gray-700">{getValue<string>()}</span>,
   },
   {
     accessorKey: 'total',
     header: 'Total',
     cell: ({ getValue }) => (
-      <span className="font-medium text-gray-900">{formatRupiah(getValue<number>())}</span>
+      <span className="font-semibold text-gray-900">{formatRupiah(getValue<number>())}</span>
     ),
   },
   {
-    accessorKey: 'metodePembayaran',
-    header: 'Metode Pembayaran',
-    cell: ({ getValue }) => <span className="text-gray-700">{getValue<string>()}</span>,
+    accessorKey: 'status',
+    header: 'Status',
+    cell: ({ getValue }) => {
+      const status = getValue<StatusPesanan>()
+      return <Badge variant={statusBadgeVariant(status)}>{status}</Badge>
+    },
+  },
+  {
+    accessorKey: 'createdAt',
+    header: 'Waktu',
+    cell: ({ getValue }) => (
+      <span className="whitespace-nowrap text-gray-500">{formatTanggalWaktu(getValue<string>())}</span>
+    ),
+  },
+  {
+    id: 'aksi',
+    header: '',
+    cell: ({ row }) => (
+      <button
+        onClick={(e) => { e.stopPropagation(); printStrukPOS(row.original) }}
+        className="flex items-center gap-1 rounded-lg px-2 py-1 text-xs text-gray-500 hover:bg-gray-100 hover:text-gray-700"
+        title="Cetak Struk"
+      >
+        <Printer className="h-3.5 w-3.5" />
+        Struk
+      </button>
+    ),
+  },
+]
+
+// ── Kolom Pesanan Manual ──────────────────────────────────────────────────────
+
+const columnsManual: ColumnDef<Pesanan>[] = [
+  {
+    accessorKey: 'nomorPesanan',
+    header: 'No. Pesanan',
+    cell: ({ row }) => (
+      <Link href={`/pesanan/${row.original.id}`} className="font-medium text-green-700 hover:underline">
+        {row.original.nomorPesanan}
+      </Link>
+    ),
+  },
+  {
+    accessorKey: 'pelangganNama',
+    header: 'Pelanggan',
+    cell: ({ getValue }) => <span className="text-gray-900">{getValue<string>()}</span>,
+  },
+  {
+    accessorKey: 'total',
+    header: 'Total',
+    cell: ({ getValue }) => (
+      <span className="font-semibold text-gray-900">{formatRupiah(getValue<number>())}</span>
+    ),
+  },
+  {
+    accessorKey: 'metodePengiriman',
+    header: 'Pengiriman',
+    cell: ({ getValue }) => <span className="text-gray-700">{getValue<string>() ?? '—'}</span>,
   },
   {
     accessorKey: 'status',
@@ -112,113 +151,117 @@ const columns: ColumnDef<Pesanan>[] = [
   },
   {
     accessorKey: 'kasirNama',
-    header: 'Kasir',
+    header: 'Dibuat oleh',
     cell: ({ getValue }) => <span className="text-gray-600">{getValue<string>()}</span>,
   },
   {
     accessorKey: 'createdAt',
-    header: 'Waktu',
+    header: 'Tanggal',
     cell: ({ getValue }) => (
       <span className="whitespace-nowrap text-gray-500">{formatTanggalWaktu(getValue<string>())}</span>
     ),
   },
 ]
 
+// ── Main Page ─────────────────────────────────────────────────────────────────
+
 export default function PesananPage() {
   const router = useRouter()
+  const [activeTab, setActiveTab] = useState<TabId>('pos')
   const [page, setPage] = useState(1)
   const [limit, setLimit] = useState(25)
   const [sorting, setSorting] = useState<SortingState>([])
   const [search, setSearch] = useState('')
   const [status, setStatus] = useState('')
-  const [sumber, setSumber] = useState('')
 
   const { data, isLoading } = useOrders({
     page,
     limit,
     search: search || undefined,
     status: status || undefined,
-    sumber: sumber || undefined,
+    sumber: activeTab,
     sortBy: sorting[0]?.id,
     sortOrder: sorting[0] ? (sorting[0].desc ? 'desc' : 'asc') : undefined,
   })
 
-  const handleSortingChange = (
-    updater: SortingState | ((prev: SortingState) => SortingState)
-  ) => {
+  const handleTabChange = (tab: TabId) => {
+    setActiveTab(tab)
+    setPage(1)
+    setSearch('')
+    setStatus('')
+    setSorting([])
+  }
+
+  const handleSortingChange = (updater: SortingState | ((prev: SortingState) => SortingState)) => {
     const next = typeof updater === 'function' ? updater(sorting) : updater
     setSorting(next)
     setPage(1)
   }
 
-  const handleSearch = (val: string) => {
-    setSearch(val)
-    setPage(1)
-  }
-
-  const handleStatus = (val: string) => {
-    setStatus(val)
-    setPage(1)
-  }
-
-  const handleSumber = (val: string) => {
-    setSumber(val)
-    setPage(1)
-  }
+  const statusOpts = activeTab === 'pos' ? STATUS_POS_OPTIONS : STATUS_OPTIONS
 
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Daftar Pesanan"
+        title="Pesanan"
         subtitle={`${data?.meta.total ?? 0} pesanan ditemukan`}
         actions={
-          <Button onClick={() => router.push('/pesanan/baru')}>
-            <Plus className="h-4 w-4" />
-            Buat Pesanan
-          </Button>
+          activeTab === 'manual' && (
+            <Button onClick={() => router.push('/pesanan/baru')}>
+              <Plus className="h-4 w-4" />
+              Buat Pesanan
+            </Button>
+          )
         }
       />
+
+      {/* Tabs */}
+      <div className="flex gap-1 rounded-xl border border-gray-200 bg-gray-50 p-1 w-fit">
+        {([
+          { id: 'pos', label: 'Transaksi POS' },
+          { id: 'manual', label: 'Pesanan Manual' },
+        ] as { id: TabId; label: string }[]).map((tab) => (
+          <button
+            key={tab.id}
+            onClick={() => handleTabChange(tab.id)}
+            className={`rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
+              activeTab === tab.id
+                ? 'bg-white text-green-700 shadow-sm'
+                : 'text-gray-600 hover:text-gray-900'
+            }`}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
 
       <Card>
         <div className="p-4 sm:p-6">
           <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center">
             <SearchInput
               value={search}
-              onChange={handleSearch}
-              placeholder="Cari nomor pesanan atau pelanggan..."
+              onChange={(v) => { setSearch(v); setPage(1) }}
+              placeholder={activeTab === 'pos' ? 'Cari no. transaksi atau pelanggan...' : 'Cari no. pesanan atau pelanggan...'}
               className="w-full sm:w-72"
             />
             <select
               value={status}
-              onChange={(e) => handleStatus(e.target.value)}
+              onChange={(e) => { setStatus(e.target.value); setPage(1) }}
               className="h-10 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:border-green-500 focus:outline-none focus:ring-1 focus:ring-green-500"
             >
-              {STATUS_OPTIONS.map((opt) => (
-                <option key={opt.value} value={opt.value}>
-                  {opt.label}
-                </option>
-              ))}
-            </select>
-            <select
-              value={sumber}
-              onChange={(e) => handleSumber(e.target.value)}
-              className="h-10 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:border-green-500 focus:outline-none focus:ring-1 focus:ring-green-500"
-            >
-              {SUMBER_OPTIONS.map((opt) => (
-                <option key={opt.value} value={opt.value}>
-                  {opt.label}
-                </option>
+              {statusOpts.map((opt) => (
+                <option key={opt.value} value={opt.value}>{opt.label}</option>
               ))}
             </select>
           </div>
 
           <DataTable
-            columns={columns}
+            columns={activeTab === 'pos' ? columnsPOS : columnsManual}
             data={data?.data ?? []}
             loading={isLoading}
             sorting={sorting}
             onSortingChange={handleSortingChange}
-            emptyText="Belum ada pesanan"
+            emptyText={activeTab === 'pos' ? 'Belum ada transaksi POS' : 'Belum ada pesanan manual'}
           />
 
           {data && data.meta.total > 0 && (
@@ -228,10 +271,7 @@ export default function PesananPage() {
               total={data.meta.total}
               limit={limit}
               onPageChange={setPage}
-              onLimitChange={(l) => {
-                setLimit(l)
-                setPage(1)
-              }}
+              onLimitChange={(l) => { setLimit(l); setPage(1) }}
             />
           )}
         </div>
