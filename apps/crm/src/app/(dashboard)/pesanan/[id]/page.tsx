@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowLeft, AlertCircle, Printer, RotateCcw } from 'lucide-react'
@@ -23,290 +23,330 @@ import { useAuthStore } from '@/store/auth-store'
 import { ordersApi } from '@/lib/api'
 import { printStrukPOS } from '@/lib/print'
 import { formatRupiah, formatTanggalWaktu } from '@/lib/utils'
-import type { StatusPesanan, ItemPesanan } from '@/types'
+import type { StatusPesanan, ItemPesanan, Pesanan } from '@/types'
 
 function StatusBadge({ status }: { status: StatusPesanan }) {
   const variantMap: Record<StatusPesanan, 'info' | 'warning' | 'purple' | 'default' | 'success' | 'danger'> = {
-    Baru: 'info',
-    Diproses: 'warning',
-    'Siap Kirim': 'purple',
-    'Dalam Pengiriman': 'default',
-    Selesai: 'success',
-    Dibatalkan: 'danger',
+    Baru: 'info', Diproses: 'warning', 'Siap Kirim': 'purple',
+    'Dalam Pengiriman': 'default', Selesai: 'success', Dibatalkan: 'danger',
   }
   return <Badge variant={variantMap[status] ?? 'default'}>{status}</Badge>
 }
 
-function MetodePengirimanLabel({ metode }: { metode: string }) {
-  return <span>{metode === 'ambil_sendiri' ? 'Ambil Sendiri' : 'Dikirim'}</span>
+// ── Items table (shared) ──────────────────────────────────────────────────────
+
+function ItemsTable({ items }: { items: ItemPesanan[] }) {
+  return (
+    <Card>
+      <CardHeader><CardTitle>Item</CardTitle></CardHeader>
+      <CardContent>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-gray-200">
+                <th className="pb-3 text-left font-medium text-gray-500">Produk</th>
+                <th className="pb-3 text-left font-medium text-gray-500">SKU</th>
+                <th className="pb-3 text-center font-medium text-gray-500">Qty</th>
+                <th className="pb-3 text-right font-medium text-gray-500">Harga Satuan</th>
+                <th className="pb-3 text-right font-medium text-gray-500">Subtotal</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-100">
+              {items.map((item) => (
+                <tr key={item.id}>
+                  <td className="py-3 font-medium text-gray-900">{item.produkNama}</td>
+                  <td className="py-3 text-gray-500">{item.produkSku}</td>
+                  <td className="py-3 text-center text-gray-700">{item.qty}</td>
+                  <td className="py-3 text-right text-gray-700">{formatRupiah(item.hargaSatuan)}</td>
+                  <td className="py-3 text-right font-medium text-gray-900">{formatRupiah(item.subtotal)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </CardContent>
+    </Card>
+  )
 }
 
-interface ReturItemState {
-  checked: boolean
-  qty: number
-}
+// ── Retur modal (shared) ──────────────────────────────────────────────────────
 
-export default function DetailPesananPage() {
-  const params = useParams()
-  const router = useRouter()
-  const id = params.id as string
-  const user = useAuthStore((s) => s.user)
+interface ReturItemState { checked: boolean; qty: number }
 
-  const { data: pesanan, isLoading, isError, refetch } = useOrder(id)
-  const { mutateAsync: updateStatus, isPending: isUpdating } = useUpdateOrderStatus()
-
-  const [showBatalModal, setShowBatalModal] = useState(false)
-  const [alasanBatal, setAlasanBatal] = useState('')
-  const [batalError, setBatalError] = useState('')
-  const [showProsesConfirm, setShowProsesConfirm] = useState(false)
-  const [showSiapKirimConfirm, setShowSiapKirimConfirm] = useState(false)
-
-  // Retur state
-  const [showReturModal, setShowReturModal] = useState(false)
+function ReturModal({
+  open, onClose, pesanan, onSuccess,
+}: {
+  open: boolean; onClose: () => void; pesanan: Pesanan; onSuccess: () => void
+}) {
   const [returItems, setReturItems] = useState<Record<string, ReturItemState>>({})
-  const [alasanRetur, setAlasanRetur] = useState('')
-  const [returError, setReturError] = useState('')
-  const [isProsesingRetur, setIsProsesingRetur] = useState(false)
+  const [alasan, setAlasan] = useState('')
+  const [error, setError] = useState('')
+  const [loading, setLoading] = useState(false)
 
-  const handleProsesPesanan = async () => {
-    await updateStatus({ id, status: 'Diproses' })
-    setShowProsesConfirm(false)
-  }
-
-  const handleTandaiSiapKirim = async () => {
-    await updateStatus({ id, status: 'Siap Kirim' })
-    setShowSiapKirimConfirm(false)
-  }
-
-  const handleBatalkan = async () => {
-    if (!alasanBatal.trim()) {
-      setBatalError('Alasan pembatalan wajib diisi')
-      return
+  useEffect(() => {
+    if (open) {
+      const initial: Record<string, ReturItemState> = {}
+      pesanan.items.forEach((item) => { initial[item.id] = { checked: false, qty: item.qty } })
+      setReturItems(initial)
+      setAlasan('')
+      setError('')
     }
-    await updateStatus({ id, status: 'Dibatalkan', catatan: alasanBatal })
-    setShowBatalModal(false)
-    setAlasanBatal('')
-    setBatalError('')
-  }
+  }, [open])
 
-  const handleOpenRetur = () => {
-    if (!pesanan) return
-    const initial: Record<string, ReturItemState> = {}
-    pesanan.items.forEach((item) => {
-      initial[item.id] = { checked: false, qty: item.qty }
-    })
-    setReturItems(initial)
-    setAlasanRetur('')
-    setReturError('')
-    setShowReturModal(true)
-  }
-
-  const handleConfirmRetur = async () => {
-    if (!pesanan) return
-    if (!alasanRetur.trim()) {
-      setReturError('Alasan retur wajib diisi')
-      return
-    }
-    const selectedItems = pesanan.items
+  const handleConfirm = async () => {
+    if (!alasan.trim()) { setError('Alasan retur wajib diisi'); return }
+    const selected = pesanan.items
       .filter((item) => returItems[item.id]?.checked)
-      .map((item) => ({
-        produkId: item.produkId,
-        qty: returItems[item.id]?.qty ?? item.qty,
-      }))
-    if (selectedItems.length === 0) {
-      setReturError('Pilih minimal satu item untuk diretur')
-      return
-    }
-    // Validate qty
+      .map((item) => ({ produkId: item.produkId, qty: returItems[item.id]?.qty ?? item.qty }))
+    if (selected.length === 0) { setError('Pilih minimal satu item'); return }
     for (const item of pesanan.items) {
-      const state = returItems[item.id]
-      if (state?.checked) {
-        if (!state.qty || state.qty <= 0 || state.qty > item.qty) {
-          setReturError(`Qty retur untuk "${item.produkNama}" tidak valid (maks: ${item.qty})`)
-          return
-        }
+      const s = returItems[item.id]
+      if (s?.checked && (!s.qty || s.qty <= 0 || s.qty > item.qty)) {
+        setError(`Qty retur "${item.produkNama}" tidak valid (maks: ${item.qty})`)
+        return
       }
     }
-
     try {
-      setIsProsesingRetur(true)
-      await ordersApi.prosesRetur(id, { items: selectedItems, alasan: alasanRetur })
+      setLoading(true)
+      await ordersApi.prosesRetur(pesanan.id, { items: selected, alasan })
       toast.success('Retur berhasil diproses')
-      setShowReturModal(false)
-      refetch()
-    } catch {
-      toast.error('Gagal memproses retur')
-    } finally {
-      setIsProsesingRetur(false)
-    }
+      onClose()
+      onSuccess()
+    } catch { toast.error('Gagal memproses retur') }
+    finally { setLoading(false) }
   }
 
-  const handleCetakStruk = () => {
-    if (!pesanan) return
-    printStrukPOS(pesanan)
-  }
-
-  // Loading state
-  if (isLoading) {
-    return (
-      <div className="space-y-6">
-        <div className="flex items-center gap-4">
-          <Skeleton className="h-8 w-8 rounded-full" />
-          <div className="space-y-2">
-            <Skeleton className="h-7 w-48" />
-            <Skeleton className="h-4 w-64" />
-          </div>
+  return (
+    <Modal
+      open={open}
+      onClose={onClose}
+      title="Proses Retur"
+      description={`Pilih item yang ingin diretur dari transaksi ${pesanan.nomorPesanan}`}
+      size="lg"
+    >
+      <div className="space-y-4">
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-gray-200">
+                <th className="pb-2 w-8"></th>
+                <th className="pb-2 text-left font-medium text-gray-500">Produk</th>
+                <th className="pb-2 text-center font-medium text-gray-500">Qty Asli</th>
+                <th className="pb-2 text-center font-medium text-gray-500">Qty Retur</th>
+                <th className="pb-2 text-right font-medium text-gray-500">Subtotal</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-100">
+              {pesanan.items.map((item: ItemPesanan) => {
+                const state = returItems[item.id]
+                return (
+                  <tr key={item.id} className={state?.checked ? 'bg-orange-50' : ''}>
+                    <td className="py-2">
+                      <input type="checkbox" checked={state?.checked ?? false}
+                        onChange={(e) => setReturItems((p) => ({ ...p, [item.id]: { ...p[item.id], checked: e.target.checked } }))}
+                        className="h-4 w-4 rounded border-gray-300 text-green-600"
+                      />
+                    </td>
+                    <td className="py-2 font-medium text-gray-900">{item.produkNama}</td>
+                    <td className="py-2 text-center text-gray-700">{item.qty}</td>
+                    <td className="py-2 text-center">
+                      <input type="number" min={1} max={item.qty}
+                        value={state?.qty ?? item.qty} disabled={!state?.checked}
+                        onChange={(e) => setReturItems((p) => ({ ...p, [item.id]: { ...p[item.id], qty: Number(e.target.value) } }))}
+                        className="w-16 rounded border border-gray-300 px-2 py-1 text-center text-sm disabled:opacity-50 focus:border-green-500 focus:outline-none"
+                      />
+                    </td>
+                    <td className="py-2 text-right text-gray-700">{formatRupiah(item.subtotal)}</td>
+                  </tr>
+                )
+              })}
+            </tbody>
+          </table>
         </div>
-        <Card>
-          <CardContent className="pt-6">
-            <div className="space-y-3">
-              <Skeleton className="h-5 w-full" />
-              <Skeleton className="h-5 w-3/4" />
-              <Skeleton className="h-5 w-1/2" />
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-6">
-            <div className="space-y-3">
-              {[1, 2, 3].map((i) => (
-                <Skeleton key={i} className="h-10 w-full" />
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    )
-  }
-
-  // Error state
-  if (isError || !pesanan) {
-    return (
-      <div className="space-y-6">
-        <PageHeader
-          title="Detail Pesanan"
-          actions={
-            <Button variant="outline" onClick={() => router.push('/pesanan')}>
-              <ArrowLeft className="h-4 w-4" />
-              Kembali
-            </Button>
-          }
+        <Textarea label="Alasan Retur" required placeholder="Masukkan alasan retur..."
+          value={alasan} onChange={(e) => { setAlasan(e.target.value); setError('') }}
+          error={error} rows={3}
         />
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center gap-3 text-red-600">
-              <AlertCircle className="h-5 w-5" />
-              <p className="text-sm">Pesanan tidak ditemukan atau terjadi kesalahan.</p>
-            </div>
-          </CardContent>
-        </Card>
+        <div className="flex justify-end gap-3">
+          <Button variant="outline" onClick={onClose} disabled={loading}>Batal</Button>
+          <Button onClick={handleConfirm} loading={loading} className="bg-orange-600 hover:bg-orange-700 text-white">
+            Proses Retur
+          </Button>
+        </div>
       </div>
-    )
-  }
+    </Modal>
+  )
+}
 
-  const statusFinal = pesanan.status === 'Selesai' || pesanan.status === 'Dibatalkan'
-  const dalamPengiriman = pesanan.status === 'Dalam Pengiriman'
+// ── Detail Transaksi POS ──────────────────────────────────────────────────────
+
+function DetailPOS({ pesanan, refetch }: { pesanan: Pesanan; refetch: () => void }) {
+  const router = useRouter()
+  const user = useAuthStore((s) => s.user)
+  const [showRetur, setShowRetur] = useState(false)
+
   const canRetur =
     pesanan.status === 'Selesai' &&
-    pesanan.sumber === 'pos' &&
     !pesanan.hasRetur &&
     (user?.role === 'manajer' || user?.role === 'admin' || user?.role === 'superadmin')
-  const canCetakStruk = pesanan.sumber === 'pos'
 
   return (
     <div className="space-y-6">
-      {/* Header */}
       <PageHeader
         title={pesanan.nomorPesanan}
-        subtitle={`Dibuat pada ${formatTanggalWaktu(pesanan.createdAt)} · Kasir: ${pesanan.kasirNama}`}
+        subtitle={`${formatTanggalWaktu(pesanan.createdAt)} · Kasir: ${pesanan.kasirNama}`}
         actions={
-          <div className="flex items-center gap-2">
-            <Button variant="outline" onClick={() => router.push('/pesanan')}>
-              <ArrowLeft className="h-4 w-4" />
-              Kembali
-            </Button>
-          </div>
+          <Button variant="outline" onClick={() => router.push('/pesanan')}>
+            <ArrowLeft className="h-4 w-4" />
+            Kembali
+          </Button>
         }
       />
 
-      {/* Status & Aksi */}
+      {/* Status + Aksi */}
       <Card>
         <CardContent className="pt-6">
           <div className="flex flex-wrap items-center gap-4">
             <div className="flex items-center gap-2">
               <span className="text-sm font-medium text-gray-600">Status:</span>
               <StatusBadge status={pesanan.status} />
-              {pesanan.sumber === 'pos' && (
-                <span className="inline-flex items-center rounded px-1.5 py-0.5 text-xs font-medium bg-blue-100 text-blue-700">
-                  POS
-                </span>
-              )}
-              {pesanan.sumber === 'manual' && (
-                <span className="inline-flex items-center rounded px-1.5 py-0.5 text-xs font-medium bg-gray-100 text-gray-600">
-                  Manual
-                </span>
-              )}
               {pesanan.hasRetur && (
                 <span className="inline-flex items-center rounded px-1.5 py-0.5 text-xs font-medium bg-orange-100 text-orange-700">
                   Ada Retur
                 </span>
               )}
             </div>
-
-            {/* Tombol aksi berdasarkan status */}
-            <div className="ml-auto flex flex-wrap gap-2">
-              {canCetakStruk && (
-                <Button variant="outline" size="sm" onClick={handleCetakStruk}>
-                  <Printer className="h-4 w-4" />
-                  Cetak Struk
-                </Button>
-              )}
-
+            <div className="ml-auto flex gap-2">
+              <Button variant="outline" size="sm" onClick={() => printStrukPOS(pesanan)}>
+                <Printer className="h-4 w-4" />
+                Cetak Struk
+              </Button>
               {canRetur && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleOpenRetur}
-                  className="border-orange-300 text-orange-700 hover:bg-orange-50"
-                >
+                <Button variant="outline" size="sm" onClick={() => setShowRetur(true)}
+                  className="border-orange-300 text-orange-700 hover:bg-orange-50">
                   <RotateCcw className="h-4 w-4" />
                   Proses Retur
                 </Button>
               )}
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
+      {/* Info Transaksi + Pembayaran */}
+      <div className="grid gap-6 lg:grid-cols-2">
+        <Card>
+          <CardHeader><CardTitle>Info Transaksi</CardTitle></CardHeader>
+          <CardContent>
+            <dl className="space-y-3 text-sm">
+              <div className="flex justify-between">
+                <dt className="text-gray-500">Kasir</dt>
+                <dd className="font-medium text-gray-900">{pesanan.kasirNama}</dd>
+              </div>
+              <div className="flex justify-between">
+                <dt className="text-gray-500">Waktu</dt>
+                <dd className="font-medium text-gray-900">{formatTanggalWaktu(pesanan.createdAt)}</dd>
+              </div>
+              <div className="flex justify-between">
+                <dt className="text-gray-500">Metode Pembayaran</dt>
+                <dd className="font-medium text-gray-900">{pesanan.metodePembayaran}</dd>
+              </div>
+            </dl>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader><CardTitle>Ringkasan Pembayaran</CardTitle></CardHeader>
+          <CardContent>
+            <dl className="space-y-3 text-sm">
+              <div className="flex justify-between">
+                <dt className="text-gray-500">Subtotal</dt>
+                <dd className="font-medium text-gray-900">{formatRupiah(pesanan.subtotal)}</dd>
+              </div>
+              {pesanan.diskon > 0 && (
+                <div className="flex justify-between">
+                  <dt className="text-gray-500">Diskon</dt>
+                  <dd className="font-medium text-red-600">- {formatRupiah(pesanan.diskon)}</dd>
+                </div>
+              )}
+              <div className="border-t border-gray-200 pt-3 flex justify-between">
+                <dt className="text-base font-semibold text-gray-900">Total</dt>
+                <dd className="text-xl font-bold text-green-700">{formatRupiah(pesanan.total)}</dd>
+              </div>
+            </dl>
+          </CardContent>
+        </Card>
+      </div>
+
+      <ItemsTable items={pesanan.items} />
+
+      <ReturModal open={showRetur} onClose={() => setShowRetur(false)} pesanan={pesanan} onSuccess={refetch} />
+    </div>
+  )
+}
+
+// ── Detail Pesanan Manual ─────────────────────────────────────────────────────
+
+function DetailManual({ pesanan, refetch }: { pesanan: Pesanan; refetch: () => void }) {
+  const router = useRouter()
+  const { mutateAsync: updateStatus, isPending: isUpdating } = useUpdateOrderStatus()
+  const [showBatalModal, setShowBatalModal] = useState(false)
+  const [alasanBatal, setAlasanBatal] = useState('')
+  const [batalError, setBatalError] = useState('')
+  const [showProsesConfirm, setShowProsesConfirm] = useState(false)
+  const [showSiapKirimConfirm, setShowSiapKirimConfirm] = useState(false)
+
+  const statusFinal = pesanan.status === 'Selesai' || pesanan.status === 'Dibatalkan'
+  const dalamPengiriman = pesanan.status === 'Dalam Pengiriman'
+
+  const handleBatalkan = async () => {
+    if (!alasanBatal.trim()) { setBatalError('Alasan pembatalan wajib diisi'); return }
+    await updateStatus({ id: pesanan.id, status: 'Dibatalkan', catatan: alasanBatal })
+    setShowBatalModal(false)
+    setAlasanBatal('')
+    setBatalError('')
+    refetch()
+  }
+
+  return (
+    <div className="space-y-6">
+      <PageHeader
+        title={pesanan.nomorPesanan}
+        subtitle={`Dibuat pada ${formatTanggalWaktu(pesanan.createdAt)} · oleh ${pesanan.kasirNama}`}
+        actions={
+          <Button variant="outline" onClick={() => router.push('/pesanan')}>
+            <ArrowLeft className="h-4 w-4" />
+            Kembali
+          </Button>
+        }
+      />
+
+      {/* Status + Aksi workflow */}
+      <Card>
+        <CardContent className="pt-6">
+          <div className="flex flex-wrap items-center gap-4">
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-medium text-gray-600">Status:</span>
+              <StatusBadge status={pesanan.status} />
+            </div>
+            <div className="ml-auto flex flex-wrap gap-2">
               {pesanan.status === 'Baru' && (
-                <Button
-                  onClick={() => setShowProsesConfirm(true)}
-                  loading={isUpdating}
-                  size="sm"
-                >
+                <Button onClick={() => setShowProsesConfirm(true)} loading={isUpdating} size="sm">
                   Proses Pesanan
                 </Button>
               )}
-
               {pesanan.status === 'Diproses' && (
-                <Button
-                  onClick={() => setShowSiapKirimConfirm(true)}
-                  loading={isUpdating}
-                  size="sm"
-                >
+                <Button onClick={() => setShowSiapKirimConfirm(true)} loading={isUpdating} size="sm">
                   Tandai Siap Kirim
                 </Button>
               )}
-
               {pesanan.status === 'Siap Kirim' && (
-                <Link href={`/pengiriman/baru?pesananId=${id}`}>
+                <Link href={`/pengiriman/baru?pesananId=${pesanan.id}`}>
                   <Button size="sm">Buat Jadwal Pengiriman</Button>
                 </Link>
               )}
-
               {!statusFinal && !dalamPengiriman && (
-                <Button
-                  variant="destructive"
-                  size="sm"
-                  onClick={() => setShowBatalModal(true)}
-                  disabled={isUpdating}
-                >
+                <Button variant="destructive" size="sm" onClick={() => setShowBatalModal(true)} disabled={isUpdating}>
                   Batalkan Pesanan
                 </Button>
               )}
@@ -315,13 +355,10 @@ export default function DetailPesananPage() {
         </CardContent>
       </Card>
 
-      {/* Grid: Info Pelanggan + Ringkasan */}
+      {/* Info Pelanggan + Pembayaran */}
       <div className="grid gap-6 lg:grid-cols-2">
-        {/* Info Pelanggan */}
         <Card>
-          <CardHeader>
-            <CardTitle>Informasi Pelanggan</CardTitle>
-          </CardHeader>
+          <CardHeader><CardTitle>Informasi Pelanggan</CardTitle></CardHeader>
           <CardContent>
             <dl className="space-y-3 text-sm">
               <div className="flex justify-between">
@@ -341,7 +378,7 @@ export default function DetailPesananPage() {
               <div className="flex justify-between">
                 <dt className="text-gray-500">Metode Pengiriman</dt>
                 <dd className="font-medium text-gray-900">
-                  <MetodePengirimanLabel metode={pesanan.metodePengiriman} />
+                  {pesanan.metodePengiriman === 'ambil_sendiri' ? 'Ambil Sendiri' : 'Dikirim'}
                 </dd>
               </div>
               {pesanan.metodePengiriman === 'dikirim' && pesanan.alamatPengiriman && (
@@ -356,11 +393,8 @@ export default function DetailPesananPage() {
           </CardContent>
         </Card>
 
-        {/* Ringkasan Finansial */}
         <Card>
-          <CardHeader>
-            <CardTitle>Ringkasan Pembayaran</CardTitle>
-          </CardHeader>
+          <CardHeader><CardTitle>Ringkasan Pembayaran</CardTitle></CardHeader>
           <CardContent>
             <dl className="space-y-3 text-sm">
               <div className="flex justify-between">
@@ -373,235 +407,99 @@ export default function DetailPesananPage() {
                   <dd className="font-medium text-red-600">- {formatRupiah(pesanan.diskon)}</dd>
                 </div>
               )}
-              <div className="border-t border-gray-200 pt-3">
-                <div className="flex justify-between">
-                  <dt className="text-base font-semibold text-gray-900">Total</dt>
-                  <dd className="text-xl font-bold text-green-700">{formatRupiah(pesanan.total)}</dd>
-                </div>
+              <div className="border-t border-gray-200 pt-3 flex justify-between">
+                <dt className="text-base font-semibold text-gray-900">Total</dt>
+                <dd className="text-xl font-bold text-green-700">{formatRupiah(pesanan.total)}</dd>
               </div>
             </dl>
           </CardContent>
         </Card>
       </div>
 
-      {/* Tabel Item */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Item Pesanan</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-gray-200">
-                  <th className="pb-3 text-left font-medium text-gray-500">Produk</th>
-                  <th className="pb-3 text-left font-medium text-gray-500">SKU</th>
-                  <th className="pb-3 text-center font-medium text-gray-500">Qty</th>
-                  <th className="pb-3 text-right font-medium text-gray-500">Harga Satuan</th>
-                  <th className="pb-3 text-right font-medium text-gray-500">Subtotal</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100">
-                {pesanan.items.map((item) => (
-                  <tr key={item.id}>
-                    <td className="py-3 font-medium text-gray-900">{item.produkNama}</td>
-                    <td className="py-3 text-gray-500">{item.produkSku}</td>
-                    <td className="py-3 text-center text-gray-700">{item.qty}</td>
-                    <td className="py-3 text-right text-gray-700">{formatRupiah(item.hargaSatuan)}</td>
-                    <td className="py-3 text-right font-medium text-gray-900">
-                      {formatRupiah(item.subtotal)}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </CardContent>
-      </Card>
+      <ItemsTable items={pesanan.items} />
 
-      {/* Catatan */}
       {pesanan.catatan && (
         <Card>
-          <CardHeader>
-            <CardTitle>Catatan</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm text-gray-700">{pesanan.catatan}</p>
-          </CardContent>
+          <CardHeader><CardTitle>Catatan</CardTitle></CardHeader>
+          <CardContent><p className="text-sm text-gray-700">{pesanan.catatan}</p></CardContent>
         </Card>
       )}
 
-      {/* Modal Konfirmasi Proses */}
-      <ConfirmModal
-        open={showProsesConfirm}
-        onClose={() => setShowProsesConfirm(false)}
-        onConfirm={handleProsesPesanan}
-        title="Proses Pesanan"
-        description={`Ubah status pesanan ${pesanan.nomorPesanan} menjadi "Diproses"?`}
-        confirmLabel="Ya, Proses"
-        cancelLabel="Batal"
-        variant="default"
-        loading={isUpdating}
+      <ConfirmModal open={showProsesConfirm} onClose={() => setShowProsesConfirm(false)}
+        onConfirm={async () => { await updateStatus({ id: pesanan.id, status: 'Diproses' }); setShowProsesConfirm(false); refetch() }}
+        title="Proses Pesanan" description={`Ubah status pesanan ${pesanan.nomorPesanan} menjadi "Diproses"?`}
+        confirmLabel="Ya, Proses" variant="default" loading={isUpdating}
       />
-
-      {/* Modal Konfirmasi Siap Kirim */}
-      <ConfirmModal
-        open={showSiapKirimConfirm}
-        onClose={() => setShowSiapKirimConfirm(false)}
-        onConfirm={handleTandaiSiapKirim}
-        title="Tandai Siap Kirim"
-        description={`Ubah status pesanan ${pesanan.nomorPesanan} menjadi "Siap Kirim"?`}
-        confirmLabel="Ya, Siap Kirim"
-        cancelLabel="Batal"
-        variant="default"
-        loading={isUpdating}
+      <ConfirmModal open={showSiapKirimConfirm} onClose={() => setShowSiapKirimConfirm(false)}
+        onConfirm={async () => { await updateStatus({ id: pesanan.id, status: 'Siap Kirim' }); setShowSiapKirimConfirm(false); refetch() }}
+        title="Tandai Siap Kirim" description={`Ubah status pesanan ${pesanan.nomorPesanan} menjadi "Siap Kirim"?`}
+        confirmLabel="Ya, Siap Kirim" variant="default" loading={isUpdating}
       />
-
-      {/* Modal Batalkan */}
-      <Modal
-        open={showBatalModal}
-        onClose={() => {
-          setShowBatalModal(false)
-          setAlasanBatal('')
-          setBatalError('')
-        }}
-        title="Batalkan Pesanan"
-        description={`Batalkan pesanan ${pesanan.nomorPesanan}? Tindakan ini tidak dapat dibatalkan.`}
-        size="md"
+      <Modal open={showBatalModal} onClose={() => { setShowBatalModal(false); setAlasanBatal(''); setBatalError('') }}
+        title="Batalkan Pesanan" description={`Batalkan pesanan ${pesanan.nomorPesanan}?`} size="md"
       >
         <div className="space-y-4">
-          <Textarea
-            label="Alasan Pembatalan"
-            required
-            placeholder="Masukkan alasan pembatalan pesanan..."
-            value={alasanBatal}
-            onChange={(e) => {
-              setAlasanBatal(e.target.value)
-              if (batalError) setBatalError('')
-            }}
-            error={batalError}
-            rows={3}
+          <Textarea label="Alasan Pembatalan" required placeholder="Masukkan alasan pembatalan..."
+            value={alasanBatal} onChange={(e) => { setAlasanBatal(e.target.value); if (batalError) setBatalError('') }}
+            error={batalError} rows={3}
           />
           <div className="flex justify-end gap-3">
-            <Button
-              variant="outline"
-              onClick={() => {
-                setShowBatalModal(false)
-                setAlasanBatal('')
-                setBatalError('')
-              }}
-              disabled={isUpdating}
-            >
-              Tutup
-            </Button>
-            <Button
-              variant="destructive"
-              onClick={handleBatalkan}
-              loading={isUpdating}
-            >
-              Batalkan Pesanan
-            </Button>
-          </div>
-        </div>
-      </Modal>
-
-      {/* Modal Proses Retur */}
-      <Modal
-        open={showReturModal}
-        onClose={() => setShowReturModal(false)}
-        title="Proses Retur"
-        description={`Pilih item yang ingin diretur dari pesanan ${pesanan.nomorPesanan}`}
-        size="lg"
-      >
-        <div className="space-y-4">
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-gray-200">
-                  <th className="pb-2 text-left font-medium text-gray-500 w-8"></th>
-                  <th className="pb-2 text-left font-medium text-gray-500">Produk</th>
-                  <th className="pb-2 text-center font-medium text-gray-500">Qty Asli</th>
-                  <th className="pb-2 text-center font-medium text-gray-500">Qty Retur</th>
-                  <th className="pb-2 text-right font-medium text-gray-500">Subtotal</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100">
-                {pesanan.items.map((item: ItemPesanan) => {
-                  const state = returItems[item.id]
-                  return (
-                    <tr key={item.id} className={state?.checked ? 'bg-orange-50' : ''}>
-                      <td className="py-2">
-                        <input
-                          type="checkbox"
-                          checked={state?.checked ?? false}
-                          onChange={(e) =>
-                            setReturItems((prev) => ({
-                              ...prev,
-                              [item.id]: { ...prev[item.id], checked: e.target.checked },
-                            }))
-                          }
-                          className="h-4 w-4 rounded border-gray-300 text-green-600"
-                        />
-                      </td>
-                      <td className="py-2 font-medium text-gray-900">{item.produkNama}</td>
-                      <td className="py-2 text-center text-gray-700">{item.qty}</td>
-                      <td className="py-2 text-center">
-                        <input
-                          type="number"
-                          min={1}
-                          max={item.qty}
-                          value={state?.qty ?? item.qty}
-                          disabled={!state?.checked}
-                          onChange={(e) =>
-                            setReturItems((prev) => ({
-                              ...prev,
-                              [item.id]: { ...prev[item.id], qty: Number(e.target.value) },
-                            }))
-                          }
-                          className="w-16 rounded border border-gray-300 px-2 py-1 text-center text-sm disabled:opacity-50 focus:border-green-500 focus:outline-none"
-                        />
-                      </td>
-                      <td className="py-2 text-right text-gray-700">
-                        {formatRupiah(item.subtotal)}
-                      </td>
-                    </tr>
-                  )
-                })}
-              </tbody>
-            </table>
-          </div>
-
-          <Textarea
-            label="Alasan Retur"
-            required
-            placeholder="Masukkan alasan retur..."
-            value={alasanRetur}
-            onChange={(e) => {
-              setAlasanRetur(e.target.value)
-              if (returError) setReturError('')
-            }}
-            error={returError}
-            rows={3}
-          />
-
-          <div className="flex justify-end gap-3">
-            <Button
-              variant="outline"
-              onClick={() => setShowReturModal(false)}
-              disabled={isProsesingRetur}
-            >
-              Batal
-            </Button>
-            <Button
-              onClick={handleConfirmRetur}
-              loading={isProsesingRetur}
-              className="bg-orange-600 hover:bg-orange-700 text-white"
-            >
-              Proses Retur
-            </Button>
+            <Button variant="outline" onClick={() => { setShowBatalModal(false); setAlasanBatal(''); setBatalError('') }} disabled={isUpdating}>Tutup</Button>
+            <Button variant="destructive" onClick={handleBatalkan} loading={isUpdating}>Batalkan Pesanan</Button>
           </div>
         </div>
       </Modal>
     </div>
   )
+}
+
+// ── Main ──────────────────────────────────────────────────────────────────────
+
+export default function DetailPesananPage() {
+  const params = useParams()
+  const router = useRouter()
+  const id = params.id as string
+
+  const { data: pesanan, isLoading, isError, refetch } = useOrder(id)
+
+  if (isLoading) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center gap-4">
+          <Skeleton className="h-8 w-8 rounded-full" />
+          <div className="space-y-2">
+            <Skeleton className="h-7 w-48" />
+            <Skeleton className="h-4 w-64" />
+          </div>
+        </div>
+        {[1, 2].map((i) => (
+          <Card key={i}><CardContent className="pt-6 space-y-3">
+            {[1, 2, 3].map((j) => <Skeleton key={j} className="h-5 w-full" />)}
+          </CardContent></Card>
+        ))}
+      </div>
+    )
+  }
+
+  if (isError || !pesanan) {
+    return (
+      <div className="space-y-6">
+        <PageHeader title="Detail Pesanan"
+          actions={<Button variant="outline" onClick={() => router.push('/pesanan')}><ArrowLeft className="h-4 w-4" />Kembali</Button>}
+        />
+        <Card><CardContent className="pt-6">
+          <div className="flex items-center gap-3 text-red-600">
+            <AlertCircle className="h-5 w-5" />
+            <p className="text-sm">Pesanan tidak ditemukan atau terjadi kesalahan.</p>
+          </div>
+        </CardContent></Card>
+      </div>
+    )
+  }
+
+  if (pesanan.sumber === 'pos') {
+    return <DetailPOS pesanan={pesanan} refetch={refetch} />
+  }
+
+  return <DetailManual pesanan={pesanan} refetch={refetch} />
 }
