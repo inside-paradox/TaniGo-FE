@@ -7,6 +7,7 @@ export interface Shift {
   cabangId: string
   cabangNama: string
   modalAwal: number
+  saldoAkhir?: number | null
   totalTransaksi: number
   totalPendapatan: number
   totalTunai: number

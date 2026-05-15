@@ -585,11 +585,18 @@ export default function LaporanPage() {
                       <th className="px-4 py-3 text-left">Selesai</th>
                       <th className="px-4 py-3 text-center">Transaksi</th>
                       <th className="px-4 py-3 text-right">Pendapatan</th>
+                      <th className="px-4 py-3 text-right">Modal Awal</th>
+                      <th className="px-4 py-3 text-right">Saldo Akhir</th>
+                      <th className="px-4 py-3 text-right">Selisih Kas</th>
                       <th className="px-4 py-3 text-center">Status</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y">
-                    {(shiftData.shifts ?? []).map((sh: Shift) => (
+                    {(shiftData.shifts ?? []).map((sh: Shift) => {
+                      const selisih = sh.saldoAkhir != null
+                        ? sh.saldoAkhir - (sh.modalAwal + sh.totalTunai)
+                        : null
+                      return (
                       <tr key={sh.id} className="hover:bg-gray-50">
                         <td className="px-4 py-3 font-medium">{sh.kasirNama}</td>
                         <td className="px-4 py-3 text-gray-500">{sh.cabangNama}</td>
@@ -597,6 +604,17 @@ export default function LaporanPage() {
                         <td className="px-4 py-3 text-gray-600">{sh.selesaiAt ? formatTanggalWaktu(sh.selesaiAt) : '—'}</td>
                         <td className="px-4 py-3 text-center">{sh.totalTransaksi}</td>
                         <td className="px-4 py-3 text-right font-semibold">{formatRupiah(sh.totalPendapatan)}</td>
+                        <td className="px-4 py-3 text-right text-gray-600">{formatRupiah(sh.modalAwal)}</td>
+                        <td className="px-4 py-3 text-right text-gray-600">
+                          {sh.saldoAkhir != null ? formatRupiah(sh.saldoAkhir) : '—'}
+                        </td>
+                        <td className="px-4 py-3 text-right font-medium">
+                          {selisih == null ? '—' : (
+                            <span className={selisih >= 0 ? 'text-green-600' : 'text-red-600'}>
+                              {selisih >= 0 ? '+' : ''}{formatRupiah(selisih)}
+                            </span>
+                          )}
+                        </td>
                         <td className="px-4 py-3 text-center">
                           {sh.status === 'Aktif'
                             ? <span className="inline-flex items-center gap-1 rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700"><span className="h-1.5 w-1.5 rounded-full bg-green-500 animate-pulse inline-block" />Aktif</span>
@@ -604,7 +622,8 @@ export default function LaporanPage() {
                           }
                         </td>
                       </tr>
-                    ))}
+                    )})}
+
                   </tbody>
                 </table>
               </div>
