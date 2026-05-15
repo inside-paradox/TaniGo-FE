@@ -14,6 +14,7 @@ import type {
   PergerakanStok,
   Supplier,
   Shift,
+  Notifikasi,
 } from '@/types'
 
 const now = new Date().toISOString()
@@ -790,6 +791,71 @@ export const mockPergerakanStok: PergerakanStok[] = [
   { id: 'pg-s-8', produkId: 'p-1', produkNama: 'Pupuk Urea 50kg', produkSku: 'PUP-001', jenis: 'penyesuaian', jumlah: -10, stokSebelum: 130, stokSesudah: 120, referensi: 'SO-2026-001', userId: 'u-2', userNama: 'Budi Manajer', catatan: 'Koreksi hasil stok opname', alasan: 'Koreksi', createdAt: d(4) },
   { id: 'pg-s-9', produkId: 'p-3', produkNama: 'Pestisida Roundup 1L', produkSku: 'PES-001', jenis: 'penyesuaian', jumlah: 2, stokSebelum: 35, stokSesudah: 37, referensi: 'SO-2026-001', userId: 'u-2', userNama: 'Budi Manajer', catatan: 'Koreksi hasil stok opname', alasan: 'Koreksi', createdAt: d(4) },
   { id: 'pg-s-10', produkId: 'p-5', produkNama: 'Sprayer Manual 16L', produkSku: 'ALT-001', jenis: 'masuk', jumlah: 5, stokSebelum: 10, stokSesudah: 15, referensi: 'TS-2026-003', userId: 'demo-admin', userNama: 'Admin Demo', catatan: 'Transfer dari Gudang Pusat', createdAt: d(3) },
+]
+
+// ─── Notifikasi ───────────────────────────────────────────────────────────────
+
+export const mockNotifikasi: Notifikasi[] = [
+  {
+    id: 'notif-1',
+    judul: 'Promo Pupuk Urea Akhir Bulan',
+    pesan: 'Diskon 10% untuk pembelian Pupuk Urea 50kg di atas 20 karung. Berlaku hingga akhir bulan ini. Informasikan ke pelanggan setia Anda.',
+    tipe: 'info',
+    targetCabang: 'semua',
+    targetRole: 'semua',
+    createdBy: 'demo-superadmin',
+    createdByNama: 'Super Admin',
+    readByUserIds: ['u-3', 'u-5'],
+    createdAt: d(1),
+  },
+  {
+    id: 'notif-2',
+    judul: 'Peringatan: Stok Pupuk NPK Mutiara Menipis',
+    pesan: 'Stok Pupuk NPK Mutiara di Toko Utama tinggal 8 kg, di bawah threshold 10 kg. Segera ajukan permintaan transfer stok dari gudang.',
+    tipe: 'peringatan',
+    targetCabang: ['toko-1'],
+    targetRole: ['kasir', 'manajer'],
+    createdBy: 'demo-admin',
+    createdByNama: 'Admin Demo',
+    readByUserIds: [],
+    createdAt: d(0),
+  },
+  {
+    id: 'notif-3',
+    judul: 'Kebijakan Harga Baru Berlaku Mulai Besok',
+    pesan: 'Terdapat penyesuaian harga jual pada 3 produk: Pupuk Urea (Rp 115.000), Pestisida Roundup (Rp 78.000), dan Sprayer Manual (Rp 180.000). Harap perbarui daftar harga di kasir.',
+    tipe: 'penting',
+    targetCabang: 'semua',
+    targetRole: ['kasir', 'manajer', 'admin'],
+    createdBy: 'demo-superadmin',
+    createdByNama: 'Super Admin',
+    readByUserIds: ['u-3'],
+    createdAt: d(2),
+  },
+  {
+    id: 'notif-4',
+    judul: 'Maintenance Sistem Terjadwal',
+    pesan: 'Sistem TaniGo akan mengalami maintenance pada hari Sabtu pukul 00.00 - 04.00 WIB. Selama maintenance, akses sistem tidak tersedia. Harap selesaikan transaksi sebelum waktu tersebut.',
+    tipe: 'peringatan',
+    targetCabang: 'semua',
+    targetRole: 'semua',
+    createdBy: 'demo-superadmin',
+    createdByNama: 'Super Admin',
+    readByUserIds: [],
+    createdAt: d(3),
+  },
+  {
+    id: 'notif-5',
+    judul: 'Target Penjualan Bulan Ini Tercapai',
+    pesan: 'Selamat! Toko Utama dan Toko Selatan telah mencapai target penjualan bulan ini. Terima kasih atas kerja keras seluruh tim. Bonus akan diproses pada akhir bulan.',
+    tipe: 'info',
+    targetCabang: ['toko-1', 'toko-2'],
+    targetRole: 'semua',
+    createdBy: 'demo-superadmin',
+    createdByNama: 'Super Admin',
+    readByUserIds: ['u-3'],
+    createdAt: d(5),
+  },
 ]
 
 // ─── Paginated wrapper ────────────────────────────────────────────────────────

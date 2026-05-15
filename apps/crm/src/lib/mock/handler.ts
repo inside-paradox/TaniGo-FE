@@ -15,9 +15,10 @@ import {
   mockSuppliers,
   mockPergerakanStok,
   mockShift,
+  mockNotifikasi,
   paginate,
 } from './data'
-import type { Cabang, User, TransferStok, Pengiriman, PurchaseOrder, PembayaranPO, Pesanan, PelangganVIP, TagihanVIP, StokOpname, CabangInventory, Supplier, PergerakanStok, Shift, StatusPenerimaanItem } from '@/types'
+import type { Cabang, User, TransferStok, Pengiriman, PurchaseOrder, PembayaranPO, Pesanan, PelangganVIP, TagihanVIP, StokOpname, CabangInventory, Supplier, PergerakanStok, Shift, StatusPenerimaanItem, Notifikasi } from '@/types'
 
 // In-memory mutable state for demo mutations
 let cabang = [...mockCabang] as Cabang[]
@@ -34,6 +35,7 @@ const cabangInventory = [...mockCabangInventory] as CabangInventory[]
 let suppliers = [...mockSuppliers] as Supplier[]
 const pergerakanStok = [...mockPergerakanStok] as PergerakanStok[]
 const shifts = [...mockShift] as Shift[]
+let notifikasi = [...mockNotifikasi] as Notifikasi[]
 
 // Settings state
 let infoToko = {
@@ -1093,6 +1095,83 @@ export function getMockResponse(config: AxiosRequestConfig): Omit<AxiosResponse,
     }
     cabang = [...cabang, newCabang]
     return ok(newCabang, 201)
+  }
+
+  // ── Notifikasi ────────────────────────────────────────────────────────────
+  // Resolve demo current user from localStorage (same pattern as other handlers)
+  const getDemoUser = (): User => {
+    const stored = typeof window !== 'undefined' ? localStorage.getItem('user') : null
+    return stored ? JSON.parse(stored) : (users.find((u) => u.id === 'u-3') ?? users[0])
+  }
+
+  if (rawUrl === '/notifications' || rawUrl.startsWith('/notifications?')) {
+    if (method === 'get') {
+      const currentUser = getDemoUser()
+      let list = notifikasi.filter((n) => {
+        const cabangOk = n.targetCabang === 'semua' || (currentUser.cabangId != null && (n.targetCabang as string[]).includes(currentUser.cabangId))
+        const roleOk = n.targetRole === 'semua' || (n.targetRole as string[]).includes(currentUser.role)
+        return cabangOk && roleOk
+      })
+      list = list.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+      const dataWithRead = list.map((n) => ({
+        ...n,
+        isRead: n.readByUserIds.includes(currentUser.id),
+      }))
+      return ok(dataWithRead)
+    }
+    if (method === 'post') {
+      const currentUser = getDemoUser()
+      const newNotif: Notifikasi = {
+        id: `notif-${Date.now()}`,
+        judul: body.judul,
+        pesan: body.pesan,
+        tipe: body.tipe,
+        targetCabang: body.targetCabang,
+        targetRole: body.targetRole,
+        createdBy: currentUser.id,
+        createdByNama: currentUser.nama,
+        readByUserIds: [],
+        createdAt: new Date().toISOString(),
+      }
+      notifikasi = [newNotif, ...notifikasi]
+      return ok(newNotif, 201)
+    }
+  }
+
+  if (rawUrl === '/notifications/read-all' && method === 'post') {
+    const currentUser = getDemoUser()
+    notifikasi = notifikasi.map((n) => {
+      const cabangOk = n.targetCabang === 'semua' || (currentUser.cabangId != null && (n.targetCabang as string[]).includes(currentUser.cabangId))
+      const roleOk = n.targetRole === 'semua' || (n.targetRole as string[]).includes(currentUser.role)
+      if (cabangOk && roleOk && !n.readByUserIds.includes(currentUser.id)) {
+        return { ...n, readByUserIds: [...n.readByUserIds, currentUser.id] }
+      }
+      return n
+    })
+    return ok({})
+  }
+
+  const notifActionMatch = matchPath(rawUrl, /^\/notifications\/([^/]+)(?:\/(.+))?$/)
+  if (notifActionMatch) {
+    const id = notifActionMatch[1]
+    const action = notifActionMatch[2]
+    const idx = notifikasi.findIndex((n) => n.id === id)
+
+    if (action === 'read' && method === 'post') {
+      const currentUser = getDemoUser()
+      if (idx !== -1 && !notifikasi[idx].readByUserIds.includes(currentUser.id)) {
+        notifikasi[idx] = {
+          ...notifikasi[idx],
+          readByUserIds: [...notifikasi[idx].readByUserIds, currentUser.id],
+        }
+      }
+      return ok({})
+    }
+
+    if (method === 'delete' && idx !== -1) {
+      notifikasi = notifikasi.filter((_, i) => i !== idx)
+      return ok({})
+    }
   }
 
   // ── Unmatched ─────────────────────────────────────────────────────────────

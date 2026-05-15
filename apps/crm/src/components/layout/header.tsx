@@ -2,12 +2,13 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Bell, LogOut, User, ChevronDown } from 'lucide-react'
+import { LogOut, User, ChevronDown } from 'lucide-react'
 import { toast } from 'sonner'
 import { cn, getInitials } from '@/lib/utils'
 import { useAuthStore } from '@/store/auth-store'
 import { useUIStore } from '@/store/ui-store'
 import { authApi } from '@/lib/api'
+import { NotificationBell } from '@/components/layout/notification-bell'
 
 const roleLabels: Record<string, string> = {
   admin: 'Admin',
@@ -45,9 +46,7 @@ export function Header() {
 
       <div className="flex items-center gap-4">
         {/* Notifications */}
-        <button className="relative rounded-lg p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-600">
-          <Bell className="h-5 w-5" />
-        </button>
+        <NotificationBell />
 
         {/* Profile Dropdown */}
         <div className="relative">

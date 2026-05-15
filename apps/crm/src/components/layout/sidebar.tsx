@@ -20,6 +20,7 @@ import {
   Sprout,
   ArrowLeftRight,
   Store,
+  Bell,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useUIStore } from '@/store/ui-store'
@@ -124,6 +125,12 @@ const navItems: NavItem[] = [
     label: 'Log Audit',
     icon: <ClipboardList className="h-5 w-5" />,
     roles: ['admin'],
+  },
+  {
+    href: '/notifikasi',
+    label: 'Notifikasi',
+    icon: <Bell className="h-5 w-5" />,
+    roles: ['superadmin', 'admin', 'manajer', 'kasir', 'staf_gudang'],
   },
   {
     href: '/pengaturan',
