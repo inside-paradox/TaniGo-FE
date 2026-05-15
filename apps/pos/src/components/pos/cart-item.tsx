@@ -37,7 +37,10 @@ export function CartItemRow({ item }: CartItemProps) {
       </div>
 
       <div className="flex items-center gap-2">
-        <div className="flex items-center rounded-lg border border-gray-200 overflow-hidden">
+        <div className={cn(
+          'flex items-center rounded-lg border overflow-hidden',
+          item.qty >= item.stok ? 'border-orange-200' : 'border-gray-200'
+        )}>
           <button
             onClick={() => updateQty(item.produkId, item.qty - 1)}
             className="flex h-7 w-7 items-center justify-center text-gray-500 hover:bg-gray-50 transition-colors"
@@ -47,11 +50,20 @@ export function CartItemRow({ item }: CartItemProps) {
           <span className="w-8 text-center text-sm font-medium">{item.qty}</span>
           <button
             onClick={() => updateQty(item.produkId, item.qty + 1)}
-            className="flex h-7 w-7 items-center justify-center text-gray-500 hover:bg-gray-50 transition-colors"
+            disabled={item.qty >= item.stok}
+            className={cn(
+              'flex h-7 w-7 items-center justify-center transition-colors',
+              item.qty >= item.stok
+                ? 'cursor-not-allowed text-gray-200'
+                : 'text-gray-500 hover:bg-gray-50'
+            )}
           >
             <Plus size={13} />
           </button>
         </div>
+        {item.qty >= item.stok && (
+          <span className="text-[10px] text-orange-500">maks stok</span>
+        )}
 
         <div className="flex items-center gap-1.5 ml-auto">
           <span className="text-xs text-gray-400">Diskon</span>

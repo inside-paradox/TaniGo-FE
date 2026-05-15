@@ -35,18 +35,23 @@ export const useCartStore = create<CartState>()((set, get) => ({
     const existing = items.find((i) => i.produkId === incoming.produkId)
 
     if (existing) {
+      const newQty = Math.min(existing.qty + incoming.qty, existing.stok)
+      if (newQty === existing.qty) return // already at max stock
       set({
         items: items.map((i) =>
           i.produkId === incoming.produkId
-            ? { ...i, qty: i.qty + incoming.qty, subtotal: calcSubtotal({ ...i, qty: i.qty + incoming.qty }) }
+            ? { ...i, qty: newQty, subtotal: calcSubtotal({ ...i, qty: newQty }) }
             : i
         ),
       })
     } else {
+      const qty = Math.min(incoming.qty, incoming.stok)
+      if (qty <= 0) return
       const newItem: ItemKeranjang = {
         ...incoming,
+        qty,
         diskon: 0,
-        subtotal: incoming.hargaSatuan * incoming.qty,
+        subtotal: incoming.hargaSatuan * qty,
       }
       set({ items: [...items, newItem] })
     }
@@ -62,9 +67,11 @@ export const useCartStore = create<CartState>()((set, get) => ({
       return
     }
     set({
-      items: get().items.map((i) =>
-        i.produkId === produkId ? { ...i, qty, subtotal: calcSubtotal({ ...i, qty }) } : i
-      ),
+      items: get().items.map((i) => {
+        if (i.produkId !== produkId) return i
+        const capped = Math.min(qty, i.stok)
+        return { ...i, qty: capped, subtotal: calcSubtotal({ ...i, qty: capped }) }
+      }),
     })
   },
 

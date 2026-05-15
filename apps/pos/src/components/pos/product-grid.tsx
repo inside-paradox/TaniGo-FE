@@ -22,17 +22,40 @@ export function ProductGrid() {
 
   const products = data ?? []
 
+  const cartItems = useCartStore((s) => s.items)
+
   const handleAdd = (item: POSInventoryItem) => {
-    if (item.stok === 0) return
+    if (item.stok === 0) {
+      toast.error(`${item.produkNama} — stok habis`)
+      return
+    }
+    const inCart = cartItems.find((c) => c.produkId === item.produkId)
+    if (inCart && inCart.qty >= item.stok) {
+      toast.warning(`${item.produkNama} — stok maksimal (${item.stok} ${item.satuan}) sudah di keranjang`)
+      return
+    }
     addItem({
       produkId: item.produkId,
       nama: item.produkNama,
       sku: item.produkSku,
       satuan: item.satuan,
       hargaSatuan: item.hargaJual,
+      stok: item.stok,
       qty: 1,
     })
     toast.success(`${item.produkNama} ditambahkan`)
+  }
+
+  // Barcode scanner: auto-add when Enter pressed with exactly 1 result
+  const handleSearchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key !== 'Enter') return
+    if (products.length === 1) {
+      handleAdd(products[0])
+      setSearch('')
+    } else if (products.length === 0) {
+      toast.error('Produk tidak ditemukan')
+    }
+    // multiple results: do nothing, let user pick
   }
 
   // Barcode scanner support: focus input on keydown if not already focused
@@ -59,6 +82,7 @@ export function ProductGrid() {
           placeholder="Cari produk, SKU, atau scan barcode..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
+          onKeyDown={handleSearchKeyDown}
           leftIcon={<Search size={16} />}
           rightIcon={isFetching && !isLoading ? <Spinner size="sm" /> : undefined}
           autoFocus

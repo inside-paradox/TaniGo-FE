@@ -6,6 +6,7 @@ export interface ItemKeranjang {
   sku: string
   satuan: string
   hargaSatuan: number
+  stok: number
   qty: number
   diskon: number
   subtotal: number
