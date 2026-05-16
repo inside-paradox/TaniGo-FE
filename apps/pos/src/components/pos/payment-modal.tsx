@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useMutation } from '@tanstack/react-query'
 import { toast } from 'sonner'
-import { CheckCircle, Printer, QrCode, Banknote } from 'lucide-react'
+import { CheckCircle, Printer, QrCode, Banknote, Building2 } from 'lucide-react'
 import { Modal } from '@/components/ui/modal'
 import { Button } from '@/components/ui/button'
 import { InputNominal } from '@/components/ui/input-nominal'
@@ -17,7 +17,7 @@ import { useOfflineStore } from '@/store/offlineStore'
 import type { MetodePembayaranPOS, Transaksi } from '@/types/pos'
 import { cn } from '@/lib/utils/cn'
 
-type MetodePilihan = Extract<MetodePembayaranPOS, 'Tunai' | 'QRIS'>
+type MetodePilihan = MetodePembayaranPOS
 
 interface PaymentModalProps {
   open: boolean
@@ -38,16 +38,22 @@ export function PaymentModal({ open, onClose }: PaymentModalProps) {
   useEffect(() => {
     if (open) {
       setMetode('Tunai')
-      setNominalTunai(totalBayar)
+      setNominalTunai(total())
       setSuccessData(null)
     }
-  }, [open, totalBayar])
+    // totalBayar sengaja tidak dimasukkan ke deps —
+    // inisialisasi hanya dijalankan saat modal buka,
+    // bukan saat cart berubah (clearCart setelah sukses akan reset successData)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open])
 
   const kembalian = metode === 'Tunai' ? Math.max(0, nominalTunai - totalBayar) : 0
   const kurang = metode === 'Tunai' ? Math.max(0, totalBayar - nominalTunai) : 0
 
   const canConfirm =
-    metode === 'QRIS' || (metode === 'Tunai' && nominalTunai >= totalBayar)
+    metode === 'QRIS' ||
+    metode === 'Transfer Bank' ||
+    (metode === 'Tunai' && nominalTunai >= totalBayar)
 
   const dto = {
     items: items.map((i) => ({
@@ -185,20 +191,24 @@ export function PaymentModal({ open, onClose }: PaymentModalProps) {
         </div>
 
         {/* Method selector */}
-        <div className="grid grid-cols-2 gap-3">
-          {(['Tunai', 'QRIS'] as MetodePilihan[]).map((m) => (
+        <div className="grid grid-cols-3 gap-3">
+          {([
+            { metode: 'Tunai',         icon: <Banknote size={22} />,   label: 'Tunai' },
+            { metode: 'QRIS',          icon: <QrCode size={22} />,     label: 'QRIS' },
+            { metode: 'Transfer Bank', icon: <Building2 size={22} />,  label: 'Transfer' },
+          ] as { metode: MetodePilihan; icon: React.ReactNode; label: string }[]).map((m) => (
             <button
-              key={m}
-              onClick={() => setMetode(m)}
+              key={m.metode}
+              onClick={() => setMetode(m.metode)}
               className={cn(
                 'flex flex-col items-center gap-2 rounded-xl border-2 p-4 transition-colors',
-                metode === m
+                metode === m.metode
                   ? 'border-green-600 bg-green-50 text-green-700'
                   : 'border-gray-200 text-gray-500 hover:border-gray-300'
               )}
             >
-              {m === 'Tunai' ? <Banknote size={24} /> : <QrCode size={24} />}
-              <span className="text-sm font-semibold">{m}</span>
+              {m.icon}
+              <span className="text-sm font-semibold">{m.label}</span>
             </button>
           ))}
         </div>
@@ -276,6 +286,20 @@ export function PaymentModal({ open, onClose }: PaymentModalProps) {
           </div>
         )}
 
+        {/* Transfer Bank */}
+        {metode === 'Transfer Bank' && (
+          <div className="flex flex-col items-center gap-3 rounded-xl border-2 border-dashed border-gray-200 p-6">
+            <Building2 size={56} className="text-gray-300" />
+            <div className="text-center">
+              <p className="text-sm font-semibold text-gray-700">Transfer Bank</p>
+              <p className="text-2xl font-bold text-gray-900 mt-1">{formatRupiah(totalBayar)}</p>
+            </div>
+            <p className="text-xs text-amber-600 bg-amber-50 rounded-lg px-3 py-2 text-center">
+              Konfirmasi setelah bukti transfer diterima dari pelanggan
+            </p>
+          </div>
+        )}
+
         <Button
           className="w-full"
           size="lg"
@@ -283,7 +307,11 @@ export function PaymentModal({ open, onClose }: PaymentModalProps) {
           loading={isPending}
           disabled={!canConfirm}
         >
-          {metode === 'QRIS' ? 'Konfirmasi Pembayaran QRIS' : 'Konfirmasi Pembayaran'}
+          {metode === 'QRIS'
+            ? 'Konfirmasi Pembayaran QRIS'
+            : metode === 'Transfer Bank'
+              ? 'Konfirmasi Transfer Bank'
+              : 'Konfirmasi Pembayaran'}
         </Button>
       </div>
     </Modal>

@@ -82,6 +82,8 @@ api.interceptors.request.use((config) => {
             demoShift.totalPenjualanTunai += total
           else if (pembayaran.some((p: { metode: string }) => p.metode === 'QRIS'))
             demoShift.totalPenjualanQRIS += total
+          else if (pembayaran.some((p: { metode: string }) => p.metode === 'Transfer Bank'))
+            demoShift.totalPenjualanTransfer += total
           localStorage.setItem('demo_active_shift', JSON.stringify(demoShift))
         }
         mock(transaksi, 201)
