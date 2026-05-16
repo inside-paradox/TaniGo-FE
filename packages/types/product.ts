@@ -11,7 +11,6 @@ export interface Produk {
   hargaBeli: number
   hargaJual: number
   stok: number
-  lokasiRak: string
   tanggalKedaluwarsa?: string | null
   foto?: string | null
   thresholdStok: number
@@ -30,7 +29,6 @@ export interface CreateProdukDto {
   hargaBeli: number
   hargaJual: number
   stokAwal: number
-  lokasiRak: string
   tanggalKedaluwarsa?: string | null
   foto?: File | null
   thresholdStok: number

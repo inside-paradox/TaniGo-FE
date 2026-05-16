@@ -46,12 +46,12 @@ export const mockUsers: User[] = [
 // ─── Produk (subset untuk transfer stok form) ─────────────────────────────────
 
 export const mockProduk: Produk[] = [
-  { id: 'p-1', nama: 'Pupuk Urea 50kg', sku: 'PUP-001', kategori: 'Pupuk', satuan: 'karung', hargaBeli: 85000, hargaJual: 110000, stok: 120, lokasiRak: 'A1', thresholdStok: 20, statusAktif: true, statusStok: 'normal', createdAt: d(90), updatedAt: now },
-  { id: 'p-2', nama: 'Pupuk NPK Mutiara', sku: 'PUP-002', kategori: 'Pupuk', satuan: 'kg', hargaBeli: 12000, hargaJual: 16000, stok: 8, lokasiRak: 'A2', thresholdStok: 10, statusAktif: true, statusStok: 'menipis', createdAt: d(80), updatedAt: now },
-  { id: 'p-3', nama: 'Pestisida Roundup 1L', sku: 'PES-001', kategori: 'Pestisida', satuan: 'botol', hargaBeli: 55000, hargaJual: 75000, stok: 35, lokasiRak: 'B1', thresholdStok: 5, statusAktif: true, statusStok: 'normal', createdAt: d(70), updatedAt: now },
-  { id: 'p-4', nama: 'Benih Padi IR64', sku: 'BEN-001', kategori: 'Benih', satuan: 'kg', hargaBeli: 15000, hargaJual: 22000, stok: 0, lokasiRak: 'C1', thresholdStok: 10, statusAktif: true, statusStok: 'habis', createdAt: d(60), updatedAt: now },
-  { id: 'p-5', nama: 'Sprayer Manual 16L', sku: 'ALT-001', kategori: 'Alat & Mesin', satuan: 'unit', hargaBeli: 125000, hargaJual: 175000, stok: 15, lokasiRak: 'D1', thresholdStok: 3, statusAktif: true, statusStok: 'normal', createdAt: d(50), updatedAt: now },
-  { id: 'p-6', nama: 'Pupuk Kandang Organik', sku: 'PUP-003', kategori: 'Pupuk', satuan: 'karung', hargaBeli: 25000, hargaJual: 35000, stok: 60, lokasiRak: 'A3', thresholdStok: 15, statusAktif: true, statusStok: 'normal', createdAt: d(40), updatedAt: now },
+  { id: 'p-1', nama: 'Pupuk Urea 50kg', sku: 'PUP-001', kategori: 'Pupuk', satuan: 'karung', hargaBeli: 85000, hargaJual: 110000, stok: 120, thresholdStok: 20, statusAktif: true, statusStok: 'normal', createdAt: d(90), updatedAt: now },
+  { id: 'p-2', nama: 'Pupuk NPK Mutiara', sku: 'PUP-002', kategori: 'Pupuk', satuan: 'kg', hargaBeli: 12000, hargaJual: 16000, stok: 8, thresholdStok: 10, statusAktif: true, statusStok: 'menipis', createdAt: d(80), updatedAt: now },
+  { id: 'p-3', nama: 'Pestisida Roundup 1L', sku: 'PES-001', kategori: 'Pestisida', satuan: 'botol', hargaBeli: 55000, hargaJual: 75000, stok: 35, thresholdStok: 5, statusAktif: true, statusStok: 'normal', createdAt: d(70), updatedAt: now },
+  { id: 'p-4', nama: 'Benih Padi IR64', sku: 'BEN-001', kategori: 'Benih', satuan: 'kg', hargaBeli: 15000, hargaJual: 22000, stok: 0, thresholdStok: 10, statusAktif: true, statusStok: 'habis', createdAt: d(60), updatedAt: now },
+  { id: 'p-5', nama: 'Sprayer Manual 16L', sku: 'ALT-001', kategori: 'Alat & Mesin', satuan: 'unit', hargaBeli: 125000, hargaJual: 175000, stok: 15, thresholdStok: 3, statusAktif: true, statusStok: 'normal', createdAt: d(50), updatedAt: now },
+  { id: 'p-6', nama: 'Pupuk Kandang Organik', sku: 'PUP-003', kategori: 'Pupuk', satuan: 'karung', hargaBeli: 25000, hargaJual: 35000, stok: 60, thresholdStok: 15, statusAktif: true, statusStok: 'normal', createdAt: d(40), updatedAt: now },
 ]
 
 // ─── Transfer Stok ────────────────────────────────────────────────────────────

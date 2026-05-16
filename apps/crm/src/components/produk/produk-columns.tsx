@@ -180,14 +180,6 @@ export function getProdukColumns(
       ),
     },
     {
-      accessorKey: 'lokasiRak',
-      header: 'Lokasi Rak',
-      enableSorting: false,
-      cell: ({ getValue }) => (
-        <span className="text-sm text-gray-600">{getValue<string>()}</span>
-      ),
-    },
-    {
       accessorKey: 'statusStok',
       header: 'Status Stok',
       enableSorting: false,

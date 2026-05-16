@@ -86,7 +86,6 @@ export function ProdukForm({ open, onClose, produk }: ProdukFormProps) {
         hargaBeli: produk.hargaBeli,
         hargaJual: produk.hargaJual,
         stokAwal: produk.stok,
-        lokasiRak: produk.lokasiRak,
         tanggalKedaluwarsa: produk.tanggalKedaluwarsa ?? undefined,
         thresholdStok: produk.thresholdStok,
         statusAktif: produk.statusAktif,
@@ -261,15 +260,6 @@ export function ProdukForm({ open, onClose, produk }: ProdukFormProps) {
               </div>
             )}
           </div>
-
-          {/* Lokasi Rak */}
-          <Input
-            label="Lokasi Rak"
-            required
-            placeholder="Contoh: Rak A1, Lorong 2"
-            error={errors.lokasiRak?.message}
-            {...register('lokasiRak')}
-          />
 
           {/* Harga Beli */}
           <Controller
