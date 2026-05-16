@@ -115,12 +115,6 @@ const navItems: NavItem[] = [
     roles: ['admin', 'manajer', 'kasir'],
   },
   {
-    href: '/pengguna',
-    label: 'Pengguna',
-    icon: <Users className="h-5 w-5" />,
-    roles: ['admin'],
-  },
-  {
     href: '/audit-log',
     label: 'Log Audit',
     icon: <ClipboardList className="h-5 w-5" />,

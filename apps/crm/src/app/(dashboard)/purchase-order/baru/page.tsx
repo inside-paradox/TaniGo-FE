@@ -13,8 +13,8 @@ import {
   CardContent,
   Input,
   Textarea,
-  Select,
 } from '@/components/ui'
+import { Combobox } from '@/components/ui/combobox'
 import { InputNominal } from '@/components/ui/input-nominal'
 import { useSuppliers } from '@/hooks/use-inventory'
 import { useProducts } from '@/hooks/use-products'
@@ -157,11 +157,6 @@ export default function BuatPOPage() {
   })
 
   const watchLainnya = watch('lainnya')
-  const supplierOptions = suppliers.map((s) => ({ value: s.id, label: s.nama }))
-  const productOptions = products.map((p) => ({
-    value: p.id,
-    label: `[${p.sku}] ${p.nama}`,
-  }))
 
   return (
     <div className="space-y-6">
@@ -189,13 +184,22 @@ export default function BuatPOPage() {
               <CardContent>
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                   <div className="sm:col-span-2">
-                    <Select
-                      label="Supplier"
-                      required
-                      placeholder="— Pilih Supplier —"
-                      options={supplierOptions}
-                      error={errors.supplierId}
-                      {...register('supplierId')}
+                    <Controller
+                      name="supplierId"
+                      control={control}
+                      render={({ field }) => (
+                        <Combobox
+                          label="Supplier"
+                          required
+                          placeholder="Cari supplier..."
+                          options={suppliers}
+                          value={field.value}
+                          onChange={field.onChange}
+                          getOptionValue={(s) => s.id}
+                          getOptionLabel={(s) => s.nama}
+                          error={errors.supplierId}
+                        />
+                      )}
                     />
                   </div>
                   <Input
@@ -252,11 +256,13 @@ export default function BuatPOPage() {
                       >
                         {/* Produk */}
                         <div className="col-span-5 mb-2 sm:mb-0">
-                          <Select
-                            placeholder="— Pilih Produk —"
-                            options={productOptions}
+                          <Combobox
+                            placeholder="Cari produk..."
+                            options={products}
                             value={item.produkId}
-                            onChange={(e) => updateItem(item._key, 'produkId', e.target.value)}
+                            onChange={(v) => updateItem(item._key, 'produkId', v)}
+                            getOptionValue={(p) => p.id}
+                            getOptionLabel={(p) => `[${p.sku}] ${p.nama}`}
                             error={errors[`item_${idx}_produk`]}
                           />
                         </div>
