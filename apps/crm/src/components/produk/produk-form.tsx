@@ -12,16 +12,9 @@ import { Select } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
 import { produkSchema, type ProdukFormData } from '@/lib/validations/product'
 import { useCreateProduct, useUpdateProduct } from '@/hooks/use-products'
+import { useKategoriProduk } from '@/hooks/use-kategori'
 import { productsApi } from '@/lib/api'
 import type { Produk } from '@/types'
-
-const KATEGORI_OPTIONS = [
-  { value: 'Benih', label: 'Benih' },
-  { value: 'Pupuk', label: 'Pupuk' },
-  { value: 'Pestisida', label: 'Pestisida' },
-  { value: 'Alat & Mesin', label: 'Alat & Mesin' },
-  { value: 'Lainnya', label: 'Lainnya' },
-]
 
 const SATUAN_OPTIONS = [
   { value: 'pcs', label: 'pcs' },
@@ -49,6 +42,8 @@ export function ProdukForm({ open, onClose, produk }: ProdukFormProps) {
 
   const createMutation = useCreateProduct()
   const updateMutation = useUpdateProduct()
+  const { data: kategoriList = [] } = useKategoriProduk()
+  const kategoriOptions = kategoriList.map((k) => ({ value: k.nama, label: k.nama }))
 
   const {
     register,
@@ -211,7 +206,7 @@ export function ProdukForm({ open, onClose, produk }: ProdukFormProps) {
               <Select
                 label="Kategori"
                 required
-                options={KATEGORI_OPTIONS}
+                options={kategoriOptions}
                 placeholder="Pilih kategori"
                 error={errors.kategori?.message}
                 value={field.value ?? ''}

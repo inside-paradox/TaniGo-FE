@@ -1,4 +1,4 @@
-export type KategoriProduk = 'Benih' | 'Pupuk' | 'Pestisida' | 'Alat & Mesin' | 'Lainnya'
+export type KategoriProduk = string
 
 export type StatusStok = 'normal' | 'menipis' | 'habis'
 

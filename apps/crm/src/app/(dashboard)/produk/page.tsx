@@ -1,7 +1,8 @@
 'use client'
 
 import { useState } from 'react'
-import { Plus, PackageX } from 'lucide-react'
+import { Plus, PackageX, Tag } from 'lucide-react'
+import { useRouter } from 'next/navigation'
 import type { SortingState } from '@tanstack/react-table'
 import { PageHeader } from '@/components/shared/page-header'
 import { DataTable } from '@/components/shared/data-table'
@@ -13,17 +14,18 @@ import { ProdukFilter } from '@/components/produk/produk-filter'
 import { getProdukColumns } from '@/components/produk/produk-columns'
 import { useProducts } from '@/hooks/use-products'
 import { useAuthStore } from '@/store/auth-store'
-import type { Produk, KategoriProduk, StatusStok } from '@/types'
+import type { Produk, StatusStok } from '@/types'
 
 interface FilterState {
   search: string
-  kategori: KategoriProduk | ''
+  kategori: string
   statusStok: StatusStok | ''
   satuan: string
 }
 
 export default function ProdukPage() {
   const { user } = useAuthStore()
+  const router = useRouter()
   const canManage = user?.role === 'superadmin'
   const [page, setPage] = useState(1)
   const [limit, setLimit] = useState(25)
@@ -80,10 +82,16 @@ export default function ProdukPage() {
         subtitle={`${data?.meta.total ?? 0} produk terdaftar`}
         actions={
           canManage ? (
-            <Button onClick={() => setFormOpen(true)}>
-              <Plus className="h-4 w-4" />
-              Tambah Produk
-            </Button>
+            <div className="flex items-center gap-3">
+              <Button variant="outline" onClick={() => router.push('/produk/kategori')}>
+                <Tag className="h-4 w-4" />
+                Kelola Kategori
+              </Button>
+              <Button onClick={() => setFormOpen(true)}>
+                <Plus className="h-4 w-4" />
+                Tambah Produk
+              </Button>
+            </div>
           ) : undefined
         }
       />

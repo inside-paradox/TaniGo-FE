@@ -2,11 +2,12 @@
 
 import { Filter, X } from 'lucide-react'
 import { SearchInput } from '@/components/shared/search-input'
-import type { KategoriProduk, StatusStok } from '@/types'
+import { useKategoriProduk } from '@/hooks/use-kategori'
+import type { StatusStok } from '@/types'
 
 interface ProdukFilterState {
   search: string
-  kategori: KategoriProduk | ''
+  kategori: string
   statusStok: StatusStok | ''
   satuan: string
 }
@@ -15,15 +16,6 @@ interface ProdukFilterProps {
   filter: ProdukFilterState
   onChange: (filter: ProdukFilterState) => void
 }
-
-const KATEGORI_OPTIONS: { value: KategoriProduk | ''; label: string }[] = [
-  { value: '', label: 'Semua Kategori' },
-  { value: 'Benih', label: 'Benih' },
-  { value: 'Pupuk', label: 'Pupuk' },
-  { value: 'Pestisida', label: 'Pestisida' },
-  { value: 'Alat & Mesin', label: 'Alat & Mesin' },
-  { value: 'Lainnya', label: 'Lainnya' },
-]
 
 const STATUS_STOK_OPTIONS: { value: StatusStok | ''; label: string }[] = [
   { value: '', label: 'Semua Status' },
@@ -37,6 +29,7 @@ const hasActiveFilter = (filter: ProdukFilterState) =>
 
 export function ProdukFilter({ filter, onChange }: ProdukFilterProps) {
   const active = hasActiveFilter(filter)
+  const { data: kategoriList = [] } = useKategoriProduk()
 
   const resetFilter = () =>
     onChange({ ...filter, kategori: '', statusStok: '', satuan: '' })
@@ -55,15 +48,12 @@ export function ProdukFilter({ filter, onChange }: ProdukFilterProps) {
 
         <select
           value={filter.kategori}
-          onChange={(e) =>
-            onChange({ ...filter, kategori: e.target.value as KategoriProduk | '' })
-          }
+          onChange={(e) => onChange({ ...filter, kategori: e.target.value })}
           className="h-10 rounded-lg border border-gray-300 bg-white px-3 text-sm text-gray-700 focus:border-green-500 focus:outline-none"
         >
-          {KATEGORI_OPTIONS.map((opt) => (
-            <option key={opt.value} value={opt.value}>
-              {opt.label}
-            </option>
+          <option value="">Semua Kategori</option>
+          {kategoriList.map((k) => (
+            <option key={k.id} value={k.nama}>{k.nama}</option>
           ))}
         </select>
 

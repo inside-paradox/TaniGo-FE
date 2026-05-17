@@ -3,7 +3,7 @@ import { z } from 'zod'
 export const produkSchema = z.object({
   nama: z.string().min(1, 'Nama produk wajib diisi'),
   sku: z.string().optional(),
-  kategori: z.enum(['Benih', 'Pupuk', 'Pestisida', 'Alat & Mesin', 'Lainnya']),
+  kategori: z.string().min(1, 'Kategori wajib dipilih'),
   satuan: z.string().min(1, 'Satuan wajib diisi'),
   hargaBeli: z.number().min(0, 'Harga beli tidak boleh negatif'),
   hargaJual: z.number().min(0, 'Harga jual tidak boleh negatif'),
