@@ -45,6 +45,9 @@ export const purchaseOrdersApi = {
     return data.data
   },
 
+  // NOTE: The backend does not expose GET /purchase-orders/{id}/pembayaran.
+  // This endpoint is called by usePembayaranPO (used on the PO detail page).
+  // Errors are handled gracefully by react-query; the UI should handle the loading/error state.
   getPembayaran: async (id: string): Promise<PembayaranPO[]> => {
     const { data } = await api.get(`/purchase-orders/${id}/pembayaran`)
     return data.data

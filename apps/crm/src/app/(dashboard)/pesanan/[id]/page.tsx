@@ -27,8 +27,8 @@ import type { StatusPesanan, ItemPesanan, Pesanan } from '@/types'
 
 function StatusBadge({ status }: { status: StatusPesanan }) {
   const variantMap: Record<StatusPesanan, 'info' | 'warning' | 'purple' | 'default' | 'success' | 'danger'> = {
-    Baru: 'info', Diproses: 'warning', 'Siap Kirim': 'purple',
-    'Dalam Pengiriman': 'default', Selesai: 'success', Dibatalkan: 'danger',
+    Baru: 'info', Dikonfirmasi: 'info', Diproses: 'warning', Siap: 'purple',
+    Dikirim: 'default', Selesai: 'success', Dibatalkan: 'danger',
   }
   return <Badge variant={variantMap[status] ?? 'default'}>{status}</Badge>
 }
@@ -342,7 +342,7 @@ function DetailManual({ pesanan, refetch }: { pesanan: Pesanan; refetch: () => v
   const [showSiapKirimConfirm, setShowSiapKirimConfirm] = useState(false)
 
   const statusFinal = pesanan.status === 'Selesai' || pesanan.status === 'Dibatalkan'
-  const dalamPengiriman = pesanan.status === 'Dalam Pengiriman'
+  const dalamPengiriman = pesanan.status === 'Dikirim'
 
   const handleBatalkan = async () => {
     if (!alasanBatal.trim()) { setBatalError('Alasan pembatalan wajib diisi'); return }
@@ -385,7 +385,7 @@ function DetailManual({ pesanan, refetch }: { pesanan: Pesanan; refetch: () => v
                   Tandai Siap Kirim
                 </Button>
               )}
-              {pesanan.status === 'Siap Kirim' && (
+              {pesanan.status === 'Siap' && (
                 <Link href={`/pengiriman/baru?pesananId=${pesanan.id}`}>
                   <Button size="sm">Buat Jadwal Pengiriman</Button>
                 </Link>
@@ -489,9 +489,9 @@ function DetailManual({ pesanan, refetch }: { pesanan: Pesanan; refetch: () => v
         confirmLabel="Ya, Proses" variant="default" loading={isUpdating}
       />
       <ConfirmModal open={showSiapKirimConfirm} onClose={() => setShowSiapKirimConfirm(false)}
-        onConfirm={async () => { await updateStatus({ id: pesanan.id, status: 'Siap Kirim' }); setShowSiapKirimConfirm(false); refetch() }}
-        title="Tandai Siap Kirim" description={`Ubah status pesanan ${pesanan.nomorPesanan} menjadi "Siap Kirim"?`}
-        confirmLabel="Ya, Siap Kirim" variant="default" loading={isUpdating}
+        onConfirm={async () => { await updateStatus({ id: pesanan.id, status: 'Siap' }); setShowSiapKirimConfirm(false); refetch() }}
+        title="Tandai Siap" description={`Ubah status pesanan ${pesanan.nomorPesanan} menjadi "Siap"?`}
+        confirmLabel="Ya, Siap" variant="default" loading={isUpdating}
       />
       <Modal open={showBatalModal} onClose={() => { setShowBatalModal(false); setAlasanBatal(''); setBatalError('') }}
         title="Batalkan Pesanan" description={`Batalkan pesanan ${pesanan.nomorPesanan}?`} size="md"

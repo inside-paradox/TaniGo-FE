@@ -22,9 +22,10 @@ type TabId = 'pos' | 'manual'
 const STATUS_OPTIONS: { value: string; label: string }[] = [
   { value: '', label: 'Semua Status' },
   { value: 'Baru', label: 'Baru' },
+  { value: 'Dikonfirmasi', label: 'Dikonfirmasi' },
   { value: 'Diproses', label: 'Diproses' },
-  { value: 'Siap Kirim', label: 'Siap Kirim' },
-  { value: 'Dalam Pengiriman', label: 'Dalam Pengiriman' },
+  { value: 'Siap', label: 'Siap' },
+  { value: 'Dikirim', label: 'Dikirim' },
   { value: 'Selesai', label: 'Selesai' },
   { value: 'Dibatalkan', label: 'Dibatalkan' },
 ]
@@ -38,9 +39,10 @@ const STATUS_POS_OPTIONS: { value: string; label: string }[] = [
 function statusBadgeVariant(status: StatusPesanan) {
   switch (status) {
     case 'Baru': return 'info'
+    case 'Dikonfirmasi': return 'info'
     case 'Diproses': return 'warning'
-    case 'Siap Kirim': return 'purple'
-    case 'Dalam Pengiriman': return 'info'
+    case 'Siap': return 'purple'
+    case 'Dikirim': return 'info'
     case 'Selesai': return 'success'
     case 'Dibatalkan': return 'danger'
     default: return 'default'
