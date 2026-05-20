@@ -4,12 +4,7 @@ import type { Cabang, CreateCabangDto, UpdateCabangDto, PaginatedResponse, TipeC
 export const cabangApi = {
   getAll: async (params?: { tipe?: TipeCabang; aktif?: boolean }): Promise<PaginatedResponse<Cabang>> => {
     const { data } = await api.get('/cabang', { params })
-    const result = data.data
-    // backend may return a plain array or a paginated response object
-    if (Array.isArray(result)) {
-      return { data: result, meta: { total: result.length, page: 1, limit: result.length, totalPages: 1 } }
-    }
-    return result
+    return data.data
   },
 
   getById: async (id: string): Promise<Cabang> => {

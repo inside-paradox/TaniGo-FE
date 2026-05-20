@@ -25,7 +25,7 @@ function BuatPengirimanForm() {
   const { data: pesananData, isLoading: loadingPesanan } = useOrders({
     page: 1,
     limit: 100,
-    status: 'Siap',
+    status: 'Siap Kirim',
   })
   const pesananList: Pesanan[] = pesananData?.data ?? []
 

@@ -546,7 +546,7 @@ export const mockPesanan: Pesanan[] = [
     metodePembayaran: 'Kredit VIP',
     metodePengiriman: 'dikirim',
     alamatPengiriman: 'Jl. Industri Besar No. 45, Tangerang',
-    status: 'Dikirim',
+    status: 'Dalam Pengiriman',
     catatan: 'Antar pagi sebelum jam 10.',
     kasirId: 'u-3',
     kasirNama: 'Siti Kasir',
