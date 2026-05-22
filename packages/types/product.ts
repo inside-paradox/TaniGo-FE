@@ -7,6 +7,7 @@ export interface Produk {
   nama: string
   sku: string
   kategori: KategoriProduk
+  kategoriId?: string | null
   satuan: string
   hargaBeli: number
   hargaJual: number
@@ -24,11 +25,11 @@ export interface Produk {
 export interface CreateProdukDto {
   nama: string
   sku?: string
-  kategori: KategoriProduk
+  kategoriId: string | null
   satuan: string
   hargaBeli: number
   hargaJual: number
-  stokAwal: number
+  stok: number
   tanggalKedaluwarsa?: string | null
   foto?: File | null
   thresholdStok: number

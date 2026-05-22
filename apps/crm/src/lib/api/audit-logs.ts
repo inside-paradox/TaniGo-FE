@@ -18,6 +18,6 @@ export const auditLogsApi = {
     params: TableParams & { userId?: string; modul?: string; tanggalDari?: string; tanggalSampai?: string }
   ): Promise<PaginatedResponse<AuditLog>> => {
     const { data } = await api.get('/audit-logs', { params })
-    return data.data
+    return { data: data.data, meta: data.meta }
   },
 }

@@ -6,7 +6,7 @@ export const purchaseOrdersApi = {
     params: TableParams & { status?: string; supplierId?: string }
   ): Promise<PaginatedResponse<PurchaseOrder>> => {
     const { data } = await api.get('/purchase-orders', { params })
-    return data.data
+    return { data: data.data, meta: data.meta }
   },
 
   getById: async (id: string): Promise<PurchaseOrder> => {

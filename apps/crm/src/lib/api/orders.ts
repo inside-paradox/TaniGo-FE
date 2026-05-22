@@ -6,7 +6,7 @@ export const ordersApi = {
     params: TableParams & { status?: string; sumber?: string; pelangganId?: string; kasirId?: string; tanggalDari?: string; tanggalSampai?: string }
   ): Promise<PaginatedResponse<Pesanan>> => {
     const { data } = await api.get('/orders', { params })
-    return data.data
+    return { data: data.data, meta: data.meta }
   },
 
   getById: async (id: string): Promise<Pesanan> => {

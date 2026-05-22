@@ -6,7 +6,7 @@ export const stokOpnameApi = {
     params: TableParams & { status?: string; cabangId?: string }
   ): Promise<PaginatedResponse<StokOpname>> => {
     const { data } = await api.get('/stok-opname', { params })
-    return data.data
+    return { data: data.data, meta: data.meta }
   },
 
   getById: async (id: string): Promise<StokOpname> => {

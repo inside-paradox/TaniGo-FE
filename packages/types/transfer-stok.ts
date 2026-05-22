@@ -44,11 +44,11 @@ export interface CreateTransferStokDto {
 }
 
 export interface ApproveTransferStokDto {
-  items: { transferItemId: string; qtyDisetujui: number }[]
+  items: { itemId: string; qtyDisetujui: number }[]
   catatan?: string
 }
 
 export interface TerimaTransferStokDto {
-  items: { transferItemId: string; qtyDiterima: number; status: StatusPenerimaanItem }[]
+  items: { itemId: string; qtyDiterima: number }[]
   catatan?: string
 }

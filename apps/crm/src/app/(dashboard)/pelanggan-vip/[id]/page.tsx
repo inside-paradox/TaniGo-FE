@@ -113,10 +113,11 @@ function CatatPembayaranModal({ open, onClose, tagihan }: CatatPembayaranModalPr
     e.preventDefault()
     if (!tagihan || !validate()) return
     await mutateAsync({
-      tagihanId: tagihan.id,
+      customerId: tagihan.pelangganId,
+      invoiceId: tagihan.id,
       nominal: nominal,
       tanggal,
-      metodePembayaran: metode,
+      metode,
       catatan: catatan || undefined,
     })
     handleClose()
@@ -136,7 +137,7 @@ function CatatPembayaranModal({ open, onClose, tagihan }: CatatPembayaranModalPr
       {tagihan && (
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="rounded-lg bg-gray-50 p-3 text-sm text-gray-700">
-            <p className="font-medium">No. Order: {tagihan.nomorOrder}</p>
+            <p className="font-medium">No. Order: {tagihan.nomorPesanan ?? tagihan.nomorOrder ?? '—'}</p>
             <p>Sisa Tagihan: <span className="font-semibold text-red-600">{formatRupiah(tagihan.sisaTagihan)}</span></p>
           </div>
           <InputNominal
@@ -198,24 +199,27 @@ function TabTagihan({ pelangganId }: { pelangganId: string }) {
 
   const columns: ColumnDef<TagihanVIP>[] = [
     {
-      accessorKey: 'nomorOrder',
+      id: 'nomorPesanan',
       header: 'No. Order',
-      cell: ({ getValue }) => <span className="font-medium text-gray-900">{getValue<string>()}</span>,
+      cell: ({ row }) => <span className="font-medium text-gray-900">{row.original.nomorPesanan ?? row.original.nomorOrder ?? '—'}</span>,
     },
     {
-      accessorKey: 'tanggal',
+      id: 'createdAt',
       header: 'Tanggal',
-      cell: ({ getValue }) => <span className="whitespace-nowrap text-gray-700">{formatTanggal(getValue<string>())}</span>,
+      cell: ({ row }) => {
+        const v = row.original.createdAt ?? row.original.tanggal ?? ''
+        return <span className="whitespace-nowrap text-gray-700">{v ? formatTanggal(v) : '—'}</span>
+      },
     },
     {
-      accessorKey: 'total',
+      id: 'nominal',
       header: 'Total',
-      cell: ({ getValue }) => <span className="font-medium">{formatRupiah(getValue<number>())}</span>,
+      cell: ({ row }) => <span className="font-medium">{formatRupiah(row.original.nominal ?? row.original.total ?? 0)}</span>,
     },
     {
-      accessorKey: 'jumlahDibayar',
+      id: 'nominalTerbayar',
       header: 'Dibayar',
-      cell: ({ getValue }) => <span className="text-green-700">{formatRupiah(getValue<number>())}</span>,
+      cell: ({ row }) => <span className="text-green-700">{formatRupiah(row.original.nominalTerbayar ?? row.original.jumlahDibayar)}</span>,
     },
     {
       accessorKey: 'sisaTagihan',
@@ -226,18 +230,19 @@ function TabTagihan({ pelangganId }: { pelangganId: string }) {
       },
     },
     {
-      accessorKey: 'dueDate',
+      id: 'tanggalJatuhTempo',
       header: 'Jatuh Tempo',
-      cell: ({ getValue }) => {
-        const v = getValue<string | null>()
+      cell: ({ row }) => {
+        const v = row.original.tanggalJatuhTempo ?? row.original.dueDate ?? null
         return <span className="whitespace-nowrap text-gray-700">{v ? formatTanggal(v) : '—'}</span>
       },
     },
     {
-      accessorKey: 'status',
+      id: 'statusTagihan',
       header: 'Status',
-      cell: ({ getValue }) => {
-        const s = getValue<StatusTagihan>()
+      cell: ({ row }) => {
+        const s = row.original.statusTagihan ?? row.original.status
+        if (!s) return null
         return (
           <Badge
             variant={statusTagihanVariant(s)}
@@ -252,7 +257,8 @@ function TabTagihan({ pelangganId }: { pelangganId: string }) {
       id: 'aksi',
       header: '',
       cell: ({ row }) => {
-        if (row.original.status === 'Lunas') return null
+        const s = row.original.statusTagihan ?? row.original.status
+        if (s === 'Lunas') return null
         return (
           <Button
             size="sm"
@@ -390,13 +396,14 @@ function TabRiwayat({ pelangganId }: { pelangganId: string }) {
 
 // ─── Tab Info Kredit ──────────────────────────────────────────────────────────
 
-function TabInfoKredit({ creditLimit, kreditTerpakai, sisaKredit, statusKredit }: {
+function TabInfoKredit({ creditLimit, creditUsed, sisaKredit, statusKredit }: {
   creditLimit: number
-  kreditTerpakai: number
+  creditUsed?: number
   sisaKredit: number
   statusKredit: StatusKreditPelanggan
 }) {
-  const pct = creditLimit > 0 ? Math.min((kreditTerpakai / creditLimit) * 100, 100) : 0
+  const used = creditUsed ?? 0
+  const pct = creditLimit > 0 ? Math.min((used / creditLimit) * 100, 100) : 0
   const colorText = pct > 90 ? 'text-red-600' : pct > 70 ? 'text-yellow-600' : 'text-green-600'
 
   return (
@@ -407,7 +414,7 @@ function TabInfoKredit({ creditLimit, kreditTerpakai, sisaKredit, statusKredit }
       </div>
       <div className="rounded-xl border border-gray-200 bg-white p-5 text-center shadow-sm">
         <p className="mb-1 text-sm font-medium text-gray-500">Kredit Terpakai</p>
-        <p className={`text-2xl font-bold ${colorText}`}>{formatRupiah(kreditTerpakai)}</p>
+        <p className={`text-2xl font-bold ${colorText}`}>{formatRupiah(used)}</p>
         <p className="mt-1 text-xs text-gray-400">{pct.toFixed(1)}% dari limit</p>
       </div>
       <div className="rounded-xl border border-gray-200 bg-white p-5 text-center shadow-sm">
@@ -419,7 +426,7 @@ function TabInfoKredit({ creditLimit, kreditTerpakai, sisaKredit, statusKredit }
           <p className="text-sm font-medium text-gray-700">Penggunaan Kredit</p>
           <Badge variant={statusKreditVariant(statusKredit)}>{statusKreditLabel(statusKredit)}</Badge>
         </div>
-        <KreditProgressBar terpakai={kreditTerpakai} limit={creditLimit} />
+        <KreditProgressBar terpakai={used} limit={creditLimit} />
         <p className="mt-2 text-right text-xs text-gray-500">{pct.toFixed(1)}%</p>
       </div>
     </div>
@@ -585,8 +592,9 @@ export default function DetailPelangganVIPPage() {
     )
   }
 
+  const pelangganCreditUsed = pelanggan.creditUsed ?? pelanggan.kreditTerpakai ?? 0
   const pct = pelanggan.creditLimit > 0
-    ? Math.min((pelanggan.kreditTerpakai / pelanggan.creditLimit) * 100, 100)
+    ? Math.min((pelangganCreditUsed / pelanggan.creditLimit) * 100, 100)
     : 0
   const barColor = pct > 90 ? 'bg-red-500' : pct > 70 ? 'bg-yellow-400' : 'bg-green-500'
 
@@ -677,7 +685,7 @@ export default function DetailPelangganVIPPage() {
               {activeTab === 'info-kredit' && (
                 <TabInfoKredit
                   creditLimit={pelanggan.creditLimit}
-                  kreditTerpakai={pelanggan.kreditTerpakai}
+                  creditUsed={pelangganCreditUsed}
                   sisaKredit={pelanggan.sisaKredit}
                   statusKredit={pelanggan.statusKredit}
                 />
@@ -700,7 +708,7 @@ export default function DetailPelangganVIPPage() {
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-500">Kredit Terpakai</span>
-                  <span className="font-semibold text-red-600">{formatRupiah(pelanggan.kreditTerpakai)}</span>
+                  <span className="font-semibold text-red-600">{formatRupiah(pelangganCreditUsed)}</span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-500">Sisa Kredit</span>

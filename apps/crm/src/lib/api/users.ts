@@ -19,22 +19,25 @@ export interface UpdateUserDto {
 export const usersApi = {
   getAll: async (params: TableParams): Promise<PaginatedResponse<User>> => {
     const { data } = await api.get('/users', { params })
-    return data.data
+    return {
+      data: data.data as User[],
+      meta: data.meta,
+    }
   },
 
   getById: async (id: string): Promise<User> => {
     const { data } = await api.get(`/users/${id}`)
-    return data.data
+    return data.data as User
   },
 
   create: async (payload: CreateUserDto): Promise<User> => {
     const { data } = await api.post('/users', payload)
-    return data.data
+    return data.data as User
   },
 
   update: async (id: string, payload: UpdateUserDto): Promise<User> => {
     const { data } = await api.patch(`/users/${id}`, payload)
-    return data.data
+    return data.data as User
   },
 
   resetPassword: async (id: string, passwordBaru: string): Promise<void> => {

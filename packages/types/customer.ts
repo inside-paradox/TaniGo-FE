@@ -8,6 +8,9 @@ export interface PelangganVIP {
   nomorTelepon: string
   alamat: string
   creditLimit: number
+  /** Actual field from backend (may be absent in legacy mock data) */
+  creditUsed?: number
+  /** Legacy field — keep for mock data compatibility */
   kreditTerpakai: number
   sisaKredit: number
   statusKredit: StatusKreditPelanggan
@@ -20,20 +23,43 @@ export interface PelangganVIP {
 export interface TagihanVIP {
   id: string
   pelangganId: string
-  nomorOrder: string
-  tanggal: string
-  total: number
-  jumlahDibayar: number
   sisaTagihan: number
+  /** New backend field */
+  pesananId?: string
+  /** New backend field */
+  nomorPesanan?: string
+  /** New backend field */
+  nomorTagihan?: string
+  /** New backend field */
+  nominal?: number
+  /** New backend field */
+  nominalTerbayar?: number
+  /** New backend field */
+  tanggalJatuhTempo?: string | null
+  /** New backend field */
+  statusTagihan?: StatusTagihan
+  /** New backend field */
+  createdAt?: string
+  /** Legacy field */
+  nomorOrder?: string
+  /** Legacy field */
+  jumlahDibayar: number
+  /** Legacy field */
+  total?: number
+  /** Legacy field */
   dueDate?: string | null
+  /** Legacy field */
   status: StatusTagihan
+  /** Legacy field */
+  tanggal?: string
 }
 
 export interface CatatPembayaranDto {
-  tagihanId: string
+  customerId: string
+  invoiceId: string
   nominal: number
   tanggal: string
-  metodePembayaran: string
+  metode: string
   catatan?: string
 }
 

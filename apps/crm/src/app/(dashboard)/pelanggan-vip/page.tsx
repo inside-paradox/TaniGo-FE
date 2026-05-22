@@ -104,19 +104,22 @@ function buildColumns(onRowClick?: (p: PelangganVIP) => void): ColumnDef<Pelangg
       ),
     },
     {
-      accessorKey: 'kreditTerpakai',
+      id: 'creditUsed',
       header: 'Terpakai',
-      cell: ({ row }) => (
-        <div className="flex flex-col gap-1">
-          <span className="text-sm text-gray-700">
-            {formatRupiah(row.original.kreditTerpakai)}
-          </span>
-          <KreditProgress
-            terpakai={row.original.kreditTerpakai}
-            limit={row.original.creditLimit}
-          />
-        </div>
-      ),
+      cell: ({ row }) => {
+        const terpakai = row.original.creditUsed ?? row.original.kreditTerpakai ?? 0
+        return (
+          <div className="flex flex-col gap-1">
+            <span className="text-sm text-gray-700">
+              {formatRupiah(terpakai)}
+            </span>
+            <KreditProgress
+              terpakai={terpakai}
+              limit={row.original.creditLimit}
+            />
+          </div>
+        )
+      },
     },
     {
       accessorKey: 'sisaKredit',

@@ -90,7 +90,19 @@ function deductInventory(branchId: string, produkId: string, qty: number, now: s
 }
 
 function ok(data: unknown, status = 200): Omit<AxiosResponse, 'config'> {
-  return { data: { data }, status, statusText: 'OK', headers: {} }
+  // Paginated responses from paginate() already have { data, meta } shape —
+  // spread them so the mock matches the real backend envelope: { data: [...], meta: {...} }
+  const isPaginated =
+    data !== null &&
+    typeof data === 'object' &&
+    'data' in (data as object) &&
+    'meta' in (data as object)
+  return {
+    data: isPaginated ? data : { data },
+    status,
+    statusText: 'OK',
+    headers: {},
+  }
 }
 
 function parseParams(url: string): URLSearchParams {

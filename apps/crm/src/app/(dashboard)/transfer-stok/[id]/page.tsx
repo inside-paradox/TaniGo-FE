@@ -59,7 +59,7 @@ function ApproveModal({ open, onClose, items, transferId }: ApproveModalProps) {
     await mutateAsync({
       id: transferId,
       payload: {
-        items: items.map((i) => ({ transferItemId: i.id, qtyDisetujui: qtyMap[i.id] ?? i.qtyDiminta })),
+        items: items.map((i) => ({ itemId: i.id, qtyDisetujui: qtyMap[i.id] ?? i.qtyDiminta })),
         catatan: catatan || undefined,
       },
     })
@@ -200,9 +200,8 @@ export default function DetailTransferStokPage() {
       id,
       payload: {
         items: transfer.items.map((item) => ({
-          transferItemId: item.id,
+          itemId: item.id,
           qtyDiterima: terimaQty[item.id] ?? item.qtyDisetujui ?? item.qtyDiminta,
-          status: terimaMap[item.id] ?? 'diterima',
         })),
         catatan: terimaCatatan || undefined,
       },

@@ -6,7 +6,7 @@ export const deliveriesApi = {
     params: TableParams & { status?: string; driverId?: string; tanggalDari?: string; tanggalSampai?: string }
   ): Promise<PaginatedResponse<Pengiriman>> => {
     const { data } = await api.get('/deliveries', { params })
-    return data.data
+    return { data: data.data, meta: data.meta }
   },
 
   getById: async (id: string): Promise<Pengiriman> => {

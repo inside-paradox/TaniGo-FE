@@ -10,16 +10,17 @@ import { useUIStore } from '@/store/ui-store'
 import { cn } from '@/lib/utils'
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
-  const { isAuthenticated } = useAuthStore()
+  const { isAuthenticated, _hasHydrated } = useAuthStore()
   const { sidebarCollapsed } = useUIStore()
   const router = useRouter()
 
   useEffect(() => {
-    if (!isAuthenticated) {
+    if (_hasHydrated && !isAuthenticated) {
       router.replace('/login')
     }
-  }, [isAuthenticated, router])
+  }, [isAuthenticated, _hasHydrated, router])
 
+  if (!_hasHydrated) return null
   if (!isAuthenticated) return null
 
   return (

@@ -4,7 +4,7 @@ import type { Produk, CreateProdukDto, UpdateProdukDto, PaginatedResponse, Table
 export const productsApi = {
   getAll: async (params: TableParams & ProdukFilter): Promise<PaginatedResponse<Produk>> => {
     const { data } = await api.get('/products', { params })
-    return data.data
+    return { data: data.data, meta: data.meta }
   },
 
   getById: async (id: string): Promise<Produk> => {

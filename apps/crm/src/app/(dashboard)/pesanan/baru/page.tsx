@@ -91,6 +91,7 @@ export default function PesananBaruPage() {
       nomorTelepon: '081234567890',
       alamat: 'Jl. Merdeka No. 1',
       creditLimit: 5_000_000,
+      creditUsed: 3_200_000,
       kreditTerpakai: 3_200_000,
       sisaKredit: 1_800_000,
       statusKredit: 'mendekati_limit' as const,
@@ -371,7 +372,7 @@ export default function PesananBaruPage() {
                         </div>
                         <div className="rounded-md bg-white/70 px-2 py-1">
                           <p className="text-[10px] uppercase tracking-wide text-gray-500">Terpakai</p>
-                          <p className="font-semibold text-red-600">{formatRupiah(pelangganVipSelected.kreditTerpakai)}</p>
+                          <p className="font-semibold text-red-600">{formatRupiah(pelangganVipSelected.creditUsed ?? pelangganVipSelected.kreditTerpakai ?? 0)}</p>
                         </div>
                         <div className="rounded-md bg-white/70 px-2 py-1">
                           <p className="text-[10px] uppercase tracking-wide text-gray-500">Sisa</p>

@@ -25,7 +25,7 @@ export const inventoryApi = {
     params: TableParams & { produkId?: string; jenis?: string }
   ): Promise<PaginatedResponse<PergerakanStok>> => {
     const { data } = await api.get('/inventory/pergerakan', { params })
-    return data.data
+    return { data: data.data, meta: data.meta }
   },
 
   penyesuaianStok: async (payload: PenyesuaianStokDto): Promise<PergerakanStok> => {
@@ -35,7 +35,7 @@ export const inventoryApi = {
 
   getSuppliers: async (params: TableParams): Promise<PaginatedResponse<Supplier>> => {
     const { data } = await api.get('/suppliers', { params })
-    return data.data
+    return { data: data.data, meta: data.meta }
   },
 
   getSupplierById: async (id: string): Promise<Supplier> => {

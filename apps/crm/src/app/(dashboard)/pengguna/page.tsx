@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { MoreHorizontal, Plus, ShieldAlert } from 'lucide-react'
+import { Plus, ShieldAlert } from 'lucide-react'
 import { toast } from 'sonner'
 import type { ColumnDef, SortingState } from '@tanstack/react-table'
 import { PageHeader } from '@/components/shared/page-header'
@@ -16,6 +16,7 @@ import { Modal, ConfirmModal } from '@/components/ui/modal'
 import { Input } from '@/components/ui/input'
 import { Select } from '@/components/ui/select'
 import { Combobox } from '@/components/ui/combobox'
+import { TableActionMenu } from '@/components/ui/table-action-menu'
 import { usersApi, type CreateUserDto, type UpdateUserDto } from '@/lib/api'
 import { useCabangList } from '@/hooks/use-cabang'
 import { useAuthStore } from '@/store/auth-store'
@@ -69,53 +70,6 @@ const EMPTY_FORM: UserFormData = {
   cabangId: '',
 }
 
-interface ActionMenuProps {
-  user: User
-  onEdit: (u: User) => void
-  onResetPassword: (u: User) => void
-  onToggleAktif: (u: User) => void
-  onDelete: (u: User) => void
-}
-
-function ActionMenu({ user, onEdit, onResetPassword, onToggleAktif, onDelete }: ActionMenuProps) {
-  const [open, setOpen] = useState(false)
-  return (
-    <div className="relative">
-      <button
-        onClick={() => setOpen((v) => !v)}
-        className="flex h-8 w-8 items-center justify-center rounded-lg text-gray-400 hover:bg-gray-100 hover:text-gray-600"
-      >
-        <MoreHorizontal className="h-4 w-4" />
-      </button>
-      {open && (
-        <>
-          <div className="fixed inset-0 z-10" onClick={() => setOpen(false)} />
-          <div className="absolute right-0 z-20 mt-1 w-48 rounded-xl border border-gray-200 bg-white shadow-lg">
-            <div className="py-1">
-              <button onClick={() => { setOpen(false); onEdit(user) }}
-                className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50">
-                Edit Pengguna
-              </button>
-              <button onClick={() => { setOpen(false); onResetPassword(user) }}
-                className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50">
-                Reset Password
-              </button>
-              <button onClick={() => { setOpen(false); onToggleAktif(user) }}
-                className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50">
-                {user.aktif ? 'Nonaktifkan' : 'Aktifkan'}
-              </button>
-              <hr className="my-1 border-gray-100" />
-              <button onClick={() => { setOpen(false); onDelete(user) }}
-                className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50">
-                Hapus
-              </button>
-            </div>
-          </div>
-        </>
-      )}
-    </div>
-  )
-}
 
 export default function PenggunaPage() {
   const qc = useQueryClient()
@@ -275,15 +229,33 @@ export default function PenggunaPage() {
     {
       id: 'aksi',
       header: '',
-      cell: ({ row }) => (
-        <ActionMenu
-          user={row.original}
-          onEdit={handleEdit}
-          onResetPassword={(u) => { setResetPasswordUser(u); setNewPassword('') }}
-          onToggleAktif={(u) => toggleAktifMutation.mutate({ id: u.id, aktif: !u.aktif })}
-          onDelete={(u) => setDeleteUser(u)}
-        />
-      ),
+      cell: ({ row }) => {
+        const u = row.original
+        return (
+          <TableActionMenu
+            items={[
+              {
+                label: 'Edit Pengguna',
+                onClick: () => handleEdit(u),
+              },
+              {
+                label: 'Reset Password',
+                onClick: () => { setResetPasswordUser(u); setNewPassword('') },
+              },
+              {
+                label: u.aktif ? 'Nonaktifkan' : 'Aktifkan',
+                onClick: () => toggleAktifMutation.mutate({ id: u.id, aktif: !u.aktif }),
+              },
+              {
+                label: 'Hapus',
+                onClick: () => setDeleteUser(u),
+                variant: 'danger',
+                separator: true,
+              },
+            ]}
+          />
+        )
+      },
     },
   ]
 

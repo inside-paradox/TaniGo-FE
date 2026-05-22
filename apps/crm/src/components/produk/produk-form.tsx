@@ -43,7 +43,7 @@ export function ProdukForm({ open, onClose, produk }: ProdukFormProps) {
   const createMutation = useCreateProduct()
   const updateMutation = useUpdateProduct()
   const { data: kategoriList = [] } = useKategoriProduk()
-  const kategoriOptions = kategoriList.map((k) => ({ value: k.nama, label: k.nama }))
+  const kategoriOptions = kategoriList.map((k) => ({ value: k.id, label: k.nama }))
 
   const {
     register,
@@ -58,7 +58,7 @@ export function ProdukForm({ open, onClose, produk }: ProdukFormProps) {
     defaultValues: {
       statusAktif: true,
       thresholdStok: 10,
-      stokAwal: 0,
+      stok: 0,
       hargaBeli: 0,
       hargaJual: 0,
     },
@@ -76,11 +76,11 @@ export function ProdukForm({ open, onClose, produk }: ProdukFormProps) {
       reset({
         nama: produk.nama,
         sku: produk.sku,
-        kategori: produk.kategori,
+        kategoriId: produk.kategoriId ?? '',
         satuan: isCustomSatuan ? 'custom' : produk.satuan,
         hargaBeli: produk.hargaBeli,
         hargaJual: produk.hargaJual,
-        stokAwal: produk.stok,
+        stok: produk.stok,
         tanggalKedaluwarsa: produk.tanggalKedaluwarsa ?? undefined,
         thresholdStok: produk.thresholdStok,
         statusAktif: produk.statusAktif,
@@ -91,7 +91,7 @@ export function ProdukForm({ open, onClose, produk }: ProdukFormProps) {
       reset({
         statusAktif: true,
         thresholdStok: 10,
-        stokAwal: 0,
+        stok: 0,
         hargaBeli: 0,
         hargaJual: 0,
       })
@@ -201,14 +201,14 @@ export function ProdukForm({ open, onClose, produk }: ProdukFormProps) {
           {/* Kategori */}
           <Controller
             control={control}
-            name="kategori"
+            name="kategoriId"
             render={({ field }) => (
               <Select
                 label="Kategori"
                 required
                 options={kategoriOptions}
                 placeholder="Pilih kategori"
-                error={errors.kategori?.message}
+                error={errors.kategoriId?.message}
                 value={field.value ?? ''}
                 onChange={field.onChange}
               />
@@ -296,10 +296,10 @@ export function ProdukForm({ open, onClose, produk }: ProdukFormProps) {
               min="0"
               placeholder="0"
               className="h-10 w-full rounded-lg border border-gray-300 px-3 text-sm text-gray-900 placeholder:text-gray-400 focus:border-green-500 focus:outline-none focus:ring-1 focus:ring-green-500"
-              {...register('stokAwal', { valueAsNumber: true })}
+              {...register('stok', { valueAsNumber: true })}
             />
-            {errors.stokAwal && (
-              <p className="mt-1 text-xs text-red-500">{errors.stokAwal.message}</p>
+            {errors.stok && (
+              <p className="mt-1 text-xs text-red-500">{errors.stok.message}</p>
             )}
           </div>
 

@@ -13,7 +13,7 @@ export const customersApi = {
     params: TableParams & { status?: string; statusKredit?: string }
   ): Promise<PaginatedResponse<PelangganVIP>> => {
     const { data } = await api.get('/customers/vip', { params })
-    return data.data
+    return { data: data.data, meta: data.meta }
   },
 
   getById: async (id: string): Promise<PelangganVIP> => {
@@ -40,15 +40,15 @@ export const customersApi = {
     params: TableParams
   ): Promise<PaginatedResponse<TagihanVIP>> => {
     const { data } = await api.get(`/customers/vip/${pelangganId}/tagihan`, { params })
-    return data.data
+    return { data: data.data, meta: data.meta }
   },
 
   catatPembayaran: async (payload: CatatPembayaranDto): Promise<void> => {
-    await api.post('/customers/vip/pembayaran', payload)
+    await api.post(`/customers/vip/${payload.customerId}/pembayaran`, payload)
   },
 
   getRiwayatTransaksi: async (pelangganId: string, params: TableParams) => {
     const { data } = await api.get(`/customers/vip/${pelangganId}/transaksi`, { params })
-    return data.data
+    return { data: data.data, meta: data.meta }
   },
 }

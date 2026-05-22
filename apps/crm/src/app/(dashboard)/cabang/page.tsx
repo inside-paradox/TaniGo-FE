@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Plus, Store, Warehouse, MapPin, Phone, MoreHorizontal } from 'lucide-react'
+import { Plus, Store, Warehouse, MapPin, Phone } from 'lucide-react'
 import { PageHeader } from '@/components/shared/page-header'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -10,6 +10,7 @@ import { Modal, ConfirmModal } from '@/components/ui/modal'
 import { Input } from '@/components/ui/input'
 import { Select } from '@/components/ui/select'
 import { Skeleton } from '@/components/ui/skeleton'
+import { TableActionMenu } from '@/components/ui/table-action-menu'
 import {
   useCabangList,
   useCreateCabang,
@@ -42,46 +43,6 @@ function TipeIcon({ tipe }: { tipe: TipeCabang }) {
     : <Warehouse className="h-4 w-4" />
 }
 
-interface ActionMenuProps {
-  cabang: Cabang
-  onEdit: (c: Cabang) => void
-  onToggle: (c: Cabang) => void
-}
-
-function ActionMenu({ cabang, onEdit, onToggle }: ActionMenuProps) {
-  const [open, setOpen] = useState(false)
-  return (
-    <div className="relative">
-      <button
-        onClick={() => setOpen((v) => !v)}
-        className="flex h-8 w-8 items-center justify-center rounded-lg text-gray-400 hover:bg-gray-100 hover:text-gray-600"
-      >
-        <MoreHorizontal className="h-4 w-4" />
-      </button>
-      {open && (
-        <>
-          <div className="fixed inset-0 z-10" onClick={() => setOpen(false)} />
-          <div className="absolute right-0 z-20 mt-1 w-44 rounded-xl border border-gray-200 bg-white shadow-lg">
-            <div className="py-1">
-              <button
-                onClick={() => { setOpen(false); onEdit(cabang) }}
-                className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50"
-              >
-                Edit Cabang
-              </button>
-              <button
-                onClick={() => { setOpen(false); onToggle(cabang) }}
-                className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50"
-              >
-                {cabang.aktif ? 'Nonaktifkan' : 'Aktifkan'}
-              </button>
-            </div>
-          </div>
-        </>
-      )}
-    </div>
-  )
-}
 
 function CabangCard({ cabang, onEdit, onToggle }: { cabang: Cabang; onEdit: (c: Cabang) => void; onToggle: (c: Cabang) => void }) {
   return (
@@ -113,7 +74,18 @@ function CabangCard({ cabang, onEdit, onToggle }: { cabang: Cabang; onEdit: (c: 
         <Badge variant={cabang.aktif ? 'success' : 'default'}>
           {cabang.aktif ? 'Aktif' : 'Nonaktif'}
         </Badge>
-        <ActionMenu cabang={cabang} onEdit={onEdit} onToggle={onToggle} />
+        <TableActionMenu
+          items={[
+            {
+              label: 'Edit Cabang',
+              onClick: () => onEdit(cabang),
+            },
+            {
+              label: cabang.aktif ? 'Nonaktifkan' : 'Aktifkan',
+              onClick: () => onToggle(cabang),
+            },
+          ]}
+        />
       </div>
     </div>
   )

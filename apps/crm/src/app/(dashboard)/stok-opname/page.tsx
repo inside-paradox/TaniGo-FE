@@ -75,20 +75,22 @@ export default function StokOpnamePage() {
         title="Stok Opname"
         subtitle="Rekonsiliasi stok fisik dengan data sistem"
         actions={
-          <div className="flex gap-2">
-            <Button
-              variant="outline"
-              onClick={handleCetakFormulir}
-              disabled={!produkData}
-            >
-              <Printer className="h-4 w-4" />
-              Cetak Formulir
-            </Button>
-            <Button onClick={() => router.push('/stok-opname/baru')}>
-              <Plus className="h-4 w-4" />
-              Buat Stok Opname
-            </Button>
-          </div>
+          !isSuperadmin ? (
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                onClick={handleCetakFormulir}
+                disabled={!produkData}
+              >
+                <Printer className="h-4 w-4" />
+                Cetak Formulir
+              </Button>
+              <Button onClick={() => router.push('/stok-opname/baru')}>
+                <Plus className="h-4 w-4" />
+                Buat Stok Opname
+              </Button>
+            </div>
+          ) : undefined
         }
       />
 

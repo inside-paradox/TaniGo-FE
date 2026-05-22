@@ -13,7 +13,7 @@ export const transferStokApi = {
     params: TableParams & { status?: string }
   ): Promise<PaginatedResponse<TransferStok>> => {
     const { data } = await api.get('/transfer-stok', { params })
-    return data.data
+    return { data: data.data, meta: data.meta }
   },
 
   getById: async (id: string): Promise<TransferStok> => {
@@ -27,7 +27,11 @@ export const transferStokApi = {
   },
 
   approve: async (id: string, payload: ApproveTransferStokDto): Promise<TransferStok> => {
-    const { data } = await api.patch(`/transfer-stok/${id}/approve`, payload)
+    const mapped = {
+      ...payload,
+      items: payload.items.map((item) => ({ itemId: item.itemId, qtyDisetujui: item.qtyDisetujui })),
+    }
+    const { data } = await api.patch(`/transfer-stok/${id}/approve`, mapped)
     return data.data
   },
 
@@ -42,7 +46,11 @@ export const transferStokApi = {
   },
 
   terima: async (id: string, payload: TerimaTransferStokDto): Promise<TransferStok> => {
-    const { data } = await api.patch(`/transfer-stok/${id}/terima`, payload)
+    const mapped = {
+      ...payload,
+      items: payload.items.map((item) => ({ itemId: item.itemId, qtyDiterima: item.qtyDiterima })),
+    }
+    const { data } = await api.patch(`/transfer-stok/${id}/terima`, mapped)
     return data.data
   },
 }

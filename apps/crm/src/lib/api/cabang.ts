@@ -4,7 +4,7 @@ import type { Cabang, CreateCabangDto, UpdateCabangDto, PaginatedResponse, TipeC
 export const cabangApi = {
   getAll: async (params?: { tipe?: TipeCabang; aktif?: boolean }): Promise<PaginatedResponse<Cabang>> => {
     const { data } = await api.get('/cabang', { params })
-    return data.data
+    return { data: data.data, meta: data.meta }
   },
 
   getById: async (id: string): Promise<Cabang> => {
