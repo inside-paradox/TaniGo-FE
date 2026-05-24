@@ -5,15 +5,14 @@ const publicRoutes = ['/login']
 
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl
-  const token = request.cookies.get('accessToken')?.value
 
-  // Already authenticated — kick away from login page
-  if (token && publicRoutes.some((route) => pathname.startsWith(route))) {
-    return NextResponse.redirect(new URL('/dashboard', request.url))
+  if (publicRoutes.some((route) => pathname.startsWith(route))) {
+    return NextResponse.next()
   }
 
-  // Not authenticated — protect all non-public routes
-  if (!token && !publicRoutes.some((route) => pathname.startsWith(route))) {
+  const token = request.cookies.get('accessToken')?.value
+
+  if (!token) {
     const loginUrl = new URL('/login', request.url)
     loginUrl.searchParams.set('redirect', pathname)
     return NextResponse.redirect(loginUrl)

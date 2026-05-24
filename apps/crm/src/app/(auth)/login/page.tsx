@@ -36,6 +36,13 @@ const DEMO_USERS: { label: string; user: User }[] = [
 
 const DEMO_TOKEN = 'demo-access-token'
 
+function getSafeRedirect(searchParams: ReturnType<typeof useSearchParams>) {
+  const redirect = searchParams.get('redirect') || '/dashboard'
+  return redirect.startsWith('/') && !redirect.startsWith('/auth') && !redirect.startsWith('/api')
+    ? redirect
+    : '/dashboard'
+}
+
 function LoginForm() {
   const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
@@ -43,21 +50,20 @@ function LoginForm() {
   const [authError, setAuthError] = useState<string | null>(null)
   const router = useRouter()
   const searchParams = useSearchParams()
-  const { setAuth } = useAuthStore()
+  const { setAuth, isAuthenticated, _hasHydrated } = useAuthStore()
 
-  const getSafeRedirect = () => {
-    const redirect = searchParams.get('redirect') || '/dashboard'
-    // Only allow redirecting to internal frontend pages (not API/auth paths)
-    return redirect.startsWith('/') && !redirect.startsWith('/auth') && !redirect.startsWith('/api')
-      ? redirect
-      : '/dashboard'
+  // Already logged in — redirect away from login page
+  // Handled client-side (not middleware) so we use actual auth state, not just cookie
+  if (_hasHydrated && isAuthenticated) {
+    router.replace(getSafeRedirect(searchParams))
+    return null
   }
 
   const loginAsDemo = (user: User) => {
     setAuth(user, DEMO_TOKEN, 'demo-refresh-token')
     document.cookie = `accessToken=${DEMO_TOKEN}; path=/; max-age=${60 * 60 * 24}`
     toast.success(`Masuk sebagai ${user.nama} (Demo)`)
-    router.push(getSafeRedirect())
+    router.push(getSafeRedirect(searchParams))
   }
 
   const {
@@ -78,7 +84,7 @@ function LoginForm() {
       document.cookie = `accessToken=${response.tokens.accessToken}; path=/; max-age=${60 * 60 * 24}`
 
       toast.success(`Selamat datang, ${response.user.nama}!`)
-      router.push(getSafeRedirect())
+      router.push(getSafeRedirect(searchParams))
     } catch (err: unknown) {
       const error = err as { response?: { data?: { message?: string } } }
       const message = error.response?.data?.message || 'Email atau password salah'
