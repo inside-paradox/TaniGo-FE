@@ -164,7 +164,7 @@ export default function DetailTransferStokPage() {
   const { id } = useParams<{ id: string }>()
   const router = useRouter()
   const { user } = useAuthStore()
-  const isGudang = user?.tipeCabang === 'gudang'
+  const isGudang = user?.tipeCabang === 'gudang' || user?.role === 'staf_gudang'
 
   const { data: transfer, isLoading } = useTransferStok(id)
   const { mutateAsync: kirim, isPending: isKirim } = useKirimTransferStok()
@@ -202,6 +202,7 @@ export default function DetailTransferStokPage() {
         items: transfer.items.map((item) => ({
           itemId: item.id,
           qtyDiterima: terimaQty[item.id] ?? item.qtyDisetujui ?? item.qtyDiminta,
+          statusPenerimaan: terimaMap[item.id] ?? 'diterima',
         })),
         catatan: terimaCatatan || undefined,
       },
@@ -230,9 +231,11 @@ export default function DetailTransferStokPage() {
     )
   }
 
-  const canApprove = isGudang && transfer.status === 'Menunggu Persetujuan'
-  const canKirim = isGudang && transfer.status === 'Disetujui'
-  const canTerima = !isGudang && transfer.status === 'Dikirim'
+  const isOwnGudang = isGudang && user?.cabangId === transfer.gudangId
+  const isOwnToko = !isGudang && user?.cabangId === transfer.tokoId
+  const canApprove = isOwnGudang && transfer.status === 'Menunggu Persetujuan'
+  const canKirim = isOwnGudang && transfer.status === 'Disetujui'
+  const canTerima = isOwnToko && transfer.status === 'Dikirim'
 
   return (
     <div className="space-y-6">

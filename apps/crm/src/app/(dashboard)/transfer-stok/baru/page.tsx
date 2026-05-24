@@ -16,6 +16,7 @@ import {
 import { useCreateTransferStok } from '@/hooks/use-transfer-stok'
 import { useProducts } from '@/hooks/use-products'
 import { useCabangList } from '@/hooks/use-cabang'
+import { useAuthStore } from '@/store/auth-store'
 import type { Produk, Cabang } from '@/types'
 
 // Satuan umum produk pertanian
@@ -37,6 +38,7 @@ let _counter = 0
 
 export default function BuatTransferStokPage() {
   const router = useRouter()
+  const { user } = useAuthStore()
   const { mutateAsync: create, isPending } = useCreateTransferStok()
   const { data: produksData } = useProducts({ page: 1, limit: 200 })
   const { data: cabangData } = useCabangList({ tipe: 'gudang', aktif: true })
@@ -50,6 +52,20 @@ export default function BuatTransferStokPage() {
   ])
   const [catatan, setCatatan] = useState('')
   const [errors, setErrors] = useState<Record<string, string>>({})
+
+  // Gudang users cannot create requests — they only process them
+  if (user?.tipeCabang === 'gudang' || user?.role === 'staf_gudang') {
+    return (
+      <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-gray-200 py-24 text-center">
+        <AlertCircle className="mb-3 h-10 w-10 text-gray-300" />
+        <p className="text-sm font-medium text-gray-500">Halaman ini tidak tersedia untuk gudang</p>
+        <p className="mt-1 text-xs text-gray-400">Hanya toko yang dapat membuat permintaan stok ke gudang</p>
+        <Button variant="outline" size="sm" className="mt-4" onClick={() => router.push('/transfer-stok')}>
+          Kembali ke Daftar
+        </Button>
+      </div>
+    )
+  }
 
   function addItem() {
     setItems((prev) => [

@@ -410,7 +410,7 @@ export function getMockResponse(config: AxiosRequestConfig): Omit<AxiosResponse,
         ts.catatanGudang = body.catatan ?? ts.catatanGudang
         ts.approvedAt = now
         ts.items = ts.items.map((item) => {
-          const incoming = (body.items as Array<{ transferItemId: string; qtyDisetujui: number }> | undefined)?.find((i) => i.transferItemId === item.id)
+          const incoming = (body.items as Array<{ itemId: string; qtyDisetujui: number }> | undefined)?.find((i) => i.itemId === item.id)
           return { ...item, qtyDisetujui: incoming?.qtyDisetujui ?? item.qtyDiminta }
         })
         // Deduct approved qty from gudang inventory
@@ -427,9 +427,9 @@ export function getMockResponse(config: AxiosRequestConfig): Omit<AxiosResponse,
         ts.status = 'Selesai'
         ts.receivedAt = now
         ts.items = ts.items.map((item) => {
-          const incoming = (body.items as Array<{ transferItemId: string; qtyDiterima: number; status: string }> | undefined)?.find((i) => i.transferItemId === item.id)
+          const incoming = (body.items as Array<{ itemId: string; qtyDiterima: number; statusPenerimaan: StatusPenerimaanItem }> | undefined)?.find((i) => i.itemId === item.id)
           return incoming
-            ? { ...item, qtyDiterima: incoming.qtyDiterima, statusPenerimaan: incoming.status as StatusPenerimaanItem }
+            ? { ...item, qtyDiterima: incoming.qtyDiterima, statusPenerimaan: incoming.statusPenerimaan ?? 'diterima' }
             : item
         })
         // Add received qty to toko inventory

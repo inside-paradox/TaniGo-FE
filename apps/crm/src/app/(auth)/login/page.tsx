@@ -4,7 +4,7 @@ import { Suspense, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { Eye, EyeOff, Loader2, FlaskConical, Sprout } from 'lucide-react'
+import { Eye, EyeOff, Loader2, FlaskConical, Sprout, AlertCircle } from 'lucide-react'
 import { toast } from 'sonner'
 import { loginSchema, type LoginFormData } from '@/lib/validations/auth'
 import { authApi } from '@/lib/api'
@@ -40,6 +40,7 @@ function LoginForm() {
   const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
   const [showDemo, setShowDemo] = useState(false)
+  const [authError, setAuthError] = useState<string | null>(null)
   const router = useRouter()
   const searchParams = useSearchParams()
   const { setAuth } = useAuthStore()
@@ -61,6 +62,7 @@ function LoginForm() {
 
   const onSubmit = async (values: LoginFormData) => {
     setLoading(true)
+    setAuthError(null)
     try {
       const response = await authApi.login(values)
       setAuth(response.user, response.tokens.accessToken, response.tokens.refreshToken)
@@ -73,7 +75,7 @@ function LoginForm() {
     } catch (err: unknown) {
       const error = err as { response?: { data?: { message?: string } } }
       const message = error.response?.data?.message || 'Email atau password salah'
-      toast.error(message)
+      setAuthError(message)
     } finally {
       setLoading(false)
     }
@@ -81,6 +83,14 @@ function LoginForm() {
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+      {/* Auth error banner */}
+      {authError && (
+        <div className="flex items-start gap-2.5 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+          <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+          <span>{authError}</span>
+        </div>
+      )}
+
       {/* Email */}
       <div className="flex flex-col gap-1">
         <label htmlFor="email" className="text-sm font-medium text-gray-700">
@@ -91,8 +101,12 @@ function LoginForm() {
           type="email"
           autoComplete="email"
           placeholder="admin@tanigo.id"
-          className="h-11 w-full rounded-lg border border-gray-300 px-4 text-sm text-gray-900 placeholder:text-gray-400 focus:border-green-500 focus:outline-none focus:ring-1 focus:ring-green-500"
-          {...register('email')}
+          className={`h-11 w-full rounded-lg border px-4 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-1 ${
+            authError || errors.email
+              ? 'border-red-400 focus:border-red-500 focus:ring-red-500'
+              : 'border-gray-300 focus:border-green-500 focus:ring-green-500'
+          }`}
+          {...register('email', { onChange: () => setAuthError(null) })}
         />
         {errors.email && (
           <p className="text-xs text-red-500">{errors.email.message}</p>
@@ -110,8 +124,12 @@ function LoginForm() {
             type={showPassword ? 'text' : 'password'}
             autoComplete="current-password"
             placeholder="Masukkan password"
-            className="h-11 w-full rounded-lg border border-gray-300 px-4 pr-12 text-sm text-gray-900 placeholder:text-gray-400 focus:border-green-500 focus:outline-none focus:ring-1 focus:ring-green-500"
-            {...register('password')}
+            className={`h-11 w-full rounded-lg border px-4 pr-12 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-1 ${
+              authError || errors.password
+                ? 'border-red-400 focus:border-red-500 focus:ring-red-500'
+                : 'border-gray-300 focus:border-green-500 focus:ring-green-500'
+            }`}
+            {...register('password', { onChange: () => setAuthError(null) })}
           />
           <button
             type="button"

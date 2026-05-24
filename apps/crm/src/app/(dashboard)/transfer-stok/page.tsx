@@ -87,7 +87,7 @@ const columns: ColumnDef<TransferStok>[] = [
 export default function TransferStokPage() {
   const router = useRouter()
   const { user } = useAuthStore()
-  const isGudang = user?.tipeCabang === 'gudang'
+  const isGudang = user?.tipeCabang === 'gudang' || user?.role === 'staf_gudang'
 
   const [page, setPage] = useState(1)
   const [limit, setLimit] = useState(25)

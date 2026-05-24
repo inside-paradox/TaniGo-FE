@@ -48,7 +48,11 @@ export const transferStokApi = {
   terima: async (id: string, payload: TerimaTransferStokDto): Promise<TransferStok> => {
     const mapped = {
       ...payload,
-      items: payload.items.map((item) => ({ itemId: item.itemId, qtyDiterima: item.qtyDiterima })),
+      items: payload.items.map((item) => ({
+        itemId: item.itemId,
+        qtyDiterima: item.qtyDiterima,
+        statusPenerimaan: item.statusPenerimaan,
+      })),
     }
     const { data } = await api.patch(`/transfer-stok/${id}/terima`, mapped)
     return data.data

@@ -49,6 +49,6 @@ export interface ApproveTransferStokDto {
 }
 
 export interface TerimaTransferStokDto {
-  items: { itemId: string; qtyDiterima: number }[]
+  items: { itemId: string; qtyDiterima: number; statusPenerimaan: StatusPenerimaanItem }[]
   catatan?: string
 }
