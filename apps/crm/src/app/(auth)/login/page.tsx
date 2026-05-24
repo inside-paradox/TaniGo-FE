@@ -45,11 +45,19 @@ function LoginForm() {
   const searchParams = useSearchParams()
   const { setAuth } = useAuthStore()
 
+  const getSafeRedirect = () => {
+    const redirect = searchParams.get('redirect') || '/dashboard'
+    // Only allow redirecting to internal frontend pages (not API/auth paths)
+    return redirect.startsWith('/') && !redirect.startsWith('/auth') && !redirect.startsWith('/api')
+      ? redirect
+      : '/dashboard'
+  }
+
   const loginAsDemo = (user: User) => {
     setAuth(user, DEMO_TOKEN, 'demo-refresh-token')
     document.cookie = `accessToken=${DEMO_TOKEN}; path=/; max-age=${60 * 60 * 24}`
     toast.success(`Masuk sebagai ${user.nama} (Demo)`)
-    router.push(searchParams.get('redirect') || '/dashboard')
+    router.push(getSafeRedirect())
   }
 
   const {
@@ -70,8 +78,7 @@ function LoginForm() {
       document.cookie = `accessToken=${response.tokens.accessToken}; path=/; max-age=${60 * 60 * 24}`
 
       toast.success(`Selamat datang, ${response.user.nama}!`)
-      const redirect = searchParams.get('redirect') || '/dashboard'
-      router.push(redirect)
+      router.push(getSafeRedirect())
     } catch (err: unknown) {
       const error = err as { response?: { data?: { message?: string } } }
       const message = error.response?.data?.message || 'Email atau password salah'
