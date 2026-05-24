@@ -5,7 +5,15 @@ import type { CreatePelangganVIPDto, CatatPembayaranDto, TableParams } from '@/t
 
 export const CUSTOMERS_KEY = 'customers'
 
-export function usePelangganVIP(params: TableParams & { status?: string; statusKredit?: string }) {
+export function useRingkasanPiutang() {
+  return useQuery({
+    queryKey: [CUSTOMERS_KEY, 'ringkasan'],
+    queryFn: () => customersApi.getRingkasan(),
+    staleTime: 30_000,
+  })
+}
+
+export function usePelangganVIP(params: TableParams & { status?: string; statusKredit?: string; statusTagihan?: string }) {
   return useQuery({
     queryKey: [CUSTOMERS_KEY, params],
     queryFn: () => customersApi.getAll(params),

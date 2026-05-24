@@ -37,6 +37,70 @@ const pergerakanStok = [...mockPergerakanStok] as PergerakanStok[]
 const shifts = [...mockShift] as Shift[]
 let notifikasi = [...mockNotifikasi] as Notifikasi[]
 
+// ── VIP helpers ───────────────────────────────────────────────────────────────
+
+function computeTagihanTerdekat(customerId: string) {
+  const aktif = tagihanVIP.filter((t) => t.pelangganId === customerId && t.status !== 'Lunas')
+  if (aktif.length === 0) return null
+
+  const nominal = aktif.reduce((sum, t) => sum + t.sisaTagihan, 0)
+  const withDue = aktif.filter((t) => t.dueDate)
+
+  if (withDue.length === 0) return { jumlah: aktif.length, nominal, dueDate: null, hariJatuhTempo: null }
+
+  const sorted = [...withDue].sort(
+    (a, b) => new Date(a.dueDate!).getTime() - new Date(b.dueDate!).getTime()
+  )
+  const nearest = sorted[0]
+  const today = new Date(); today.setHours(0, 0, 0, 0)
+  const due = new Date(nearest.dueDate!); due.setHours(0, 0, 0, 0)
+  const hariJatuhTempo = Math.round((due.getTime() - today.getTime()) / 86_400_000)
+
+  return { jumlah: aktif.length, nominal, dueDate: nearest.dueDate!, hariJatuhTempo }
+}
+
+function computeRingkasan() {
+  const today = new Date(); today.setHours(0, 0, 0, 0)
+  const sevenDaysLater = new Date(today.getTime() + 7 * 86_400_000)
+
+  let totalPiutang = 0
+  let mendekatiCount = 0, mendekatiNominal = 0
+  let overdueCount = 0, overdueNominal = 0
+
+  for (const customer of pelangganVIP) {
+    const tagihanAktif = tagihanVIP.filter(
+      (t) => t.pelangganId === customer.id && t.status !== 'Lunas'
+    )
+    if (tagihanAktif.length === 0) continue
+
+    const nominal = tagihanAktif.reduce((sum, t) => sum + t.sisaTagihan, 0)
+    totalPiutang += nominal
+
+    const isOverdue = tagihanAktif.some((t) => {
+      if (!t.dueDate) return false
+      const due = new Date(t.dueDate); due.setHours(0, 0, 0, 0)
+      return due < today
+    })
+
+    const isMendekati =
+      !isOverdue &&
+      tagihanAktif.some((t) => {
+        if (!t.dueDate) return false
+        const due = new Date(t.dueDate); due.setHours(0, 0, 0, 0)
+        return due >= today && due <= sevenDaysLater
+      })
+
+    if (isOverdue) { overdueCount++; overdueNominal += nominal }
+    else if (isMendekati) { mendekatiCount++; mendekatiNominal += nominal }
+  }
+
+  return {
+    totalPiutang,
+    mendekatiJatuhTempo: { count: mendekatiCount, nominal: mendekatiNominal },
+    sudahJatuhTempo: { count: overdueCount, nominal: overdueNominal },
+  }
+}
+
 // Settings state
 let infoToko = {
   nama: 'TaniGo Luwu',
@@ -759,14 +823,50 @@ export function getMockResponse(config: AxiosRequestConfig): Omit<AxiosResponse,
   }
 
   // ── Pelanggan VIP ─────────────────────────────────────────────────────────
+
+  // GET /customers/vip/ringkasan — summary piutang (must come before the /{id} catch-all)
+  if ((rawUrl === '/customers/vip/ringkasan' || rawUrl.startsWith('/customers/vip/ringkasan?')) && method === 'get') {
+    return ok(computeRingkasan())
+  }
+
   if (rawUrl === '/customers/vip' || rawUrl.startsWith('/customers/vip?')) {
     if (method === 'get') {
+      const today = new Date(); today.setHours(0, 0, 0, 0)
+      const sevenDaysLater = new Date(today.getTime() + 7 * 86_400_000)
+
       let list = [...pelangganVIP]
       if (params.status) list = list.filter((c) => c.status === params.status)
       if (params.statusKredit) list = list.filter((c) => c.statusKredit === params.statusKredit)
       const q = params.search as string | undefined
       if (q) list = list.filter((c) => c.namaLengkap.toLowerCase().includes(q.toLowerCase()) || c.nomorTelepon.includes(q))
-      return ok(paginate(list, Number(params.page ?? 1), Number(params.limit ?? 25)))
+
+      // Filter by statusTagihan
+      const statusTagihan = params.statusTagihan as string | undefined
+      if (statusTagihan === 'ada_hutang') {
+        list = list.filter((c) => c.kreditTerpakai > 0)
+      } else if (statusTagihan === 'mendekati_jt') {
+        list = list.filter((c) => {
+          const aktif = tagihanVIP.filter((t) => t.pelangganId === c.id && t.status !== 'Lunas')
+          return aktif.some((t) => {
+            if (!t.dueDate) return false
+            const due = new Date(t.dueDate); due.setHours(0, 0, 0, 0)
+            return due >= today && due <= sevenDaysLater
+          })
+        })
+      } else if (statusTagihan === 'overdue') {
+        list = list.filter((c) => {
+          const aktif = tagihanVIP.filter((t) => t.pelangganId === c.id && t.status !== 'Lunas')
+          return aktif.some((t) => {
+            if (!t.dueDate) return false
+            const due = new Date(t.dueDate); due.setHours(0, 0, 0, 0)
+            return due < today
+          })
+        })
+      }
+
+      // Enrich each customer with tagihanTerdekat
+      const enriched = list.map((c) => ({ ...c, tagihanTerdekat: computeTagihanTerdekat(c.id) }))
+      return ok(paginate(enriched, Number(params.page ?? 1), Number(params.limit ?? 25)))
     }
     if (method === 'post') {
       const newVIP: PelangganVIP = {

@@ -455,73 +455,73 @@ export const mockPelangganVIP: PelangganVIP[] = [
 ]
 
 export const mockTagihanVIP: TagihanVIP[] = [
-  // Tagihan vip-1
+  // ── vip-1: Kelompok Tani Makmur Jaya — 1 tagihan aktif, due dalam 5 hari (mendekati JT)
   {
     id: 'tgn-1a',
     pelangganId: 'vip-1',
     nomorOrder: 'ORD-2026-038',
-    tanggal: d(10),
+    tanggal: d(40),
     total: 1650000,
     jumlahDibayar: 1650000,
     sisaTagihan: 0,
-    dueDate: d(-5),
+    dueDate: d(10),   // lunas, dueDate tidak relevan
     status: 'Lunas',
   },
   {
     id: 'tgn-1b',
     pelangganId: 'vip-1',
     nomorOrder: 'ORD-2026-044',
-    tanggal: d(3),
+    tanggal: d(25),   // 25 hari lalu → jatuh tempo = d(25-30) = d(-5) = 5 hari lagi
     total: 2750000,
     jumlahDibayar: 0,
     sisaTagihan: 2750000,
-    dueDate: d(-17),
+    dueDate: d(-5),   // 5 hari ke depan → mendekati JT
     status: 'Belum Bayar',
   },
-  // Tagihan vip-2
+  // ── vip-2: PT Agro Nusantara — 1 Sebagian (20 hari lagi) + 1 Jatuh Tempo (overdue 10 hari)
   {
     id: 'tgn-2a',
     pelangganId: 'vip-2',
     nomorOrder: 'ORD-2026-031',
-    tanggal: d(20),
+    tanggal: d(50),
     total: 9500000,
     jumlahDibayar: 9500000,
     sisaTagihan: 0,
-    dueDate: d(-5),
+    dueDate: d(20),   // lunas
     status: 'Lunas',
   },
   {
     id: 'tgn-2b',
     pelangganId: 'vip-2',
     nomorOrder: 'ORD-2026-041',
-    tanggal: d(7),
+    tanggal: d(10),   // 10 hari lalu → jatuh tempo = d(-20) = 20 hari ke depan
     total: 12000000,
     jumlahDibayar: 5000000,
     sisaTagihan: 7000000,
-    dueDate: d(-7),
+    dueDate: d(-20),  // 20 hari ke depan → belum mendesak
     status: 'Sebagian',
   },
   {
     id: 'tgn-2c',
     pelangganId: 'vip-2',
     nomorOrder: 'ORD-2026-047',
-    tanggal: d(1),
+    tanggal: d(40),   // 40 hari lalu → jatuh tempo = d(10) = 10 hari lalu (overdue!)
     total: 8500000,
     jumlahDibayar: 0,
     sisaTagihan: 8500000,
-    dueDate: d(-14),
+    dueDate: d(10),   // 10 hari yang lalu → overdue
     status: 'Jatuh Tempo',
   },
-  // Tagihan vip-3
+  // ── vip-3: Pak Hendra Wijaya — Jatuh Tempo overdue 5 hari
   {
     id: 'tgn-3a',
     pelangganId: 'vip-3',
     nomorOrder: 'ORD-2026-029',
-    tanggal: d(25),
+    tanggal: d(35),   // 35 hari lalu → jatuh tempo = d(5) = 5 hari lalu (overdue!)
     total: 5200000,
     jumlahDibayar: 0,
     sisaTagihan: 5200000,
-    dueDate: d(-10),
+    dueDate: d(5),    // 5 hari yang lalu → overdue
     status: 'Jatuh Tempo',
   },
 ]

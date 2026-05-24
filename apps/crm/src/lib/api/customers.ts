@@ -2,6 +2,7 @@ import api from './axios'
 import type {
   PelangganVIP,
   TagihanVIP,
+  RingkasanPiutang,
   CatatPembayaranDto,
   CreatePelangganVIPDto,
   PaginatedResponse,
@@ -9,8 +10,13 @@ import type {
 } from '@/types'
 
 export const customersApi = {
+  getRingkasan: async (): Promise<RingkasanPiutang> => {
+    const { data } = await api.get('/customers/vip/ringkasan')
+    return data.data ?? data
+  },
+
   getAll: async (
-    params: TableParams & { status?: string; statusKredit?: string }
+    params: TableParams & { status?: string; statusKredit?: string; statusTagihan?: string }
   ): Promise<PaginatedResponse<PelangganVIP>> => {
     const { data } = await api.get('/customers/vip', { params })
     return { data: data.data, meta: data.meta }

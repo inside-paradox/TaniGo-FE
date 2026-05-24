@@ -2,6 +2,17 @@ export type StatusKreditPelanggan = 'aman' | 'mendekati_limit' | 'melebihi_limit
 export type StatusPelangganVIP = 'aktif' | 'suspend'
 export type StatusTagihan = 'Belum Bayar' | 'Sebagian' | 'Lunas' | 'Jatuh Tempo'
 
+export interface TagihanTerdekat {
+  /** Jumlah tagihan aktif (belum lunas) */
+  jumlah: number
+  /** Total sisa tagihan aktif */
+  nominal: number
+  /** Due date tagihan paling dekat */
+  dueDate: string | null
+  /** Hari menuju jatuh tempo; negatif = sudah lewat (overdue) */
+  hariJatuhTempo: number | null
+}
+
 export interface PelangganVIP {
   id: string
   namaLengkap: string
@@ -16,8 +27,16 @@ export interface PelangganVIP {
   statusKredit: StatusKreditPelanggan
   status: StatusPelangganVIP
   catatan?: string | null
+  /** Tagihan aktif paling urgent — null jika tidak ada hutang */
+  tagihanTerdekat?: TagihanTerdekat | null
   createdAt: string
   updatedAt: string
+}
+
+export interface RingkasanPiutang {
+  totalPiutang: number
+  mendekatiJatuhTempo: { count: number; nominal: number }
+  sudahJatuhTempo: { count: number; nominal: number }
 }
 
 export interface TagihanVIP {

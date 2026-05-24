@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { Plus } from 'lucide-react'
+import { Plus, AlertTriangle, Clock, Wallet, Users } from 'lucide-react'
 import type { ColumnDef, SortingState } from '@tanstack/react-table'
 import { PageHeader } from '@/components/shared/page-header'
 import { DataTable } from '@/components/shared/data-table'
@@ -10,13 +10,16 @@ import { Pagination } from '@/components/shared/pagination'
 import { SearchInput } from '@/components/shared/search-input'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Card } from '@/components/ui/card'
+import { Card, CardContent } from '@/components/ui/card'
 import { Modal } from '@/components/ui/modal'
 import { Input } from '@/components/ui/input'
 import { InputNominal } from '@/components/ui/input-nominal'
-import { usePelangganVIP, useCreatePelangganVIP } from '@/hooks/use-customers'
+import { Skeleton } from '@/components/ui/skeleton'
+import { usePelangganVIP, useCreatePelangganVIP, useRingkasanPiutang } from '@/hooks/use-customers'
 import { formatRupiah } from '@/lib/utils'
 import type { PelangganVIP, StatusKreditPelanggan } from '@/types'
+
+// ─── Constants ────────────────────────────────────────────────────────────────
 
 const STATUS_KREDIT_OPTIONS = [
   { value: '', label: 'Semua Status Kredit' },
@@ -31,53 +34,239 @@ const STATUS_OPTIONS = [
   { value: 'suspend', label: 'Suspend' },
 ]
 
+type StatusTagihanFilter = '' | 'ada_hutang' | 'mendekati_jt' | 'overdue'
+
+const TAGIHAN_FILTER_TABS: { value: StatusTagihanFilter; label: string }[] = [
+  { value: '', label: 'Semua' },
+  { value: 'ada_hutang', label: 'Ada Hutang' },
+  { value: 'mendekati_jt', label: 'Mendekati JT' },
+  { value: 'overdue', label: 'Overdue' },
+]
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
 function statusKreditVariant(s: StatusKreditPelanggan) {
   switch (s) {
-    case 'aman':
-      return 'success'
-    case 'mendekati_limit':
-      return 'warning'
-    case 'melebihi_limit':
-      return 'danger'
-    default:
-      return 'default'
+    case 'aman': return 'success'
+    case 'mendekati_limit': return 'warning'
+    case 'melebihi_limit': return 'danger'
+    default: return 'default'
   }
 }
 
 function statusKreditLabel(s: StatusKreditPelanggan) {
   switch (s) {
-    case 'aman':
-      return 'Aman'
-    case 'mendekati_limit':
-      return 'Mendekati Limit'
-    case 'melebihi_limit':
-      return 'Melebihi Limit'
-    default:
-      return s
+    case 'aman': return 'Aman'
+    case 'mendekati_limit': return 'Mendekati Limit'
+    case 'melebihi_limit': return 'Melebihi Limit'
+    default: return s
   }
 }
 
+// ─── Sub-components ───────────────────────────────────────────────────────────
+
 function KreditProgress({ terpakai, limit }: { terpakai: number; limit: number }) {
   const pct = limit > 0 ? Math.min((terpakai / limit) * 100, 100) : 0
-  const color =
-    pct >= 100 ? 'bg-red-500' : pct >= 80 ? 'bg-yellow-500' : 'bg-green-500'
+  const color = pct >= 100 ? 'bg-red-500' : pct >= 80 ? 'bg-yellow-500' : 'bg-green-500'
   return (
     <div className="w-24">
       <div className="mb-0.5 flex justify-between text-[10px] text-gray-500">
         <span>{pct.toFixed(0)}%</span>
       </div>
       <div className="h-1.5 w-full rounded-full bg-gray-200">
-        <div
-          className={`h-1.5 rounded-full transition-all ${color}`}
-          style={{ width: `${pct}%` }}
-        />
+        <div className={`h-1.5 rounded-full transition-all ${color}`} style={{ width: `${pct}%` }} />
       </div>
     </div>
   )
 }
 
-function buildColumns(onRowClick?: (p: PelangganVIP) => void): ColumnDef<PelangganVIP>[] {
-  void onRowClick
+function TagihanBadge({ customer }: { customer: PelangganVIP }) {
+  const tt = customer.tagihanTerdekat
+  const terpakai = customer.creditUsed ?? customer.kreditTerpakai ?? 0
+
+  if (!tt || terpakai === 0) {
+    return <span className="text-xs text-gray-400">—</span>
+  }
+
+  const { hariJatuhTempo, dueDate } = tt
+
+  if (hariJatuhTempo === null || dueDate === null) {
+    return (
+      <span className="inline-flex items-center gap-1 rounded-full bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-700">
+        {formatRupiah(tt.nominal)}
+      </span>
+    )
+  }
+
+  if (hariJatuhTempo < 0) {
+    // Overdue
+    return (
+      <span className="inline-flex items-center gap-1 rounded-full bg-red-50 px-2 py-0.5 text-xs font-medium text-red-700">
+        <AlertTriangle className="h-3 w-3" />
+        Lewat {Math.abs(hariJatuhTempo)} hari
+      </span>
+    )
+  }
+
+  if (hariJatuhTempo === 0) {
+    return (
+      <span className="inline-flex items-center gap-1 rounded-full bg-red-50 px-2 py-0.5 text-xs font-medium text-red-700">
+        <AlertTriangle className="h-3 w-3" />
+        Hari ini!
+      </span>
+    )
+  }
+
+  if (hariJatuhTempo <= 7) {
+    return (
+      <span className="inline-flex items-center gap-1 rounded-full bg-orange-50 px-2 py-0.5 text-xs font-medium text-orange-700">
+        <Clock className="h-3 w-3" />
+        {hariJatuhTempo} hari lagi
+      </span>
+    )
+  }
+
+  return (
+    <span className="inline-flex items-center gap-1 rounded-full bg-gray-50 px-2 py-0.5 text-xs font-medium text-gray-600">
+      <Clock className="h-3 w-3" />
+      {hariJatuhTempo} hari lagi
+    </span>
+  )
+}
+
+function SummaryCards({
+  loading,
+  totalPelanggan,
+  onFilterChange,
+}: {
+  loading: boolean
+  totalPelanggan: number
+  onFilterChange: (f: StatusTagihanFilter) => void
+}) {
+  const { data: ringkasan, isLoading: ringkasanLoading } = useRingkasanPiutang()
+  const isLoading = loading || ringkasanLoading
+
+  return (
+    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      {/* Total pelanggan */}
+      <Card>
+        <CardContent className="p-5">
+          {isLoading ? (
+            <div className="space-y-2"><Skeleton className="h-4 w-24" /><Skeleton className="h-7 w-16" /></div>
+          ) : (
+            <div className="flex items-start justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-500">Total Pelanggan VIP</p>
+                <p className="mt-1 text-2xl font-bold text-gray-900">{totalPelanggan}</p>
+                <p className="mt-0.5 text-xs text-gray-400">Pelanggan terdaftar</p>
+              </div>
+              <div className="rounded-xl bg-green-50 p-3">
+                <Users className="h-5 w-5 text-green-600" />
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Total piutang */}
+      <Card>
+        <CardContent className="p-5">
+          {isLoading ? (
+            <div className="space-y-2"><Skeleton className="h-4 w-24" /><Skeleton className="h-7 w-32" /></div>
+          ) : (
+            <button
+              className="w-full text-left"
+              onClick={() => onFilterChange('ada_hutang')}
+            >
+              <div className="flex items-start justify-between">
+                <div>
+                  <p className="text-sm font-medium text-gray-500">Total Piutang</p>
+                  <p className="mt-1 text-2xl font-bold text-gray-900">
+                    {formatRupiah(ringkasan?.totalPiutang ?? 0)}
+                  </p>
+                  <p className="mt-0.5 text-xs text-blue-600 hover:underline">Lihat yang berhutang →</p>
+                </div>
+                <div className="rounded-xl bg-blue-50 p-3">
+                  <Wallet className="h-5 w-5 text-blue-600" />
+                </div>
+              </div>
+            </button>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Mendekati jatuh tempo */}
+      <Card className={ringkasan && ringkasan.mendekatiJatuhTempo.count > 0 ? 'border-orange-200' : ''}>
+        <CardContent className="p-5">
+          {isLoading ? (
+            <div className="space-y-2"><Skeleton className="h-4 w-28" /><Skeleton className="h-7 w-12" /></div>
+          ) : (
+            <button
+              className="w-full text-left"
+              onClick={() => onFilterChange('mendekati_jt')}
+              disabled={!ringkasan || ringkasan.mendekatiJatuhTempo.count === 0}
+            >
+              <div className="flex items-start justify-between">
+                <div>
+                  <p className="text-sm font-medium text-gray-500">Mendekati Jatuh Tempo</p>
+                  <p className={`mt-1 text-2xl font-bold ${ringkasan && ringkasan.mendekatiJatuhTempo.count > 0 ? 'text-orange-600' : 'text-gray-900'}`}>
+                    {ringkasan?.mendekatiJatuhTempo.count ?? 0}
+                    <span className="ml-1 text-sm font-normal text-gray-400">pelanggan</span>
+                  </p>
+                  <p className="mt-0.5 text-xs text-gray-400">
+                    {ringkasan && ringkasan.mendekatiJatuhTempo.count > 0
+                      ? formatRupiah(ringkasan.mendekatiJatuhTempo.nominal)
+                      : 'Tidak ada dalam 7 hari'}
+                  </p>
+                </div>
+                <div className={`rounded-xl p-3 ${ringkasan && ringkasan.mendekatiJatuhTempo.count > 0 ? 'bg-orange-50' : 'bg-gray-50'}`}>
+                  <Clock className={`h-5 w-5 ${ringkasan && ringkasan.mendekatiJatuhTempo.count > 0 ? 'text-orange-500' : 'text-gray-400'}`} />
+                </div>
+              </div>
+            </button>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Overdue */}
+      <Card className={ringkasan && ringkasan.sudahJatuhTempo.count > 0 ? 'border-red-200' : ''}>
+        <CardContent className="p-5">
+          {isLoading ? (
+            <div className="space-y-2"><Skeleton className="h-4 w-24" /><Skeleton className="h-7 w-12" /></div>
+          ) : (
+            <button
+              className="w-full text-left"
+              onClick={() => onFilterChange('overdue')}
+              disabled={!ringkasan || ringkasan.sudahJatuhTempo.count === 0}
+            >
+              <div className="flex items-start justify-between">
+                <div>
+                  <p className="text-sm font-medium text-gray-500">Sudah Jatuh Tempo</p>
+                  <p className={`mt-1 text-2xl font-bold ${ringkasan && ringkasan.sudahJatuhTempo.count > 0 ? 'text-red-600' : 'text-gray-900'}`}>
+                    {ringkasan?.sudahJatuhTempo.count ?? 0}
+                    <span className="ml-1 text-sm font-normal text-gray-400">pelanggan</span>
+                  </p>
+                  <p className="mt-0.5 text-xs text-gray-400">
+                    {ringkasan && ringkasan.sudahJatuhTempo.count > 0
+                      ? formatRupiah(ringkasan.sudahJatuhTempo.nominal)
+                      : 'Semua tagihan on-track'}
+                  </p>
+                </div>
+                <div className={`rounded-xl p-3 ${ringkasan && ringkasan.sudahJatuhTempo.count > 0 ? 'bg-red-50' : 'bg-gray-50'}`}>
+                  <AlertTriangle className={`h-5 w-5 ${ringkasan && ringkasan.sudahJatuhTempo.count > 0 ? 'text-red-500' : 'text-gray-400'}`} />
+                </div>
+              </div>
+            </button>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  )
+}
+
+// ─── Table columns ────────────────────────────────────────────────────────────
+
+function buildColumns(): ColumnDef<PelangganVIP>[] {
   return [
     {
       accessorKey: 'namaLengkap',
@@ -110,13 +299,8 @@ function buildColumns(onRowClick?: (p: PelangganVIP) => void): ColumnDef<Pelangg
         const terpakai = row.original.creditUsed ?? row.original.kreditTerpakai ?? 0
         return (
           <div className="flex flex-col gap-1">
-            <span className="text-sm text-gray-700">
-              {formatRupiah(terpakai)}
-            </span>
-            <KreditProgress
-              terpakai={terpakai}
-              limit={row.original.creditLimit}
-            />
+            <span className="text-sm text-gray-700">{formatRupiah(terpakai)}</span>
+            <KreditProgress terpakai={terpakai} limit={row.original.creditLimit} />
           </div>
         )
       },
@@ -127,6 +311,11 @@ function buildColumns(onRowClick?: (p: PelangganVIP) => void): ColumnDef<Pelangg
       cell: ({ getValue }) => (
         <span className="font-medium text-gray-900">{formatRupiah(getValue<number>())}</span>
       ),
+    },
+    {
+      id: 'jatuhTempo',
+      header: 'Jatuh Tempo',
+      cell: ({ row }) => <TagihanBadge customer={row.original} />,
     },
     {
       accessorKey: 'statusKredit',
@@ -151,6 +340,8 @@ function buildColumns(onRowClick?: (p: PelangganVIP) => void): ColumnDef<Pelangg
   ]
 }
 
+// ─── Form types ───────────────────────────────────────────────────────────────
+
 interface TambahForm {
   namaLengkap: string
   nomorTelepon: string
@@ -169,6 +360,8 @@ const EMPTY_FORM: TambahForm = {
   catatan: '',
 }
 
+// ─── Page ─────────────────────────────────────────────────────────────────────
+
 export default function PelangganVIPPage() {
   const [page, setPage] = useState(1)
   const [limit, setLimit] = useState(25)
@@ -176,6 +369,7 @@ export default function PelangganVIPPage() {
   const [search, setSearch] = useState('')
   const [statusKredit, setStatusKredit] = useState('')
   const [status, setStatus] = useState('')
+  const [statusTagihan, setStatusTagihan] = useState<StatusTagihanFilter>('')
   const [modalOpen, setModalOpen] = useState(false)
   const [form, setForm] = useState<TambahForm>(EMPTY_FORM)
   const [formErrors, setFormErrors] = useState<TambahFormErrors>({})
@@ -186,17 +380,21 @@ export default function PelangganVIPPage() {
     search: search || undefined,
     statusKredit: statusKredit || undefined,
     status: status || undefined,
+    statusTagihan: statusTagihan || undefined,
     sortBy: sorting[0]?.id,
     sortOrder: sorting[0] ? (sorting[0].desc ? 'desc' : 'asc') : undefined,
   })
 
   const createMutation = useCreatePelangganVIP()
 
-  const handleSortingChange = (
-    updater: SortingState | ((prev: SortingState) => SortingState)
-  ) => {
+  const handleSortingChange = (updater: SortingState | ((prev: SortingState) => SortingState)) => {
     const next = typeof updater === 'function' ? updater(sorting) : updater
     setSorting(next)
+    setPage(1)
+  }
+
+  const handleFilterChange = (f: StatusTagihanFilter) => {
+    setStatusTagihan(f)
     setPage(1)
   }
 
@@ -241,44 +439,57 @@ export default function PelangganVIPPage() {
         }
       />
 
+      {/* Summary Cards */}
+      <SummaryCards
+        loading={isLoading}
+        totalPelanggan={data?.meta.total ?? 0}
+        onFilterChange={handleFilterChange}
+      />
+
       <Card>
         <div className="p-4 sm:p-6">
+
+          {/* Filter Tabs */}
+          <div className="mb-4 flex gap-1 rounded-lg border border-gray-200 bg-gray-50 p-1 w-fit">
+            {TAGIHAN_FILTER_TABS.map((tab) => (
+              <button
+                key={tab.value}
+                onClick={() => handleFilterChange(tab.value)}
+                className={`rounded-md px-3 py-1.5 text-sm font-medium transition-all ${
+                  statusTagihan === tab.value
+                    ? 'bg-white text-gray-900 shadow-sm'
+                    : 'text-gray-500 hover:text-gray-700'
+                }`}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
+
+          {/* Search + Filters */}
           <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center">
             <SearchInput
               value={search}
-              onChange={(val) => {
-                setSearch(val)
-                setPage(1)
-              }}
+              onChange={(val) => { setSearch(val); setPage(1) }}
               placeholder="Cari nama atau telepon..."
               className="w-full sm:w-72"
             />
             <select
               value={statusKredit}
-              onChange={(e) => {
-                setStatusKredit(e.target.value)
-                setPage(1)
-              }}
+              onChange={(e) => { setStatusKredit(e.target.value); setPage(1) }}
               className="h-10 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:border-green-500 focus:outline-none focus:ring-1 focus:ring-green-500"
             >
               {STATUS_KREDIT_OPTIONS.map((opt) => (
-                <option key={opt.value} value={opt.value}>
-                  {opt.label}
-                </option>
+                <option key={opt.value} value={opt.value}>{opt.label}</option>
               ))}
             </select>
             <select
               value={status}
-              onChange={(e) => {
-                setStatus(e.target.value)
-                setPage(1)
-              }}
+              onChange={(e) => { setStatus(e.target.value); setPage(1) }}
               className="h-10 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:border-green-500 focus:outline-none focus:ring-1 focus:ring-green-500"
             >
               {STATUS_OPTIONS.map((opt) => (
-                <option key={opt.value} value={opt.value}>
-                  {opt.label}
-                </option>
+                <option key={opt.value} value={opt.value}>{opt.label}</option>
               ))}
             </select>
           </div>
@@ -299,22 +510,16 @@ export default function PelangganVIPPage() {
               total={data.meta.total}
               limit={limit}
               onPageChange={setPage}
-              onLimitChange={(l) => {
-                setLimit(l)
-                setPage(1)
-              }}
+              onLimitChange={(l) => { setLimit(l); setPage(1) }}
             />
           )}
         </div>
       </Card>
 
+      {/* Modal Tambah Pelanggan */}
       <Modal
         open={modalOpen}
-        onClose={() => {
-          setModalOpen(false)
-          setForm(EMPTY_FORM)
-          setFormErrors({})
-        }}
+        onClose={() => { setModalOpen(false); setForm(EMPTY_FORM); setFormErrors({}) }}
         title="Tambah Pelanggan VIP"
         size="md"
       >
@@ -360,11 +565,7 @@ export default function PelangganVIPPage() {
             <Button
               type="button"
               variant="outline"
-              onClick={() => {
-                setModalOpen(false)
-                setForm(EMPTY_FORM)
-                setFormErrors({})
-              }}
+              onClick={() => { setModalOpen(false); setForm(EMPTY_FORM); setFormErrors({}) }}
             >
               Batal
             </Button>
