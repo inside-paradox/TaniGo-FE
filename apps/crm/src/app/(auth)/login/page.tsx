@@ -1,6 +1,6 @@
 'use client'
 
-import { Suspense, useState } from 'react'
+import { Suspense, useState, useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -53,11 +53,12 @@ function LoginForm() {
   const { setAuth, isAuthenticated, _hasHydrated } = useAuthStore()
 
   // Already logged in — redirect away from login page
-  // Handled client-side (not middleware) so we use actual auth state, not just cookie
-  if (_hasHydrated && isAuthenticated) {
-    router.replace(getSafeRedirect(searchParams))
-    return null
-  }
+  // Must be in useEffect, not render, to avoid React crash
+  useEffect(() => {
+    if (_hasHydrated && isAuthenticated) {
+      router.replace(getSafeRedirect(searchParams))
+    }
+  }, [_hasHydrated, isAuthenticated, router, searchParams])
 
   const loginAsDemo = (user: User) => {
     setAuth(user, DEMO_TOKEN, 'demo-refresh-token')
