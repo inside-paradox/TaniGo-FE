@@ -118,6 +118,7 @@ export function PaymentModal({ open, onClose }: PaymentModalProps) {
             <CheckCircle className="text-green-500" size={48} />
             <p className="text-lg font-bold text-gray-900">Pembayaran Diterima</p>
             <p className="text-sm text-gray-500">No. Struk: {successData.nomorStruk}</p>
+            <p className="text-xs text-gray-400">ID: {successData.id}</p>
             <p className="text-xs text-gray-400">Kasir: {user?.nama ?? '-'}</p>
           </div>
 

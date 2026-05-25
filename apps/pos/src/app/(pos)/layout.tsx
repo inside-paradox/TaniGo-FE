@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { FlaskConical, WifiOff, RefreshCw } from 'lucide-react'
 import { useAuthStore } from '@/store/authStore'
@@ -9,19 +9,19 @@ import { useOnlineStatus } from '@/hooks/useOnlineStatus'
 import { Sidebar } from '@/components/shared/sidebar'
 
 export default function POSLayout({ children }: { children: React.ReactNode }) {
-  const { isAuthenticated, accessToken } = useAuthStore()
+  const accessToken = useAuthStore((s) => s.accessToken)
+  const _hasHydrated = useAuthStore((s) => s._hasHydrated)
   const router = useRouter()
   const isDemo = accessToken === 'demo-token'
   const isOnline = useOnlineStatus()
   const { queueCount, isSyncing } = useOfflineStore()
-  const [mounted, setMounted] = useState(false)
 
   useEffect(() => {
-    setMounted(true)
-    if (!isAuthenticated()) router.replace('/login')
-  }, [isAuthenticated, router])
+    if (_hasHydrated && !accessToken) router.replace('/login')
+  }, [_hasHydrated, accessToken, router])
 
-  if (!mounted || !isAuthenticated()) return null
+  if (!_hasHydrated) return null
+  if (!accessToken) return null
 
   return (
     <div className="flex h-screen flex-col overflow-hidden bg-gray-50">

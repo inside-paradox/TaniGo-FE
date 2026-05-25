@@ -29,12 +29,14 @@ const DEMO_USER = {
 export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false)
   const { mutate: doLogin, isPending } = useLogin()
-  const { isAuthenticated, setAuth } = useAuthStore()
+  const setAuth = useAuthStore((s) => s.setAuth)
+  const accessToken = useAuthStore((s) => s.accessToken)
+  const _hasHydrated = useAuthStore((s) => s._hasHydrated)
   const router = useRouter()
 
   useEffect(() => {
-    if (isAuthenticated()) router.replace('/transaksi')
-  }, [isAuthenticated, router])
+    if (_hasHydrated && accessToken) router.replace('/transaksi')
+  }, [_hasHydrated, accessToken, router])
 
   const {
     register,

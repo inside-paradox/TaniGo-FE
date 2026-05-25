@@ -4,46 +4,48 @@
 export interface POSInventoryItem {
   id: string
   cabangId: string
+  cabangNama: string
   produkId: string
   produkNama: string
   produkSku: string
   satuan: string
   stok: number
   hargaJual: number
+  statusStok: string
   updatedAt: string
 }
 
 // Demo inventory for toko-1 (the demo kasir's branch)
 const TOKO_1_INVENTORY: POSInventoryItem[] = [
   {
-    id: 'ci-t1-p1', cabangId: 'toko-1', produkId: 'p-1',
+    id: 'ci-t1-p1', cabangId: 'toko-1', cabangNama: 'Toko Utama', produkId: 'p-1',
     produkNama: 'Pupuk Urea 50kg', produkSku: 'PUP-001', satuan: 'karung',
-    stok: 20, hargaJual: 110000, updatedAt: new Date().toISOString(),
+    stok: 20, hargaJual: 110000, statusStok: 'tersedia', updatedAt: new Date().toISOString(),
   },
   {
-    id: 'ci-t1-p3', cabangId: 'toko-1', produkId: 'p-3',
+    id: 'ci-t1-p3', cabangId: 'toko-1', cabangNama: 'Toko Utama', produkId: 'p-3',
     produkNama: 'Pestisida Roundup 1L', produkSku: 'PES-001', satuan: 'botol',
-    stok: 10, hargaJual: 75000, updatedAt: new Date().toISOString(),
+    stok: 10, hargaJual: 75000, statusStok: 'tersedia', updatedAt: new Date().toISOString(),
   },
   {
-    id: 'ci-t1-p6', cabangId: 'toko-1', produkId: 'p-6',
+    id: 'ci-t1-p6', cabangId: 'toko-1', cabangNama: 'Toko Utama', produkId: 'p-6',
     produkNama: 'Pupuk Kandang Organik', produkSku: 'PUP-003', satuan: 'karung',
-    stok: 25, hargaJual: 35000, updatedAt: new Date().toISOString(),
+    stok: 25, hargaJual: 35000, statusStok: 'tersedia', updatedAt: new Date().toISOString(),
   },
   {
-    id: 'ci-t1-p2', cabangId: 'toko-1', produkId: 'p-2',
+    id: 'ci-t1-p2', cabangId: 'toko-1', cabangNama: 'Toko Utama', produkId: 'p-2',
     produkNama: 'Pupuk NPK Mutiara', produkSku: 'PUP-002', satuan: 'kg',
-    stok: 5, hargaJual: 16000, updatedAt: new Date().toISOString(),
+    stok: 5, hargaJual: 16000, statusStok: 'menipis', updatedAt: new Date().toISOString(),
   },
   {
-    id: 'ci-t1-p5', cabangId: 'toko-1', produkId: 'p-5',
+    id: 'ci-t1-p5', cabangId: 'toko-1', cabangNama: 'Toko Utama', produkId: 'p-5',
     produkNama: 'Sprayer Manual 16L', produkSku: 'ALT-001', satuan: 'unit',
-    stok: 3, hargaJual: 175000, updatedAt: new Date().toISOString(),
+    stok: 3, hargaJual: 175000, statusStok: 'menipis', updatedAt: new Date().toISOString(),
   },
   {
-    id: 'ci-t1-p4', cabangId: 'toko-1', produkId: 'p-4',
+    id: 'ci-t1-p4', cabangId: 'toko-1', cabangNama: 'Toko Utama', produkId: 'p-4',
     produkNama: 'Benih Padi IR64', produkSku: 'BEN-001', satuan: 'kg',
-    stok: 0, hargaJual: 22000, updatedAt: new Date().toISOString(),
+    stok: 0, hargaJual: 22000, statusStok: 'habis', updatedAt: new Date().toISOString(),
   },
 ]
 

@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { ShoppingCart, Clock, LogOut, Sprout, RefreshCw } from 'lucide-react'
+import { ShoppingCart, Clock, RotateCcw, LogOut, Sprout, RefreshCw } from 'lucide-react'
 import { cn } from '@/lib/utils/cn'
 import { useAuthStore } from '@/store/authStore'
 import { useShiftStore } from '@/store/shiftStore'
@@ -16,6 +16,7 @@ import { formatTanggalWaktu } from '@tanigo/utils'
 const navItems = [
   { href: '/transaksi', label: 'Transaksi', icon: ShoppingCart },
   { href: '/shift', label: 'Shift', icon: Clock },
+  { href: '/retur', label: 'Retur', icon: RotateCcw },
 ]
 
 export function Sidebar() {

@@ -86,7 +86,65 @@ api.interceptors.request.use((config) => {
             demoShift.totalPenjualanTransfer += total
           localStorage.setItem('demo_active_shift', JSON.stringify(demoShift))
         }
+        // Store transaction for later lookup (retur)
+        const stored = JSON.parse(localStorage.getItem('demo_transactions') ?? '{}')
+        stored[transaksi.id] = transaksi
+        localStorage.setItem('demo_transactions', JSON.stringify(stored))
         mock(transaksi, 201)
+      }
+
+      // GET /api/transactions/:id
+      const trxGetMatch = url.match(/^\/api\/transactions\/([^/]+)$/)
+      if (trxGetMatch && method === 'get') {
+        const id = trxGetMatch[1]
+        const stored = JSON.parse(localStorage.getItem('demo_transactions') ?? '{}')
+        const trx = stored[id] ?? null
+        mock(trx)
+      }
+
+      // POST /api/transactions/:id/return
+      const returMatch = url.match(/^\/api\/transactions\/([^/]+)\/return$/)
+      if (returMatch && method === 'post') {
+        const transaksiId = returMatch[1]
+        const stored = JSON.parse(localStorage.getItem('demo_transactions') ?? '{}')
+        const trx = stored[transaksiId]
+        const body = config.data
+          ? typeof config.data === 'string' ? JSON.parse(config.data) : config.data
+          : {}
+        const returItems = (body.items ?? []) as Array<{ itemTransaksiId: string; qty: number }>
+        const resolvedItems = returItems.map((ri) => {
+          const orig = trx?.items?.find((i: { id: string }) => i.id === ri.itemTransaksiId)
+          return {
+            itemTransaksiId: ri.itemTransaksiId,
+            produkId: orig?.produkId ?? '',
+            produkNama: orig?.produkNama ?? '',
+            produkSku: orig?.produkSku ?? '',
+            satuan: orig?.satuan ?? 'pcs',
+            qty: ri.qty,
+            hargaSatuan: orig?.hargaSatuan ?? 0,
+            subtotal: (orig?.hargaSatuan ?? 0) * ri.qty,
+          }
+        })
+        const totalRefund = resolvedItems.reduce((s, i) => s + i.subtotal, 0)
+        // Update demo shift retur stats
+        const demoShiftRaw2 = localStorage.getItem('demo_active_shift')
+        const demoShift2 = demoShiftRaw2 ? JSON.parse(demoShiftRaw2) : null
+        if (demoShift2) {
+          demoShift2.totalRetur += totalRefund
+          localStorage.setItem('demo_active_shift', JSON.stringify(demoShift2))
+        }
+        const retur = {
+          id: `retur-${Date.now()}`,
+          transaksiId,
+          nomorStruk: trx?.nomorStruk ?? '',
+          items: resolvedItems,
+          totalRefund,
+          metodeRefund: body.metodeRefund ?? 'Tunai',
+          kasirId: 'u-3',
+          kasirNama: 'Siti Kasir',
+          createdAt: new Date().toISOString(),
+        }
+        mock(retur, 201)
       }
 
       // ── Shifts ───────────────────────────────────────────────────────────────
@@ -162,7 +220,7 @@ api.interceptors.response.use(
       } catch {
         localStorage.removeItem('access_token')
         localStorage.removeItem('refresh_token')
-        localStorage.removeItem('auth_user')
+        localStorage.removeItem('tanigo-auth')
         if (typeof window !== 'undefined') {
           window.location.href = '/login'
         }
