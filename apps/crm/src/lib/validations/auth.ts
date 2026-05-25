@@ -8,12 +8,12 @@ export const loginSchema = z.object({
 export const changePasswordSchema = z
   .object({
     passwordLama: z.string().min(1, 'Password lama wajib diisi'),
-    passwordBaru: z.string().min(6, 'Password baru minimal 6 karakter'),
-    konfirmasiPassword: z.string().min(1, 'Konfirmasi password wajib diisi'),
+    passwordBaru: z.string().min(8, 'Password baru minimal 8 karakter'),
+    konfirmasi: z.string().min(1, 'Konfirmasi password wajib diisi'),
   })
-  .refine((data) => data.passwordBaru === data.konfirmasiPassword, {
+  .refine((data) => data.passwordBaru === data.konfirmasi, {
     message: 'Konfirmasi password tidak cocok',
-    path: ['konfirmasiPassword'],
+    path: ['konfirmasi'],
   })
 
 export type LoginFormData = z.infer<typeof loginSchema>

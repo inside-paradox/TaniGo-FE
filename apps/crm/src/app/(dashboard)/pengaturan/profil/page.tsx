@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { changePasswordSchema, type ChangePasswordFormData } from '@/lib/validations/auth'
 import { useMutation } from '@tanstack/react-query'
 import { Save, KeyRound, User, Building2, ShieldCheck, Eye, EyeOff } from 'lucide-react'
 import { toast } from 'sonner'
@@ -154,12 +156,6 @@ function InfoAkunSection() {
 
 // ── Ganti Password ────────────────────────────────────────────────────────────
 
-interface PasswordForm {
-  passwordLama: string
-  passwordBaru: string
-  konfirmasi: string
-}
-
 function GantiPasswordSection() {
   const [showLama, setShowLama] = useState(false)
   const [showBaru, setShowBaru] = useState(false)
@@ -168,15 +164,14 @@ function GantiPasswordSection() {
   const {
     register,
     handleSubmit,
-    watch,
     reset,
     formState: { errors },
-  } = useForm<PasswordForm>()
-
-  const passwordBaru = watch('passwordBaru')
+  } = useForm<ChangePasswordFormData>({
+    resolver: zodResolver(changePasswordSchema),
+  })
 
   const mutation = useMutation({
-    mutationFn: (data: PasswordForm) =>
+    mutationFn: (data: ChangePasswordFormData) =>
       authApi.changePassword({ passwordLama: data.passwordLama, passwordBaru: data.passwordBaru }),
     onSuccess: () => {
       reset()
@@ -205,7 +200,7 @@ function GantiPasswordSection() {
             <div className="relative">
               <input
                 type={showLama ? 'text' : 'password'}
-                {...register('passwordLama', { required: 'Password lama wajib diisi' })}
+                {...register('passwordLama')}
                 placeholder="Masukkan password saat ini"
                 className="h-10 w-full rounded-lg border border-gray-300 px-3 pr-10 text-sm focus:border-green-500 focus:outline-none focus:ring-1 focus:ring-green-500"
               />
@@ -230,10 +225,7 @@ function GantiPasswordSection() {
             <div className="relative">
               <input
                 type={showBaru ? 'text' : 'password'}
-                {...register('passwordBaru', {
-                  required: 'Password baru wajib diisi',
-                  minLength: { value: 8, message: 'Minimal 8 karakter' },
-                })}
+                {...register('passwordBaru')}
                 placeholder="Minimal 8 karakter"
                 className="h-10 w-full rounded-lg border border-gray-300 px-3 pr-10 text-sm focus:border-green-500 focus:outline-none focus:ring-1 focus:ring-green-500"
               />
@@ -258,10 +250,7 @@ function GantiPasswordSection() {
             <div className="relative">
               <input
                 type={showKonfirmasi ? 'text' : 'password'}
-                {...register('konfirmasi', {
-                  required: 'Konfirmasi password wajib diisi',
-                  validate: (v) => v === passwordBaru || 'Password tidak cocok',
-                })}
+                {...register('konfirmasi')}
                 placeholder="Ulangi password baru"
                 className="h-10 w-full rounded-lg border border-gray-300 px-3 pr-10 text-sm focus:border-green-500 focus:outline-none focus:ring-1 focus:ring-green-500"
               />
