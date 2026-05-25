@@ -32,7 +32,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Badge } from '@/components/ui/badge'
-import { useDashboardStok, useDashboardPenjualan } from '@/hooks/use-dashboard'
+import { useDashboardStok, useDashboardPenjualan, useDashboardToko, useDashboardGudang, useDashboardSuperadmin } from '@/hooks/use-dashboard'
 import { useCabangList } from '@/hooks/use-cabang'
 import { useAuthStore } from '@/store/auth-store'
 import { formatRupiah } from '@/lib/utils'
@@ -97,6 +97,7 @@ function StatCard({
 
 function DashboardGudang() {
   const { data: stok, isLoading: stokLoading } = useDashboardStok()
+  const { data: aktivitas, isLoading: aktivitasLoading } = useDashboardGudang()
 
   return (
     <div className="space-y-6">
@@ -149,24 +150,27 @@ function DashboardGudang() {
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
           <StatCard
             title="PO Menunggu"
-            value={4}
+            value={aktivitas?.poMenunggu ?? 0}
             subtitle="Menunggu konfirmasi supplier"
             icon={<ClipboardList className="h-5 w-5 text-indigo-600" />}
             color="bg-indigo-50"
+            loading={aktivitasLoading}
           />
           <StatCard
             title="Transfer Masuk"
-            value={7}
+            value={aktivitas?.transferMasuk ?? 0}
             subtitle="Menunggu persetujuan"
             icon={<Clock className="h-5 w-5 text-amber-600" />}
             color="bg-amber-50"
+            loading={aktivitasLoading}
           />
           <StatCard
             title="Siap Dikirim"
-            value={3}
+            value={aktivitas?.siapDikirim ?? 0}
             subtitle="Transfer sudah disetujui"
             icon={<ArrowLeftRight className="h-5 w-5 text-teal-600" />}
             color="bg-teal-50"
+            loading={aktivitasLoading}
           />
         </div>
       </div>
@@ -177,6 +181,7 @@ function DashboardGudang() {
 function DashboardToko() {
   const { data: penjualan, isLoading: penjualanLoading } = useDashboardPenjualan()
   const { data: stok, isLoading: stokLoading } = useDashboardStok()
+  const { data: operasional, isLoading: operasionalLoading } = useDashboardToko()
 
   const penjualanHarian = penjualan?.harian || penjualanHarianMock
   const metodePembayaran = penjualan?.metodePembayaran || metodePembayaranMock
@@ -324,33 +329,36 @@ function DashboardToko() {
         </h2>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <StatCard
-            title="Pengiriman"
-            value={8}
-            subtitle="3 sedang dalam perjalanan"
+            title="Pengiriman Hari Ini"
+            value={operasional?.pengirimanHariIni ?? 0}
+            subtitle="Terjadwal hari ini"
             icon={<Truck className="h-5 w-5 text-teal-600" />}
             color="bg-teal-50"
+            loading={operasionalLoading}
           />
           <StatCard
             title="Pesanan Baru"
-            value={12}
+            value={operasional?.pesananBaru ?? 0}
             subtitle="Menunggu diproses"
             icon={<ShoppingCart className="h-5 w-5 text-amber-600" />}
             color="bg-amber-50"
+            loading={operasionalLoading}
           />
           <StatCard
             title="Tagihan Jatuh Tempo"
-            value={3}
+            value={operasional?.tagihanJatuhTempo ?? 0}
             subtitle="Pelanggan VIP"
             icon={<AlertTriangle className="h-5 w-5 text-rose-600" />}
             color="bg-rose-50"
+            loading={operasionalLoading}
           />
           <StatCard
             title="Transfer Stok Pending"
-            value={2}
+            value={operasional?.transferStokPending ?? 0}
             subtitle="Menunggu konfirmasi gudang"
             icon={<ArrowLeftRight className="h-5 w-5 text-violet-600" />}
             color="bg-violet-50"
-            loading={stokLoading}
+            loading={operasionalLoading}
           />
         </div>
       </div>
@@ -383,23 +391,17 @@ function DashboardToko() {
   )
 }
 
-// ─── Mock performance data per toko (replace with API when available) ──────────
-const performanceTokoMock = [
-  { nama: 'Toko Utama', pendapatan: 39100000, transaksi: 142, pertumbuhan: 12.4 },
-  { nama: 'Toko Selatan', pendapatan: 28500000, transaksi: 103, pertumbuhan: -3.2 },
-  { nama: 'Toko Barat', pendapatan: 31200000, transaksi: 118, pertumbuhan: 8.7 },
-  { nama: 'Toko Timur', pendapatan: 19800000, transaksi: 76, pertumbuhan: 21.1 },
-]
-
 function DashboardSuperadmin() {
   const { data: cabangData, isLoading: cabangLoading } = useCabangList()
+  const { data: superadminData, isLoading: superadminLoading } = useDashboardSuperadmin()
   const allCabang = cabangData?.data ?? []
   const tokoList = allCabang.filter((c) => c.tipe === 'toko')
   const gudangList = allCabang.filter((c) => c.tipe === 'gudang')
   const activeCount = allCabang.filter((c) => c.aktif).length
 
-  const totalPendapatan = performanceTokoMock.reduce((s, t) => s + t.pendapatan, 0)
-  const totalTransaksi = performanceTokoMock.reduce((s, t) => s + t.transaksi, 0)
+  const performaToko = superadminData?.performaToko ?? []
+  const totalPendapatan = performaToko.reduce((s, t) => s + t.pendapatan, 0)
+  const totalTransaksi = performaToko.reduce((s, t) => s + t.transaksi, 0)
 
   return (
     <div className="space-y-6">
@@ -429,6 +431,7 @@ function DashboardSuperadmin() {
             subtitle="Semua toko"
             icon={<TrendingUp className="h-5 w-5 text-green-600" />}
             color="bg-green-50"
+            loading={superadminLoading}
           />
           <StatCard
             title="Total Transaksi"
@@ -436,6 +439,7 @@ function DashboardSuperadmin() {
             subtitle="7 hari terakhir"
             icon={<ShoppingCart className="h-5 w-5 text-purple-600" />}
             color="bg-purple-50"
+            loading={superadminLoading}
           />
         </div>
       </div>
@@ -445,8 +449,11 @@ function DashboardSuperadmin() {
         <Card className="lg:col-span-2">
           <CardHeader><CardTitle>Pendapatan per Toko (7 Hari Terakhir)</CardTitle></CardHeader>
           <CardContent>
+            {superadminLoading ? (
+              <Skeleton className="h-56 w-full" />
+            ) : (
             <ResponsiveContainer width="100%" height={220}>
-              <BarChart data={performanceTokoMock} barSize={32}>
+              <BarChart data={performaToko} barSize={32}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
                 <XAxis dataKey="nama" tick={{ fontSize: 11, fill: '#6b7280' }} axisLine={false} tickLine={false} />
                 <YAxis tick={{ fontSize: 11, fill: '#6b7280' }} axisLine={false} tickLine={false}
@@ -458,6 +465,7 @@ function DashboardSuperadmin() {
                 <Bar dataKey="pendapatan" fill="#16a34a" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
+            )}
           </CardContent>
         </Card>
 
@@ -508,8 +516,12 @@ function DashboardSuperadmin() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">
-              {performanceTokoMock.map((toko) => (
-                <tr key={toko.nama} className="hover:bg-gray-50">
+              {superadminLoading ? (
+                <tr><td colSpan={4} className="px-4 py-6 text-center text-sm text-gray-400">Memuat data...</td></tr>
+              ) : performaToko.length === 0 ? (
+                <tr><td colSpan={4} className="px-4 py-6 text-center text-sm text-gray-400">Belum ada data toko</td></tr>
+              ) : performaToko.map((toko) => (
+                <tr key={toko.cabangId} className="hover:bg-gray-50">
                   <td className="px-4 py-3 font-medium text-gray-900">{toko.nama}</td>
                   <td className="px-4 py-3 text-right text-gray-700">{formatRupiah(toko.pendapatan)}</td>
                   <td className="px-4 py-3 text-right text-gray-700">{toko.transaksi}</td>
@@ -524,6 +536,7 @@ function DashboardSuperadmin() {
                 </tr>
               ))}
             </tbody>
+
           </table>
         </div>
       </div>

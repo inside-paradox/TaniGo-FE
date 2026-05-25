@@ -4,6 +4,9 @@ import type {
   PergerakanStok,
   PenyesuaianStokDto,
   DashboardStok,
+  DashboardToko,
+  DashboardGudang,
+  DashboardSuperadmin,
   Supplier,
   CreateSupplierDto,
   PaginatedResponse,
@@ -18,6 +21,21 @@ export const inventoryApi = {
 
   getDashboard: async (): Promise<DashboardStok> => {
     const { data } = await api.get('/inventory/dashboard')
+    return data.data
+  },
+
+  getDashboardToko: async (): Promise<DashboardToko> => {
+    const { data } = await api.get('/dashboard/toko')
+    return data.data
+  },
+
+  getDashboardGudang: async (): Promise<DashboardGudang> => {
+    const { data } = await api.get('/dashboard/gudang')
+    return data.data
+  },
+
+  getDashboardSuperadmin: async (): Promise<DashboardSuperadmin> => {
+    const { data } = await api.get('/dashboard/superadmin')
     return data.data
   },
 

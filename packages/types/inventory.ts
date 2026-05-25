@@ -44,6 +44,31 @@ export interface DashboardStok {
   produkKedaluwarsa30Hari: number
 }
 
+export interface DashboardToko {
+  pengirimanHariIni: number
+  pesananBaru: number
+  tagihanJatuhTempo: number
+  transferStokPending: number
+}
+
+export interface DashboardGudang {
+  poMenunggu: number
+  transferMasuk: number
+  siapDikirim: number
+}
+
+export interface PerformaToko {
+  cabangId: string
+  nama: string
+  pendapatan: number
+  transaksi: number
+  pertumbuhan: number
+}
+
+export interface DashboardSuperadmin {
+  performaToko: PerformaToko[]
+}
+
 export interface Supplier {
   id: string
   nama: string
