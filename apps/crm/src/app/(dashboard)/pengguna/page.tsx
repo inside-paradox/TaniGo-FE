@@ -169,6 +169,7 @@ export default function PenggunaPage() {
     if (!form.nama.trim()) errors.nama = 'Nama wajib diisi'
     if (!form.email.trim()) errors.email = 'Email wajib diisi'
     if (!editUser && !form.password.trim()) errors.password = 'Password wajib diisi untuk pengguna baru'
+    if (!editUser && form.password.trim() && form.password.length < 8) errors.password = 'Password minimal 8 karakter'
     if (!form.role) errors.role = 'Role wajib dipilih'
     if (roleNeedsCabang(form.role) && !form.cabangId) errors.cabangId = 'Cabang wajib dipilih'
     setFormErrors(errors)
@@ -362,16 +363,19 @@ export default function PenggunaPage() {
         description={`Reset password untuk ${resetPasswordUser?.nama}`}
         size="sm"
       >
-        <form onSubmit={async (e) => { e.preventDefault(); if (!resetPasswordUser || !newPassword.trim()) return; await resetPasswordMutation.mutateAsync({ id: resetPasswordUser.id, passwordBaru: newPassword }) }} className="space-y-4">
+        <form onSubmit={async (e) => { e.preventDefault(); if (!resetPasswordUser || newPassword.length < 8) return; await resetPasswordMutation.mutateAsync({ id: resetPasswordUser.id, passwordBaru: newPassword }) }} className="space-y-4">
           <div className="flex items-start gap-3 rounded-lg bg-yellow-50 p-3 text-sm text-yellow-800">
             <ShieldAlert className="mt-0.5 h-4 w-4 flex-shrink-0" />
             <p>Password baru akan langsung aktif. Pastikan pengguna telah diberitahu.</p>
           </div>
           <Input label="Password Baru" required type="password" value={newPassword}
             onChange={(e) => setNewPassword(e.target.value)} placeholder="Minimal 8 karakter" />
+          {newPassword.length > 0 && newPassword.length < 8 && (
+            <p className="text-xs text-red-500">Password minimal 8 karakter</p>
+          )}
           <div className="flex justify-end gap-3">
             <Button type="button" variant="outline" onClick={() => { setResetPasswordUser(null); setNewPassword('') }}>Batal</Button>
-            <Button type="submit" loading={resetPasswordMutation.isPending} disabled={!newPassword.trim()}>Reset Password</Button>
+            <Button type="submit" loading={resetPasswordMutation.isPending} disabled={newPassword.length < 8}>Reset Password</Button>
           </div>
         </form>
       </Modal>
