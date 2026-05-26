@@ -12,7 +12,6 @@ import {
   BarChart2,
   Settings,
   ChevronLeft,
-  ChevronRight,
   ShoppingBag,
   ClipboardList,
   ClipboardCheck,
@@ -155,26 +154,30 @@ export function Sidebar() {
     >
       {/* Logo */}
       <div className="flex h-16 items-center justify-between border-b border-gray-200 px-4">
-        {!sidebarCollapsed && (
-          <div className="flex items-center gap-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-green-600">
-              <Sprout className="h-4 w-4 text-white" />
-            </div>
-            <span className="text-lg font-bold text-gray-900">TaniGo</span>
-          </div>
-        )}
-        {sidebarCollapsed && (
-          <div className="mx-auto flex h-8 w-8 items-center justify-center rounded-lg bg-green-600 text-white font-bold text-sm">
-            TG
-          </div>
-        )}
-        {!sidebarCollapsed && (
+        {sidebarCollapsed ? (
           <button
             onClick={toggleSidebar}
-            className="rounded-lg p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600"
+            title="Buka sidebar"
+            className="mx-auto flex h-8 w-8 items-center justify-center rounded-lg bg-green-600 text-white font-bold text-sm hover:bg-green-700 transition-colors"
           >
-            <ChevronLeft className="h-4 w-4" />
+            TG
           </button>
+        ) : (
+          <>
+            <div className="flex items-center gap-2">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-green-600">
+                <Sprout className="h-4 w-4 text-white" />
+              </div>
+              <span className="text-lg font-bold text-gray-900">TaniGo</span>
+            </div>
+            <button
+              onClick={toggleSidebar}
+              title="Tutup sidebar"
+              className="rounded-lg p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600"
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </button>
+          </>
         )}
       </div>
 
@@ -207,17 +210,6 @@ export function Sidebar() {
         </ul>
       </nav>
 
-      {/* Collapse button when collapsed */}
-      {sidebarCollapsed && (
-        <div className="border-t border-gray-200 p-2">
-          <button
-            onClick={toggleSidebar}
-            className="flex w-full items-center justify-center rounded-lg p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-600"
-          >
-            <ChevronRight className="h-4 w-4" />
-          </button>
-        </div>
-      )}
     </aside>
   )
 }
