@@ -158,9 +158,9 @@ export function Sidebar() {
           <button
             onClick={toggleSidebar}
             title="Buka sidebar"
-            className="mx-auto flex h-8 w-8 items-center justify-center rounded-lg bg-green-600 text-white font-bold text-sm hover:bg-green-700 transition-colors"
+            className="mx-auto flex h-8 w-8 items-center justify-center rounded-lg bg-green-600 hover:bg-green-700 transition-colors"
           >
-            TG
+            <Sprout className="h-4 w-4 text-white" />
           </button>
         ) : (
           <>
