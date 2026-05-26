@@ -81,13 +81,13 @@ function StatCard({
             <Skeleton className="h-3 w-32" />
           </div>
         ) : (
-          <div className="flex items-start justify-between">
-            <div>
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0 flex-1">
               <p className="text-sm font-medium text-gray-500">{title}</p>
-              <p className="mt-1 text-2xl font-bold text-gray-900">{value}</p>
+              <p className="mt-1 text-xl font-bold leading-tight text-gray-900 break-words">{value}</p>
               {subtitle && <p className="mt-1 text-xs text-gray-400">{subtitle}</p>}
             </div>
-            <div className={`rounded-xl p-3 ${color}`}>{icon}</div>
+            <div className={`shrink-0 rounded-xl p-3 ${color}`}>{icon}</div>
           </div>
         )}
       </CardContent>
