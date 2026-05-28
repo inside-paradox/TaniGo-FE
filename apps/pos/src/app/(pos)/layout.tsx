@@ -8,20 +8,38 @@ import { useOfflineStore } from '@/store/offlineStore'
 import { useOnlineStatus } from '@/hooks/useOnlineStatus'
 import { Sidebar } from '@/components/shared/sidebar'
 
+function isAllowedInPOS(user: { role: string; tipeCabang?: string | null } | null): boolean {
+  if (!user) return false
+  return user.role === 'kasir' && user.tipeCabang === 'toko'
+}
+
 export default function POSLayout({ children }: { children: React.ReactNode }) {
   const accessToken = useAuthStore((s) => s.accessToken)
+  const user = useAuthStore((s) => s.user)
   const _hasHydrated = useAuthStore((s) => s._hasHydrated)
+  const clearAuth = useAuthStore((s) => s.clearAuth)
   const router = useRouter()
   const isDemo = accessToken === 'demo-token'
   const isOnline = useOnlineStatus()
   const { queueCount, isSyncing } = useOfflineStore()
 
   useEffect(() => {
-    if (_hasHydrated && !accessToken) router.replace('/login')
-  }, [_hasHydrated, accessToken, router])
+    if (!_hasHydrated) return
+    if (!accessToken) {
+      router.replace('/login')
+      return
+    }
+    // Demo mode bypasses role check
+    if (isDemo) return
+    if (!isAllowedInPOS(user)) {
+      clearAuth()
+      router.replace('/login')
+    }
+  }, [_hasHydrated, accessToken, user, isDemo, clearAuth, router])
 
   if (!_hasHydrated) return null
   if (!accessToken) return null
+  if (!isDemo && !isAllowedInPOS(user)) return null
 
   return (
     <div className="flex h-screen flex-col overflow-hidden bg-gray-50">

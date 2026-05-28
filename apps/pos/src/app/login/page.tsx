@@ -51,6 +51,11 @@ export default function LoginPage() {
     setAuthError(null)
     try {
       const data = await login(values)
+      // POS hanya untuk kasir di cabang toko
+      if (data.user.role !== 'kasir' || data.user.tipeCabang !== 'toko') {
+        setAuthError('Akses ditolak. TaniGo POS hanya dapat diakses oleh Kasir Toko.')
+        return
+      }
       setAuth(data.user, data.tokens.accessToken, data.tokens.refreshToken)
       toast.success(`Selamat datang, ${data.user.nama}!`)
       router.replace('/transaksi')
