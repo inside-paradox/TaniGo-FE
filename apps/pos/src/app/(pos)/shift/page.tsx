@@ -4,7 +4,7 @@ import { useMutation, useQuery } from '@tanstack/react-query'
 import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { toast } from 'sonner'
-import { Clock, CheckCircle, Printer } from 'lucide-react'
+import { Clock, CheckCircle, Printer, Loader2 } from 'lucide-react'
 import { formatRupiah, formatTanggalWaktu } from '@tanigo/utils'
 import { bukaShift, tutupShift, fetchActiveShift } from '@/lib/api/shifts'
 import { useShiftStore } from '@/store/shiftStore'
@@ -19,10 +19,10 @@ function formatRupiahInput(value: string): number {
 }
 
 export default function ShiftPage() {
-  const { activeShift, setShift, clearShift } = useShiftStore()
+  const { activeShift, setShift, clearShift, _hasHydrated } = useShiftStore()
   const user = useAuthStore((s) => s.user)
 
-  const { refetch } = useQuery({
+  const { refetch, isLoading: isFetchingShift } = useQuery({
     queryKey: ['active-shift'],
     queryFn: async () => {
       const shift = await fetchActiveShift()
@@ -59,6 +59,17 @@ export default function ShiftPage() {
     },
     onError: () => toast.error('Gagal menutup shift'),
   })
+
+  // Wait for both Zustand hydration and server fetch before deciding which view to show.
+  // Without this gate, the page briefly flashes "Buka Shift" on every fresh load even when
+  // the server (or localStorage) has an active shift, causing a blink and premature state.
+  if (!_hasHydrated || (!activeShift && isFetchingShift)) {
+    return (
+      <div className="flex h-full items-center justify-center">
+        <Loader2 className="animate-spin text-gray-400" size={32} />
+      </div>
+    )
+  }
 
   if (!activeShift) {
     return (
