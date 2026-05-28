@@ -1,16 +1,15 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useRouter } from 'next/navigation'
-import { Eye, EyeOff, FlaskConical, Sprout } from 'lucide-react'
-import { useState } from 'react'
+import { Eye, EyeOff, FlaskConical, Sprout, AlertCircle } from 'lucide-react'
 import { toast } from 'sonner'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { loginSchema, type LoginFormValues } from '@/lib/validations/auth'
-import { useLogin } from '@/hooks/useAuth'
+import { login } from '@/lib/api/auth'
 import { useAuthStore } from '@/store/authStore'
 
 const DEMO_USER = {
@@ -28,7 +27,8 @@ const DEMO_USER = {
 
 export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false)
-  const { mutate: doLogin, isPending } = useLogin()
+  const [isPending, setIsPending] = useState(false)
+  const [authError, setAuthError] = useState<string | null>(null)
   const setAuth = useAuthStore((s) => s.setAuth)
   const accessToken = useAuthStore((s) => s.accessToken)
   const _hasHydrated = useAuthStore((s) => s._hasHydrated)
@@ -46,7 +46,22 @@ export default function LoginPage() {
     resolver: zodResolver(loginSchema),
   })
 
-  const onSubmit = (values: LoginFormValues) => doLogin(values)
+  const onSubmit = async (values: LoginFormValues) => {
+    setIsPending(true)
+    setAuthError(null)
+    try {
+      const data = await login(values)
+      setAuth(data.user, data.tokens.accessToken, data.tokens.refreshToken)
+      toast.success(`Selamat datang, ${data.user.nama}!`)
+      router.replace('/transaksi')
+    } catch (err: unknown) {
+      const error = err as { response?: { data?: { message?: string } } }
+      const message = error.response?.data?.message || 'Email atau password salah'
+      setAuthError(message)
+    } finally {
+      setIsPending(false)
+    }
+  }
 
   const handleDemo = () => {
     setAuth(DEMO_USER, 'demo-token', 'demo-refresh-token')
@@ -67,13 +82,20 @@ export default function LoginPage() {
 
         <div className="rounded-2xl border border-gray-200 bg-white p-8 shadow-sm space-y-4">
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+            {authError && (
+              <div className="flex items-start gap-2.5 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+                <span>{authError}</span>
+              </div>
+            )}
+
             <Input
               label="Email"
               type="email"
               placeholder="kasir@tanigo.id"
               autoComplete="email"
               error={errors.email?.message}
-              {...register('email')}
+              {...register('email', { onChange: () => setAuthError(null) })}
             />
 
             <Input
@@ -92,7 +114,7 @@ export default function LoginPage() {
                   {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                 </button>
               }
-              {...register('password')}
+              {...register('password', { onChange: () => setAuthError(null) })}
             />
 
             <Button type="submit" className="w-full" size="lg" loading={isPending}>
