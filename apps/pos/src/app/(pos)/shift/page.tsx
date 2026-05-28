@@ -108,7 +108,7 @@ export default function ShiftPage() {
   }
 
   const saldoAkhir = tutupForm.watch('saldoAkhir') ?? 0
-  const expectedCash = activeShift.saldoAwal + activeShift.totalPenjualanTunai - activeShift.totalRetur
+  const expectedCash = (activeShift.saldoAwal ?? 0) + (activeShift.totalPenjualanTunai ?? 0) - (activeShift.totalRetur ?? 0)
   const selisih = saldoAkhir - expectedCash
 
   return (
@@ -131,7 +131,7 @@ export default function ShiftPage() {
           </div>
           <div>
             <p className="text-gray-400">Saldo Awal</p>
-            <p className="font-medium">{formatRupiah(activeShift.saldoAwal)}</p>
+            <p className="font-medium">{formatRupiah(activeShift.saldoAwal ?? 0)}</p>
           </div>
           <div>
             <p className="text-gray-400">Cabang</p>
@@ -144,13 +144,13 @@ export default function ShiftPage() {
         <h2 className="mb-3 font-semibold text-gray-700">Ringkasan Penjualan</h2>
         <div className="space-y-2 text-sm">
           {[
-            { label: 'Total Transaksi', value: `${activeShift.totalTransaksi} transaksi` },
-            { label: 'Total Penjualan', value: formatRupiah(activeShift.totalPenjualan) },
-            { label: 'Tunai', value: formatRupiah(activeShift.totalPenjualanTunai) },
-            { label: 'QRIS', value: formatRupiah(activeShift.totalPenjualanQRIS) },
-            { label: 'Transfer Bank', value: formatRupiah(activeShift.totalPenjualanTransfer) },
-            { label: 'Total Diskon', value: `-${formatRupiah(activeShift.totalDiskon)}` },
-            { label: 'Total Retur', value: `-${formatRupiah(activeShift.totalRetur)}` },
+            { label: 'Total Transaksi', value: `${activeShift.totalTransaksi ?? 0} transaksi` },
+            { label: 'Total Penjualan', value: formatRupiah(activeShift.totalPenjualan ?? 0) },
+            { label: 'Tunai', value: formatRupiah(activeShift.totalPenjualanTunai ?? 0) },
+            { label: 'QRIS', value: formatRupiah(activeShift.totalPenjualanQRIS ?? 0) },
+            { label: 'Transfer Bank', value: formatRupiah(activeShift.totalPenjualanTransfer ?? 0) },
+            { label: 'Total Diskon', value: `-${formatRupiah(activeShift.totalDiskon ?? 0)}` },
+            { label: 'Total Retur', value: `-${formatRupiah(activeShift.totalRetur ?? 0)}` },
           ].map(({ label, value }) => (
             <div key={label} className="flex justify-between">
               <span className="text-gray-500">{label}</span>
