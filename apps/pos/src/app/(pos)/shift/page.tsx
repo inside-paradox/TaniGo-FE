@@ -5,7 +5,7 @@ import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
-import { Clock, CheckCircle, Printer, Loader2 } from 'lucide-react'
+import { Clock, CheckCircle, Printer, Loader2, AlertCircle } from 'lucide-react'
 import { formatRupiah, formatTanggalWaktu } from '@tanigo/utils'
 import { bukaShift, tutupShift, fetchActiveShift } from '@/lib/api/shifts'
 import { useShiftStore } from '@/store/shiftStore'
@@ -38,6 +38,7 @@ export default function ShiftPage() {
     resolver: zodResolver(bukaShiftSchema),
     defaultValues: { saldoAwal: 0 },
   })
+  const bukaError = bukaForm.formState.errors.root?.message
 
   const tutupForm = useForm<TutupShiftFormValues>({
     resolver: zodResolver(tutupShiftSchema),
@@ -51,7 +52,11 @@ export default function ShiftPage() {
       toast.success('Shift berhasil dibuka')
       router.replace('/transaksi')
     },
-    onError: () => toast.error('Gagal membuka shift'),
+    onError: (err: unknown) => {
+      const error = err as { response?: { data?: { message?: string } } }
+      const message = error.response?.data?.message ?? 'Gagal membuka shift'
+      bukaForm.setError('root', { message })
+    },
   })
 
   const { mutate: doTutupShift, isPending: tutupLoading } = useMutation({
@@ -90,6 +95,12 @@ export default function ShiftPage() {
               onSubmit={bukaForm.handleSubmit((v) => doBukaShift(v))}
               className="space-y-4"
             >
+              {bukaError && (
+                <div className="flex items-start gap-2.5 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                  <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+                  <span>{bukaError}</span>
+                </div>
+              )}
               <Controller
                 name="saldoAwal"
                 control={bukaForm.control}
