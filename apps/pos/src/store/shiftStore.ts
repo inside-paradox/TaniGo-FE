@@ -23,6 +23,7 @@ export const useShiftStore = create<ShiftState>()(
     }),
     {
       name: 'tanigo-shift',
+      partialize: (state) => ({ activeShift: state.activeShift }),
       onRehydrateStorage: () => (state) => {
         state?.setHasHydrated(true)
       },

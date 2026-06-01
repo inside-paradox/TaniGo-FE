@@ -24,7 +24,7 @@ export default function ShiftPage() {
   const user = useAuthStore((s) => s.user)
   const router = useRouter()
 
-  const { refetch, isLoading: isFetchingShift } = useQuery({
+  const { refetch } = useQuery({
     queryKey: ['active-shift'],
     queryFn: async () => {
       const shift = await fetchActiveShift()
@@ -63,10 +63,9 @@ export default function ShiftPage() {
     onError: () => toast.error('Gagal menutup shift'),
   })
 
-  // Wait for both Zustand hydration and server fetch before deciding which view to show.
-  // Without this gate, the page briefly flashes "Buka Shift" on every fresh load even when
-  // the server (or localStorage) has an active shift, causing a blink and premature state.
-  if (!_hasHydrated || (!activeShift && isFetchingShift)) {
+  // Wait for Zustand to rehydrate from localStorage before rendering.
+  // This prevents a brief flash of the wrong view on initial load.
+  if (!_hasHydrated) {
     return (
       <div className="flex h-full items-center justify-center">
         <Loader2 className="animate-spin text-gray-400" size={32} />
