@@ -21,7 +21,7 @@ import { usersApi, type CreateUserDto, type UpdateUserDto } from '@/lib/api'
 import { useCabangList } from '@/hooks/use-cabang'
 import { useAuthStore } from '@/store/auth-store'
 import { formatTanggal } from '@/lib/utils'
-import type { User, UserRole, Cabang } from '@/types'
+import type { User, UserRole, Cabang, TipeCabang } from '@/types'
 
 const USERS_KEY = 'users'
 
@@ -31,6 +31,14 @@ const ALL_ROLE_OPTIONS = [
   { value: 'kasir', label: 'Kasir' },
   { value: 'staf_gudang', label: 'Staf Gudang' },
 ]
+
+// Role → tipeCabang yang diperbolehkan. null berarti bebas.
+const ROLE_TIPE_CABANG: Record<string, TipeCabang[] | null> = {
+  kasir: ['toko'],
+  staf_gudang: ['gudang'],
+  admin: null,
+  manajer: null,
+}
 
 function roleBadgeVariant(role: UserRole) {
   switch (role) {
@@ -159,6 +167,12 @@ export default function PenggunaPage() {
     ? cabangList
     : cabangList.filter((c) => c.id === currentUser?.cabangId)
 
+  // Filter cabang sesuai role yang dipilih (kasir → toko, staf_gudang → gudang)
+  const allowedTipes = ROLE_TIPE_CABANG[form.role] ?? null
+  const cabangOptionsForRole = allowedTipes
+    ? cabangOptions.filter((c) => allowedTipes.includes(c.tipe))
+    : cabangOptions
+
   // Role options: superadmin cannot be created from this form (system-level)
   const roleOptions = ALL_ROLE_OPTIONS
 
@@ -172,6 +186,14 @@ export default function PenggunaPage() {
     if (!editUser && form.password.trim() && form.password.length < 8) errors.password = 'Password minimal 8 karakter'
     if (!form.role) errors.role = 'Role wajib dipilih'
     if (roleNeedsCabang(form.role) && !form.cabangId) errors.cabangId = 'Cabang wajib dipilih'
+    if (roleNeedsCabang(form.role) && form.cabangId) {
+      const selectedCabang = cabangList.find((c) => c.id === form.cabangId)
+      const tipeAllowed = ROLE_TIPE_CABANG[form.role]
+      if (selectedCabang && tipeAllowed && !tipeAllowed.includes(selectedCabang.tipe)) {
+        const tipeLabel = tipeAllowed.map((t) => (t === 'toko' ? 'Toko' : 'Gudang')).join(' atau ')
+        errors.cabangId = `Role ini hanya dapat ditempatkan di cabang ${tipeLabel}`
+      }
+    }
     setFormErrors(errors)
     return Object.keys(errors).length === 0
   }
@@ -321,13 +343,20 @@ export default function PenggunaPage() {
               error={formErrors.password} placeholder="Minimal 8 karakter" />
           )}
           <Select label="Role" required value={form.role}
-            onChange={(e) => setForm((f) => ({ ...f, role: e.target.value, cabangId: '' }))}
+            onChange={(e) => {
+              const newRole = e.target.value
+              const newAllowedTipes = ROLE_TIPE_CABANG[newRole] ?? null
+              const currentCabang = cabangList.find((c) => c.id === form.cabangId)
+              const cabangStillValid = !newAllowedTipes || (currentCabang && newAllowedTipes.includes(currentCabang.tipe))
+              setForm((f) => ({ ...f, role: newRole, cabangId: cabangStillValid ? f.cabangId : '' }))
+              setFormErrors((fe) => ({ ...fe, cabangId: undefined }))
+            }}
             options={roleOptions} error={formErrors.role} />
           {roleNeedsCabang(form.role) && (
             <Combobox<Cabang>
               label="Cabang"
               required
-              options={cabangOptions}
+              options={cabangOptionsForRole}
               value={form.cabangId}
               onChange={(id) => setForm((f) => ({ ...f, cabangId: id }))}
               getOptionValue={(c) => c.id}
