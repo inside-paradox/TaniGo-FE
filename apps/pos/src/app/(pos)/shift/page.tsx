@@ -29,6 +29,7 @@ export default function ShiftPage() {
     queryFn: async () => {
       const shift = await fetchActiveShift()
       if (shift) setShift(shift)
+      else clearShift()
       return shift
     },
   })

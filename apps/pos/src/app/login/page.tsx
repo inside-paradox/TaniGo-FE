@@ -31,6 +31,7 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false)
   const setAuth = useAuthStore((s) => s.setAuth)
   const setShift = useShiftStore((s) => s.setShift)
+  const clearShift = useShiftStore((s) => s.clearShift)
   const accessToken = useAuthStore((s) => s.accessToken)
   const _hasHydrated = useAuthStore((s) => s._hasHydrated)
   const router = useRouter()
@@ -59,12 +60,14 @@ export default function LoginPage() {
       }
       setAuth(data.user, data.tokens.accessToken, data.tokens.refreshToken)
       toast.success(`Selamat datang, ${data.user.nama}!`)
-      // Check if a shift is already open — direct kasir accordingly
+      // Check if a shift is already open — direct kasir accordingly.
+      // Always sync store with server: clear stale localStorage shift if server has none.
       const activeShift = await fetchActiveShift()
       if (activeShift) {
         setShift(activeShift)
         router.replace('/transaksi')
       } else {
+        clearShift()
         router.replace('/shift')
       }
     } catch (err: unknown) {
@@ -82,6 +85,7 @@ export default function LoginPage() {
       setShift(activeShift)
       router.replace('/transaksi')
     } else {
+      clearShift()
       router.replace('/shift')
     }
   }
