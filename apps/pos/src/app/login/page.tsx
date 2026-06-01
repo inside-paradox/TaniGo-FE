@@ -10,7 +10,9 @@ import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { loginSchema, type LoginFormValues } from '@/lib/validations/auth'
 import { login } from '@/lib/api/auth'
+import { fetchActiveShift } from '@/lib/api/shifts'
 import { useAuthStore } from '@/store/authStore'
+import { useShiftStore } from '@/store/shiftStore'
 
 const DEMO_USER = {
   id: 'demo-001',
@@ -28,6 +30,7 @@ const DEMO_USER = {
 export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false)
   const setAuth = useAuthStore((s) => s.setAuth)
+  const setShift = useShiftStore((s) => s.setShift)
   const accessToken = useAuthStore((s) => s.accessToken)
   const _hasHydrated = useAuthStore((s) => s._hasHydrated)
   const router = useRouter()
@@ -56,7 +59,14 @@ export default function LoginPage() {
       }
       setAuth(data.user, data.tokens.accessToken, data.tokens.refreshToken)
       toast.success(`Selamat datang, ${data.user.nama}!`)
-      router.replace('/transaksi')
+      // Check if a shift is already open — direct kasir accordingly
+      const activeShift = await fetchActiveShift()
+      if (activeShift) {
+        setShift(activeShift)
+        router.replace('/transaksi')
+      } else {
+        router.replace('/shift')
+      }
     } catch (err: unknown) {
       const error = err as { response?: { data?: { message?: string } } }
       const message = error.response?.data?.message || 'Email atau password salah'
@@ -64,10 +74,16 @@ export default function LoginPage() {
     }
   }
 
-  const handleDemo = () => {
+  const handleDemo = async () => {
     setAuth(DEMO_USER, 'demo-token', 'demo-refresh-token')
     toast.success('Masuk sebagai Kasir Demo')
-    router.replace('/transaksi')
+    const activeShift = await fetchActiveShift()
+    if (activeShift) {
+      setShift(activeShift)
+      router.replace('/transaksi')
+    } else {
+      router.replace('/shift')
+    }
   }
 
   return (

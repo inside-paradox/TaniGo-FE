@@ -3,6 +3,7 @@
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
+import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 import { Clock, CheckCircle, Printer, Loader2 } from 'lucide-react'
 import { formatRupiah, formatTanggalWaktu } from '@tanigo/utils'
@@ -21,6 +22,7 @@ function formatRupiahInput(value: string): number {
 export default function ShiftPage() {
   const { activeShift, setShift, clearShift, _hasHydrated } = useShiftStore()
   const user = useAuthStore((s) => s.user)
+  const router = useRouter()
 
   const { refetch, isLoading: isFetchingShift } = useQuery({
     queryKey: ['active-shift'],
@@ -46,7 +48,7 @@ export default function ShiftPage() {
     onSuccess: (shift) => {
       setShift(shift)
       toast.success('Shift berhasil dibuka')
-      refetch()
+      router.replace('/transaksi')
     },
     onError: () => toast.error('Gagal membuka shift'),
   })
