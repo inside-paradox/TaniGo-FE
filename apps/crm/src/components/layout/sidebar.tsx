@@ -141,7 +141,9 @@ export function Sidebar() {
   const visibleItems = navItems.filter((item) => {
     if (!user) return false
     if (!item.roles.includes(user.role)) return false
-    if (item.tipeCabang && user.tipeCabang && !item.tipeCabang.includes(user.tipeCabang)) return false
+    // If the item restricts by tipeCabang, user must match — null tipeCabang also fails.
+    // Superadmin is never listed in tipeCabang-restricted items so this is safe.
+    if (item.tipeCabang && (!user.tipeCabang || !item.tipeCabang.includes(user.tipeCabang))) return false
     return true
   })
 

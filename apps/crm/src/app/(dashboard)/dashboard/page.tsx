@@ -547,7 +547,8 @@ function DashboardSuperadmin() {
 export default function DashboardPage() {
   const { user } = useAuthStore()
   const isSuperadmin = user?.role === 'superadmin'
-  const isGudang = user?.tipeCabang === 'gudang'
+  // staf_gudang always belongs to gudang; also handle null tipeCabang from backend
+  const isGudang = user?.tipeCabang === 'gudang' || user?.role === 'staf_gudang'
 
   return (
     <div className="space-y-6">
