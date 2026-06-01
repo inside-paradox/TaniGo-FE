@@ -1,27 +1,38 @@
 'use client'
 
 import { useEffect } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, usePathname } from 'next/navigation'
 import { Sidebar } from '@/components/layout/sidebar'
 import { Header } from '@/components/layout/header'
 import { Breadcrumb } from '@/components/layout/breadcrumb'
 import { useAuthStore } from '@/store/auth-store'
 import { useUIStore } from '@/store/ui-store'
+import { canAccess } from '@/lib/rbac'
 import { cn } from '@/lib/utils'
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
-  const { isAuthenticated, _hasHydrated } = useAuthStore()
+  const { isAuthenticated, user, _hasHydrated } = useAuthStore()
   const { sidebarCollapsed } = useUIStore()
   const router = useRouter()
+  const pathname = usePathname()
 
   useEffect(() => {
-    if (_hasHydrated && !isAuthenticated) {
+    if (!_hasHydrated) return
+
+    if (!isAuthenticated) {
       router.replace('/login')
+      return
     }
-  }, [isAuthenticated, _hasHydrated, router])
+
+    // Cek role + tipeCabang — redirect ke /dashboard jika tidak punya akses
+    if (!canAccess(user, pathname)) {
+      router.replace('/dashboard')
+    }
+  }, [isAuthenticated, user, _hasHydrated, pathname, router])
 
   if (!_hasHydrated) return null
   if (!isAuthenticated) return null
+  if (!canAccess(user, pathname)) return null
 
   return (
     <div className="min-h-screen bg-gray-50">

@@ -24,113 +24,30 @@ import {
 import { cn } from '@/lib/utils'
 import { useUIStore } from '@/store/ui-store'
 import { useAuthStore } from '@/store/auth-store'
-import type { UserRole, TipeCabang } from '@/types'
+import { canAccess } from '@/lib/rbac'
 
 interface NavItem {
   href: string
   label: string
   icon: React.ReactNode
-  roles: UserRole[]
-  tipeCabang?: TipeCabang[]
 }
 
 const navItems: NavItem[] = [
-  {
-    href: '/dashboard',
-    label: 'Dashboard',
-    icon: <LayoutDashboard className="h-5 w-5" />,
-    roles: ['superadmin', 'admin', 'manajer', 'kasir', 'staf_gudang'],
-  },
-  // ── Superadmin only ──
-  {
-    href: '/cabang',
-    label: 'Cabang',
-    icon: <Store className="h-5 w-5" />,
-    roles: ['superadmin'],
-  },
-  {
-    href: '/pengguna',
-    label: 'Pengguna',
-    icon: <Users className="h-5 w-5" />,
-    roles: ['superadmin'],
-  },
-  // ── Operasional ──
-  {
-    href: '/produk',
-    label: 'Produk',
-    icon: <Package className="h-5 w-5" />,
-    roles: ['superadmin', 'admin', 'manajer', 'staf_gudang'],
-  },
-  {
-    href: '/inventori',
-    label: 'Inventori',
-    icon: <Warehouse className="h-5 w-5" />,
-    roles: ['admin', 'manajer', 'staf_gudang'],
-  },
-  {
-    href: '/purchase-order',
-    label: 'Purchase Order',
-    icon: <ShoppingBag className="h-5 w-5" />,
-    roles: ['admin', 'manajer', 'staf_gudang'],
-    tipeCabang: ['gudang'],
-  },
-  {
-    href: '/transfer-stok',
-    label: 'Transfer Stok',
-    icon: <ArrowLeftRight className="h-5 w-5" />,
-    roles: ['admin', 'manajer', 'staf_gudang'],
-  },
-  {
-    href: '/stok-opname',
-    label: 'Stok Opname',
-    icon: <ClipboardCheck className="h-5 w-5" />,
-    roles: ['superadmin', 'admin', 'manajer', 'staf_gudang'],
-  },
-  {
-    href: '/pesanan',
-    label: 'Pesanan',
-    icon: <ShoppingCart className="h-5 w-5" />,
-    roles: ['admin', 'manajer', 'kasir'],
-    tipeCabang: ['toko'],
-  },
-  {
-    href: '/pelanggan-vip',
-    label: 'Pelanggan VIP',
-    icon: <Star className="h-5 w-5" />,
-    roles: ['admin', 'manajer'],
-    tipeCabang: ['toko'],
-  },
-  {
-    href: '/pengiriman',
-    label: 'Pengiriman',
-    icon: <Truck className="h-5 w-5" />,
-    roles: ['admin', 'manajer', 'kasir'],
-    tipeCabang: ['toko'],
-  },
-  {
-    href: '/laporan',
-    label: 'Laporan',
-    icon: <BarChart2 className="h-5 w-5" />,
-    roles: ['admin', 'manajer', 'kasir'],
-  },
-  {
-    href: '/audit-log',
-    label: 'Log Audit',
-    icon: <ClipboardList className="h-5 w-5" />,
-    roles: ['admin'],
-  },
-  {
-    href: '/notifikasi',
-    label: 'Notifikasi',
-    icon: <Bell className="h-5 w-5" />,
-    roles: ['superadmin', 'admin', 'manajer', 'kasir', 'staf_gudang'],
-  },
-  {
-    href: '/pengaturan',
-    label: 'Pengaturan',
-    icon: <Settings className="h-5 w-5" />,
-    roles: ['admin', 'manajer'],
-  },
+  { href: '/dashboard',      label: 'Dashboard',      icon: <LayoutDashboard className="h-5 w-5" /> },
+  { href: '/cabang',         label: 'Cabang',         icon: <Store className="h-5 w-5" /> },
+  { href: '/pengguna',       label: 'Pengguna',       icon: <Users className="h-5 w-5" /> },
+  { href: '/produk',         label: 'Produk',         icon: <Package className="h-5 w-5" /> },
+  { href: '/inventori',      label: 'Inventori',      icon: <Warehouse className="h-5 w-5" /> },
+  { href: '/purchase-order', label: 'Purchase Order', icon: <ShoppingBag className="h-5 w-5" /> },
+  { href: '/transfer-stok',  label: 'Transfer Stok',  icon: <ArrowLeftRight className="h-5 w-5" /> },
+  { href: '/stok-opname',    label: 'Stok Opname',    icon: <ClipboardCheck className="h-5 w-5" /> },
+  { href: '/pesanan',        label: 'Pesanan',        icon: <ShoppingCart className="h-5 w-5" /> },
+  { href: '/pelanggan-vip',  label: 'Pelanggan VIP',  icon: <Star className="h-5 w-5" /> },
+  { href: '/pengiriman',     label: 'Pengiriman',     icon: <Truck className="h-5 w-5" /> },
+  { href: '/laporan',        label: 'Laporan',        icon: <BarChart2 className="h-5 w-5" /> },
+  { href: '/audit-log',      label: 'Log Audit',      icon: <ClipboardList className="h-5 w-5" /> },
+  { href: '/notifikasi',     label: 'Notifikasi',     icon: <Bell className="h-5 w-5" /> },
+  { href: '/pengaturan',     label: 'Pengaturan',     icon: <Settings className="h-5 w-5" /> },
 ]
 
 export function Sidebar() {
@@ -138,14 +55,7 @@ export function Sidebar() {
   const { sidebarCollapsed, toggleSidebar } = useUIStore()
   const { user } = useAuthStore()
 
-  const visibleItems = navItems.filter((item) => {
-    if (!user) return false
-    if (!item.roles.includes(user.role)) return false
-    // If the item restricts by tipeCabang, user must match — null tipeCabang also fails.
-    // Superadmin is never listed in tipeCabang-restricted items so this is safe.
-    if (item.tipeCabang && (!user.tipeCabang || !item.tipeCabang.includes(user.tipeCabang))) return false
-    return true
-  })
+  const visibleItems = navItems.filter((item) => canAccess(user, item.href))
 
   return (
     <aside
@@ -211,7 +121,6 @@ export function Sidebar() {
           })}
         </ul>
       </nav>
-
     </aside>
   )
 }
