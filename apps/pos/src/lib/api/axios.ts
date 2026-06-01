@@ -203,6 +203,12 @@ api.interceptors.response.use(
 
     const original = error.config
 
+    // Never intercept 401 from the login endpoint — wrong credentials should
+    // be handled by the caller, not the refresh/redirect flow.
+    if (error.response?.status === 401 && original.url === '/auth/login') {
+      return Promise.reject(error)
+    }
+
     if (error.response?.status === 401 && !original._retry) {
       original._retry = true
 
