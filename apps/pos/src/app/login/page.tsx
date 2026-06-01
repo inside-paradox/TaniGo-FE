@@ -27,8 +27,6 @@ const DEMO_USER = {
 
 export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false)
-  const [isPending, setIsPending] = useState(false)
-  const [authError, setAuthError] = useState<string | null>(null)
   const setAuth = useAuthStore((s) => s.setAuth)
   const accessToken = useAuthStore((s) => s.accessToken)
   const _hasHydrated = useAuthStore((s) => s._hasHydrated)
@@ -41,19 +39,19 @@ export default function LoginPage() {
   const {
     register,
     handleSubmit,
-    formState: { errors },
+    setError,
+    clearErrors,
+    formState: { errors, isSubmitting },
   } = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
   })
 
   const onSubmit = async (values: LoginFormValues) => {
-    setIsPending(true)
-    setAuthError(null)
     try {
       const data = await login(values)
       // POS hanya untuk kasir di cabang toko
       if (data.user.role !== 'kasir' || data.user.tipeCabang !== 'toko') {
-        setAuthError('Akses ditolak. TaniGo POS hanya dapat diakses oleh Kasir Toko.')
+        setError('root', { message: 'Akses ditolak. TaniGo POS hanya dapat diakses oleh Kasir Toko.' })
         return
       }
       setAuth(data.user, data.tokens.accessToken, data.tokens.refreshToken)
@@ -62,9 +60,7 @@ export default function LoginPage() {
     } catch (err: unknown) {
       const error = err as { response?: { data?: { message?: string } } }
       const message = error.response?.data?.message || 'Email atau password salah'
-      setAuthError(message)
-    } finally {
-      setIsPending(false)
+      setError('root', { message })
     }
   }
 
@@ -87,10 +83,10 @@ export default function LoginPage() {
 
         <div className="rounded-2xl border border-gray-200 bg-white p-8 shadow-sm space-y-4">
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-            {authError && (
+            {errors.root?.message && (
               <div className="flex items-start gap-2.5 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
                 <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
-                <span>{authError}</span>
+                <span>{errors.root.message}</span>
               </div>
             )}
 
@@ -100,7 +96,7 @@ export default function LoginPage() {
               placeholder="kasir@tanigo.id"
               autoComplete="email"
               error={errors.email?.message}
-              {...register('email', { onChange: () => setAuthError(null) })}
+              {...register('email', { onChange: () => clearErrors('root') })}
             />
 
             <Input
@@ -119,10 +115,10 @@ export default function LoginPage() {
                   {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                 </button>
               }
-              {...register('password', { onChange: () => setAuthError(null) })}
+              {...register('password', { onChange: () => clearErrors('root') })}
             />
 
-            <Button type="submit" className="w-full" size="lg" loading={isPending}>
+            <Button type="submit" className="w-full" size="lg" loading={isSubmitting}>
               Masuk
             </Button>
           </form>
