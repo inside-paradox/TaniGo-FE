@@ -12,8 +12,6 @@ export interface ProductSearchParams {
  * The API returns CabangInventory enriched with hargaJual (from the product catalog join).
  */
 export async function fetchCabangInventory(cabangId: string): Promise<POSInventoryItem[]> {
-  const { data } = await api.get<{ data: POSInventoryItem[] }>('/cabang-inventory', {
-    params: { cabangId },
-  })
-  return data.data
+  const { data } = await api.get('/cabang-inventory', { params: { cabangId } })
+  return data?.data?.data ?? data?.data ?? data ?? []
 }
