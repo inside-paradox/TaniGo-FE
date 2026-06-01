@@ -547,8 +547,11 @@ function DashboardSuperadmin() {
 export default function DashboardPage() {
   const { user } = useAuthStore()
   const isSuperadmin = user?.role === 'superadmin'
-  // staf_gudang always belongs to gudang; also handle null tipeCabang from backend
-  const isGudang = user?.tipeCabang === 'gudang' || user?.role === 'staf_gudang'
+  // admin & staf_gudang selalu gudang berdasarkan RBAC; tipeCabang dari backend sebagai fallback
+  const isGudang =
+    user?.role === 'admin' ||
+    user?.role === 'staf_gudang' ||
+    user?.tipeCabang === 'gudang'
 
   return (
     <div className="space-y-6">
