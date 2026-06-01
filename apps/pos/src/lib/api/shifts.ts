@@ -14,7 +14,8 @@ export async function tutupShift(dto: TutupShiftDto): Promise<Shift> {
 export async function fetchActiveShift(): Promise<Shift | null> {
   try {
     const { data } = await api.get<{ data: Shift }>('/api/shifts/active')
-    return data.data
+    // Guard against backend returning {} or null instead of a real shift object
+    return data.data?.id ? data.data : null
   } catch {
     return null
   }
