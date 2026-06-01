@@ -16,30 +16,30 @@ export interface RouteAccess {
 }
 
 export const ROUTE_ACCESS: RouteAccess[] = [
-  // ── Semua role terautentikasi ──
-  { href: '/dashboard', roles: ['superadmin', 'admin', 'manajer', 'kasir', 'staf_gudang'] },
-  { href: '/notifikasi', roles: ['superadmin', 'admin', 'manajer', 'kasir', 'staf_gudang'] },
+  // ── Semua role ──
+  { href: '/dashboard',      roles: ['superadmin', 'admin', 'manajer', 'kasir', 'staf_gudang'] },
+  { href: '/notifikasi',     roles: ['superadmin', 'admin', 'manajer', 'kasir', 'staf_gudang'] },
 
   // ── Superadmin only ──
-  { href: '/cabang', roles: ['superadmin'] },
-  { href: '/pengguna', roles: ['superadmin'] },
+  { href: '/cabang',         roles: ['superadmin'] },
+  { href: '/pengguna',       roles: ['superadmin'] },
 
-  // ── Operasional (semua tipeCabang) ──
-  { href: '/produk', roles: ['superadmin', 'admin', 'manajer', 'staf_gudang'] },
-  { href: '/stok-opname', roles: ['superadmin', 'admin', 'manajer', 'staf_gudang'] },
-  { href: '/transfer-stok', roles: ['admin', 'manajer', 'staf_gudang'] },
-  { href: '/laporan', roles: ['admin', 'manajer', 'kasir'] },
-  { href: '/audit-log', roles: ['admin'] },
-  { href: '/pengaturan', roles: ['admin', 'manajer'] },
+  // ── Operasional umum (superadmin + role cabang, semua tipeCabang) ──
+  { href: '/produk',         roles: ['superadmin', 'admin', 'manajer', 'staf_gudang'] },
+  { href: '/stok-opname',    roles: ['superadmin', 'admin', 'manajer', 'staf_gudang'] },
+  { href: '/transfer-stok',  roles: ['admin', 'manajer', 'staf_gudang'] },
+  { href: '/laporan',        roles: ['admin', 'manajer', 'kasir'] },
+  { href: '/audit-log',      roles: ['admin'] },
+  { href: '/pengaturan',     roles: ['admin', 'manajer'] },
 
-  // ── Gudang only ──
-  { href: '/inventori', roles: ['admin', 'manajer', 'staf_gudang'], tipeCabang: ['gudang'] },
+  // ── Gudang only — superadmin tidak perlu akses operasional per cabang ──
+  { href: '/inventori',      roles: ['admin', 'manajer', 'staf_gudang'], tipeCabang: ['gudang'] },
   { href: '/purchase-order', roles: ['admin', 'manajer', 'staf_gudang'], tipeCabang: ['gudang'] },
 
   // ── Toko only ──
-  { href: '/pesanan', roles: ['admin', 'manajer', 'kasir'], tipeCabang: ['toko'] },
-  { href: '/pelanggan-vip', roles: ['admin', 'manajer'], tipeCabang: ['toko'] },
-  { href: '/pengiriman', roles: ['admin', 'manajer', 'kasir'], tipeCabang: ['toko'] },
+  { href: '/pesanan',        roles: ['admin', 'manajer', 'kasir'],       tipeCabang: ['toko'] },
+  { href: '/pelanggan-vip',  roles: ['admin', 'manajer'],                tipeCabang: ['toko'] },
+  { href: '/pengiriman',     roles: ['admin', 'manajer', 'kasir'],       tipeCabang: ['toko'] },
 ]
 
 export interface RbacUser {
@@ -49,12 +49,10 @@ export interface RbacUser {
 
 /**
  * Cek apakah user boleh mengakses pathname tertentu.
- * Superadmin selalu diizinkan.
- * Route yang tidak terdaftar → diizinkan (pengaturan profil, dsb.).
+ * Route yang tidak terdaftar → diizinkan (halaman umum seperti /pengaturan/profil).
  */
 export function canAccess(user: RbacUser | null | undefined, pathname: string): boolean {
   if (!user) return false
-  if (user.role === 'superadmin') return true
 
   const rule = ROUTE_ACCESS.find(
     (r) => pathname === r.href || pathname.startsWith(r.href + '/')
