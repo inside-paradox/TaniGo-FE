@@ -36,10 +36,10 @@ export const ROUTE_ACCESS: RouteAccess[] = [
   { href: '/inventori',      roles: ['admin', 'manajer', 'staf_gudang'], tipeCabang: ['gudang'] },
   { href: '/purchase-order', roles: ['admin', 'manajer', 'staf_gudang'], tipeCabang: ['gudang'] },
 
-  // ── Toko only ──
-  { href: '/pesanan',        roles: ['admin', 'manajer', 'kasir'],       tipeCabang: ['toko'] },
-  { href: '/pelanggan-vip',  roles: ['admin', 'manajer'],                tipeCabang: ['toko'] },
-  { href: '/pengiriman',     roles: ['admin', 'manajer', 'kasir'],       tipeCabang: ['toko'] },
+  // ── Toko only — admin tidak termasuk (admin hanya di gudang) ──
+  { href: '/pesanan',        roles: ['manajer', 'kasir'], tipeCabang: ['toko'] },
+  { href: '/pelanggan-vip',  roles: ['manajer'],          tipeCabang: ['toko'] },
+  { href: '/pengiriman',     roles: ['manajer', 'kasir'], tipeCabang: ['toko'] },
 ]
 
 export interface RbacUser {

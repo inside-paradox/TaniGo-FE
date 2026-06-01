@@ -32,12 +32,12 @@ const ALL_ROLE_OPTIONS = [
   { value: 'staf_gudang', label: 'Staf Gudang' },
 ]
 
-// Role → tipeCabang yang diperbolehkan. null berarti bebas.
+// Role → tipeCabang yang diperbolehkan. null berarti bebas (toko atau gudang).
 const ROLE_TIPE_CABANG: Record<string, TipeCabang[] | null> = {
+  admin: ['gudang'],
+  manajer: null,
   kasir: ['toko'],
   staf_gudang: ['gudang'],
-  admin: null,
-  manajer: null,
 }
 
 function roleBadgeVariant(role: UserRole) {
