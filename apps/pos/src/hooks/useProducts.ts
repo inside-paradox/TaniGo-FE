@@ -1,6 +1,7 @@
 'use client'
 
 import { useQuery } from '@tanstack/react-query'
+import axios from 'axios'
 import { fetchCabangInventory } from '@/lib/api/products'
 import { searchDemoInventory } from '@/lib/demo/inventory'
 import { cacheInventory, getCachedInventory } from '@/lib/db/idb'
@@ -20,6 +21,11 @@ export function useProducts(params: ProductSearchParams) {
   const cabangId = user?.cabangId ?? ''
 
   return useQuery({
+    // 'always' is critical: with the default 'online' networkMode, React Query
+    // pauses the query while offline and never runs queryFn — so the offline
+    // IndexedDB fallback below never executes and the grid shows "Produk tidak
+    // ditemukan". We handle offline ourselves, so the query must always run.
+    networkMode: 'always',
     queryKey: ['cabang-inventory', cabangId, params.search, isDemo, isOnline],
     queryFn: async () => {
       if (isDemo) {
@@ -30,24 +36,32 @@ export function useProducts(params: ProductSearchParams) {
         return getCachedInventory(params.search ?? '')
       }
 
-      const result = await fetchCabangInventory(cabangId)
+      try {
+        const result = await fetchCabangInventory(cabangId)
 
-      // Cache all fetched inventory items for offline use
-      if (!params.search) {
-        cacheInventory(result).catch(() => {})
+        // Cache all fetched inventory items for offline use
+        if (!params.search) {
+          cacheInventory(result).catch(() => {})
+        }
+
+        // Apply client-side search filter
+        if (params.search) {
+          const q = params.search.toLowerCase()
+          return result.filter(
+            (item) =>
+              item.produkNama.toLowerCase().includes(q) ||
+              item.produkSku.toLowerCase().includes(q)
+          )
+        }
+
+        return result
+      } catch (err) {
+        // Backend unreachable (no response) — serve from IDB cache
+        if (axios.isAxiosError(err) && !err.response) {
+          return getCachedInventory(params.search ?? '')
+        }
+        throw err
       }
-
-      // Apply client-side search filter
-      if (params.search) {
-        const q = params.search.toLowerCase()
-        return result.filter(
-          (item) =>
-            item.produkNama.toLowerCase().includes(q) ||
-            item.produkSku.toLowerCase().includes(q)
-        )
-      }
-
-      return result
     },
     placeholderData: (prev) => prev,
     enabled: !!cabangId || isDemo,

@@ -1,3 +1,5 @@
+'use client'
+
 import { ProductGrid } from '@/components/pos/product-grid'
 import { Cart } from '@/components/pos/cart'
 

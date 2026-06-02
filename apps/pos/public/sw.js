@@ -1,58 +1,78 @@
-const CACHE_NAME = 'tanigo-pos-v1';
+const CACHE_NAME = 'tanigo-pos-v4';
 
-const SHELL_ASSETS = [
+const SHELL_URLS = [
   '/',
   '/transaksi',
   '/shift',
+  '/retur',
   '/login',
   '/manifest.webmanifest',
 ];
 
-// Install: cache shell assets and skip waiting
+// Install: cache shell HTML and skip waiting
 self.addEventListener('install', (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(SHELL_ASSETS))
+    caches.open(CACHE_NAME).then((cache) =>
+      // addAll is best-effort — individual failures don't abort the install
+      Promise.allSettled(SHELL_URLS.map((url) =>
+        cache.add(url).catch(() => {})
+      ))
+    )
   );
   self.skipWaiting();
 });
 
-// Activate: clean up old caches and claim clients
+// Activate: clean up old caches and claim clients immediately
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((keys) =>
       Promise.all(
-        keys
-          .filter((key) => key !== CACHE_NAME)
-          .map((key) => caches.delete(key))
+        keys.filter((key) => key !== CACHE_NAME).map((key) => caches.delete(key))
       )
     )
   );
   self.clients.claim();
 });
 
-// Fetch: network first, cache fallback for navigation and same-origin requests
+// Fetch strategy:
+//   /_next/static/* → cache-first (content-hashed assets; cached as they are fetched online)
+//   /api/*          → network-only (never cache)
+//   everything else → network-first with cache fallback
 self.addEventListener('fetch', (event) => {
   const { request } = event;
   const url = new URL(request.url);
 
-  // Pass through cross-origin requests
-  if (url.origin !== self.location.origin) {
+  if (url.origin !== self.location.origin) return;
+  if (url.pathname.startsWith('/api/')) return;
+
+  // Cache-first for versioned static chunks — once fetched online they are always served offline
+  if (url.pathname.startsWith('/_next/static/')) {
+    event.respondWith(
+      caches.match(request).then((cached) => {
+        if (cached) return cached;
+        return fetch(request).then((response) => {
+          if (response.ok) {
+            // waitUntil keeps the SW alive until the cache write completes.
+            // Without it the write is a dangling promise that the browser may
+            // drop when it terminates the worker right after respondWith settles.
+            const clone = response.clone();
+            event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.put(request, clone)));
+          }
+          return response;
+        });
+      })
+    );
     return;
   }
 
-  // Pass through API requests — handled by the server / axios interceptor
-  if (url.pathname.startsWith('/api/')) {
-    return;
-  }
-
-  // Network first, cache fallback
+  // Network-first for HTML pages; serve cached version when offline
   event.respondWith(
     fetch(request)
       .then((response) => {
-        // Cache successful GET responses
         if (request.method === 'GET' && response.ok) {
-          const responseClone = response.clone();
-          caches.open(CACHE_NAME).then((cache) => cache.put(request, responseClone));
+          // See note above — the runtime cache write must be wrapped in waitUntil.
+          const clone = response.clone();
+          event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.put(request, clone)));
         }
         return response;
       })

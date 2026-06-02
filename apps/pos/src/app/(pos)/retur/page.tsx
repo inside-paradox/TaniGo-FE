@@ -52,14 +52,19 @@ export default function ReturPage() {
     onError: () => toast.error('Gagal memproses retur'),
   })
 
+  const getReturableQty = (item: ItemTransaksi) =>
+    item.qtyTersisa !== undefined ? item.qtyTersisa : item.qty
+
   const toggleItem = (item: ItemTransaksi) => {
+    const maxQty = getReturableQty(item)
+    if (maxQty <= 0) return // sudah habis diretur
     setSelected((prev) => {
       if (prev[item.id]) {
         const next = { ...prev }
         delete next[item.id]
         return next
       }
-      return { ...prev, [item.id]: { itemTransaksiId: item.id, qty: item.qty, max: item.qty } }
+      return { ...prev, [item.id]: { itemTransaksiId: item.id, qty: maxQty, max: maxQty } }
     })
   }
 
@@ -150,22 +155,40 @@ export default function ReturPage() {
           {transaksi.items.map((item) => {
             const sel = selected[item.id]
             const isSelected = !!sel
+            const returableQty = getReturableQty(item)
+            const sudahDiretur = returableQty <= 0
             return (
               <div
                 key={item.id}
-                className={`rounded-xl border p-4 transition-colors cursor-pointer ${
-                  isSelected ? 'border-green-400 bg-green-50' : 'border-gray-200 bg-white hover:border-gray-300'
+                className={`rounded-xl border p-4 transition-colors ${
+                  sudahDiretur
+                    ? 'cursor-not-allowed border-gray-100 bg-gray-50 opacity-60'
+                    : isSelected
+                      ? 'cursor-pointer border-green-400 bg-green-50'
+                      : 'cursor-pointer border-gray-200 bg-white hover:border-gray-300'
                 }`}
                 onClick={() => toggleItem(item)}
               >
                 <div className="flex items-start justify-between gap-4">
                   <div className="min-w-0 flex-1">
-                    <p className="font-medium text-gray-900 truncate">{item.produkNama}</p>
+                    <div className="flex items-center gap-2">
+                      <p className={`font-medium truncate ${sudahDiretur ? 'text-gray-400' : 'text-gray-900'}`}>
+                        {item.produkNama}
+                      </p>
+                      {sudahDiretur && (
+                        <span className="shrink-0 rounded-full bg-gray-200 px-2 py-0.5 text-xs text-gray-500">
+                          Sudah Diretur
+                        </span>
+                      )}
+                    </div>
                     <p className="text-xs text-gray-500 mt-0.5">
                       {item.qty} {item.satuan} × {formatRupiah(item.hargaSatuan)}
+                      {!sudahDiretur && returableQty < item.qty && (
+                        <span className="ml-1 text-orange-500">· tersisa {returableQty}</span>
+                      )}
                     </p>
                   </div>
-                  <p className="text-sm font-semibold text-gray-900 shrink-0">
+                  <p className={`text-sm font-semibold shrink-0 ${sudahDiretur ? 'text-gray-400' : 'text-gray-900'}`}>
                     {formatRupiah(item.subtotal)}
                   </p>
                 </div>
@@ -191,7 +214,7 @@ export default function ReturPage() {
                         +
                       </button>
                     </div>
-                    <span className="text-xs text-gray-400">maks {item.qty}</span>
+                    <span className="text-xs text-gray-400">maks {returableQty}</span>
                   </div>
                 )}
               </div>

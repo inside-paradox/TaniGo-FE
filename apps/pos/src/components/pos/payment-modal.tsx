@@ -10,6 +10,7 @@ import { InputNominal } from '@/components/ui/input-nominal'
 import { formatRupiah } from '@tanigo/utils'
 import { useCartStore } from '@/store/cartStore'
 import { useAuthStore } from '@/store/authStore'
+import axios from 'axios'
 import { createTransaksi } from '@/lib/api/transactions'
 import { enqueueTransaction, getQueueCount } from '@/lib/db/idb'
 import { useOnlineStatus } from '@/hooks/useOnlineStatus'
@@ -40,6 +41,7 @@ export function PaymentModal({ open, onClose }: PaymentModalProps) {
       setMetode('Tunai')
       setNominalTunai(total())
       setSuccessData(null)
+      resetMutation()
     }
     // totalBayar sengaja tidak dimasukkan ke deps —
     // inisialisasi hanya dijalankan saat modal buka,
@@ -66,15 +68,32 @@ export function PaymentModal({ open, onClose }: PaymentModalProps) {
     sumber: 'pos' as const,
   }
 
-  const { mutate: processPayment, isPending } = useMutation({
+  const queueTransaction = async () => {
+    await enqueueTransaction(dto)
+    const count = await getQueueCount()
+    setQueueCount(count)
+    return null
+  }
+
+  const { mutate: processPayment, isPending, reset: resetMutation } = useMutation({
+    // 'always' is critical: with the default 'online' networkMode, React Query's
+    // onlineManager pauses the mutation while offline (isPending stays true but the
+    // mutationFn never runs). We handle offline ourselves by queueing to IndexedDB,
+    // so the mutationFn must always execute regardless of React Query's online state.
+    networkMode: 'always',
     mutationFn: async () => {
-      if (!isOnline) {
-        await enqueueTransaction(dto)
-        const count = await getQueueCount()
-        setQueueCount(count)
-        return null
+      // Use window global as source of truth — survives HMR and component remounts
+      const offline = !isOnline || (typeof window !== 'undefined' && !window.__posOnline__)
+      if (offline) return queueTransaction()
+
+      try {
+        return await createTransaksi(dto)
+      } catch (err) {
+        // No response object = network unreachable (backend down, no internet, etc.)
+        // Queue the transaction so it syncs when connectivity returns.
+        if (axios.isAxiosError(err) && !err.response) return queueTransaction()
+        throw err // server returned an error (4xx/5xx) — propagate normally
       }
-      return createTransaksi(dto)
     },
     onSuccess: (data) => {
       if (!data) {

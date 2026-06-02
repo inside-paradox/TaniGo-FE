@@ -1,15 +1,19 @@
 'use client'
 
+import { useState, useEffect } from 'react'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useRouter } from 'next/navigation'
+import axios from 'axios'
 import { toast } from 'sonner'
-import { Clock, CheckCircle, Printer, Loader2, AlertCircle } from 'lucide-react'
+import { Clock, CheckCircle, Printer, Loader2, AlertCircle, WifiOff } from 'lucide-react'
 import { formatRupiah, formatTanggalWaktu } from '@tanigo/utils'
 import { bukaShift, tutupShift, fetchActiveShift } from '@/lib/api/shifts'
 import { useShiftStore } from '@/store/shiftStore'
 import { useAuthStore } from '@/store/authStore'
+import { useOfflineStore } from '@/store/offlineStore'
+import { useOnlineStatus } from '@/hooks/useOnlineStatus'
 import { bukaShiftSchema, tutupShiftSchema, type BukaShiftFormValues, type TutupShiftFormValues } from '@/lib/validations/payment'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -22,7 +26,27 @@ function formatRupiahInput(value: string): number {
 export default function ShiftPage() {
   const { activeShift, setShift, clearShift, _hasHydrated } = useShiftStore()
   const user = useAuthStore((s) => s.user)
+  const { setPendingShift } = useOfflineStore()
+  const isOnline = useOnlineStatus()
   const router = useRouter()
+  const [redirectAfterOpen, setRedirectAfterOpen] = useState(false)
+
+  // Prefetch /transaksi while online so the RSC payload is in the router's
+  // in-memory cache. When the user opens shift and we call router.replace,
+  // the router uses the cached payload — no network request needed offline.
+  useEffect(() => {
+    if (isOnline) router.prefetch('/transaksi')
+  }, [isOnline, router])
+
+  // Navigate only after React has committed the new activeShift state.
+  // Calling router.replace synchronously alongside setShift in the same event
+  // handler races with Next.js App Router's transition system and can silently fail.
+  useEffect(() => {
+    if (redirectAfterOpen && activeShift) {
+      setRedirectAfterOpen(false)
+      router.replace('/transaksi')
+    }
+  }, [redirectAfterOpen, activeShift, router])
 
   const { refetch } = useQuery({
     queryKey: ['active-shift'],
@@ -45,19 +69,56 @@ export default function ShiftPage() {
     defaultValues: { saldoAkhir: 0 },
   })
 
+  function openShiftOffline(saldoAwal: number) {
+    const localShift = {
+      id: `local-${Date.now()}`,
+      kasirId: user?.id ?? '',
+      kasirNama: user?.nama ?? '',
+      cabang: user?.cabang ?? '',
+      waktuBuka: new Date().toISOString(),
+      waktuTutup: null,
+      saldoAwal,
+      saldoAkhir: null,
+      totalTransaksi: 0,
+      totalPenjualan: 0,
+      totalPenjualanTunai: 0,
+      totalPenjualanQRIS: 0,
+      totalPenjualanTransfer: 0,
+      totalDiskon: 0,
+      totalRetur: 0,
+      status: 'aktif' as const,
+    }
+    setShift(localShift)
+    setPendingShift({ saldoAwal, waktuBuka: localShift.waktuBuka })
+    toast.success('Shift dibuka secara offline. Akan disinkronkan saat online.')
+    setRedirectAfterOpen(true)
+  }
+
   const { mutate: doBukaShift, isPending: bukaLoading } = useMutation({
     mutationFn: (dto: BukaShiftFormValues) => bukaShift(dto),
     onSuccess: (shift) => {
       setShift(shift)
       toast.success('Shift berhasil dibuka')
-      router.replace('/transaksi')
+      setRedirectAfterOpen(true)
     },
     onError: (err: unknown) => {
       const error = err as { response?: { data?: { message?: string } } }
-      const message = error.response?.data?.message ?? 'Gagal membuka shift'
-      bukaForm.setError('root', { message })
+      // No response = network unreachable → fall back to offline shift
+      if (axios.isAxiosError(err) && !error.response) {
+        openShiftOffline(bukaForm.getValues('saldoAwal'))
+        return
+      }
+      bukaForm.setError('root', { message: error.response?.data?.message ?? 'Gagal membuka shift' })
     },
   })
+
+  function handleBukaShift(values: BukaShiftFormValues) {
+    if (!isOnline) {
+      openShiftOffline(values.saldoAwal)
+      return
+    }
+    doBukaShift(values)
+  }
 
   const { mutate: doTutupShift, isPending: tutupLoading } = useMutation({
     mutationFn: (dto: TutupShiftFormValues) => tutupShift(dto),
@@ -90,9 +151,16 @@ export default function ShiftPage() {
             <p className="mt-1 text-sm text-gray-500">Masukkan saldo awal kas untuk memulai shift</p>
           </div>
 
+          {!isOnline && (
+            <div className="mb-4 flex items-center gap-2.5 rounded-xl border border-orange-200 bg-orange-50 px-4 py-3 text-sm text-orange-700">
+              <WifiOff className="h-4 w-4 shrink-0" />
+              <span>Mode offline — shift akan disinkronkan saat koneksi pulih.</span>
+            </div>
+          )}
+
           <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-gray-200">
             <form
-              onSubmit={bukaForm.handleSubmit((v) => doBukaShift(v))}
+              onSubmit={bukaForm.handleSubmit(handleBukaShift)}
               className="space-y-4"
             >
               {bukaError && (
@@ -132,7 +200,13 @@ export default function ShiftPage() {
   }
 
   const saldoAkhir = tutupForm.watch('saldoAkhir') ?? 0
-  const expectedCash = (activeShift.saldoAwal ?? 0) + (activeShift.totalPenjualanTunai ?? 0) - (activeShift.totalRetur ?? 0)
+  // Uang fisik di laci = saldoAwal + tunai_masuk - kembalian_keluar - retur_keluar
+  // Jika backend belum mengirim totalKembalian, fallback ke 0 (formula tetap lebih baik dari sebelumnya)
+  const expectedCash =
+    (activeShift.saldoAwal ?? 0) +
+    (activeShift.totalPenjualanTunai ?? 0) -
+    (activeShift.totalKembalian ?? 0) -
+    (activeShift.totalRetur ?? 0)
   const selisih = saldoAkhir - expectedCash
 
   return (

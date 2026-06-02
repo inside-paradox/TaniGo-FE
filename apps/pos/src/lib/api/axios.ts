@@ -6,6 +6,7 @@ const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3000'
 export const api = axios.create({
   baseURL: BASE_URL,
   headers: { 'Content-Type': 'application/json' },
+  timeout: 10000,
 })
 
 // Demo mode interceptor — intercepts requests when token is 'demo-token'

@@ -27,6 +27,8 @@ export interface ItemTransaksi {
   hargaSatuan: number
   diskon: number
   subtotal: number
+  /** Sisa qty yang masih bisa diretur. Jika 0, item sudah habis diretur. */
+  qtyTersisa?: number
 }
 
 export interface Transaksi {
@@ -66,11 +68,14 @@ export interface Shift {
   saldoAkhir?: number | null
   totalTransaksi: number
   totalPenjualan: number
+  /** Uang tunai yang diterima dari pelanggan (amount tendered), bukan net penjualan */
   totalPenjualanTunai: number
   totalPenjualanQRIS: number
   totalPenjualanTransfer: number
   totalDiskon: number
   totalRetur: number
+  /** Total kembalian tunai yang diberikan ke pelanggan. Diperlukan agar ekspektasi kas akurat. */
+  totalKembalian?: number
   status: 'aktif' | 'tutup'
 }
 
