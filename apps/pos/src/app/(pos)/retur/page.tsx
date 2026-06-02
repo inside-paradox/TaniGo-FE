@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useMutation } from '@tanstack/react-query'
 import { toast } from 'sonner'
+import axios from 'axios'
 import { Search, RotateCcw, CheckCircle, ChevronLeft } from 'lucide-react'
 import { formatRupiah } from '@tanigo/utils'
 import { fetchTransaksi, createRetur } from '@/lib/api/transactions'
@@ -49,7 +50,14 @@ export default function ReturPage() {
       setStep('success')
       toast.success('Retur berhasil diproses')
     },
-    onError: () => toast.error('Gagal memproses retur'),
+    onError: (err) => {
+      if (axios.isAxiosError(err) && (!err.response || err.response.status >= 500)) {
+        toast.error('Gagal memproses retur. Silakan periksa koneksi internet Anda atau coba beberapa saat lagi.')
+        return
+      }
+      const msg = axios.isAxiosError(err) ? err.response?.data?.message : null
+      toast.error(msg ?? 'Gagal memproses retur.')
+    },
   })
 
   const getReturableQty = (item: ItemTransaksi) =>
@@ -152,6 +160,12 @@ export default function ReturPage() {
 
         {/* Items list */}
         <div className="flex-1 overflow-auto p-6 space-y-3">
+          {transaksi.items.every((i) => getReturableQty(i) <= 0) && (
+            <div className="flex items-start gap-3 rounded-xl border border-blue-200 bg-blue-50 p-4 text-sm text-blue-700">
+              <span className="mt-0.5 shrink-0 text-base">ℹ️</span>
+              <span>Transaksi ini sudah dibatalkan atau dikembalikan sepenuhnya (Full Retur).</span>
+            </div>
+          )}
           {transaksi.items.map((item) => {
             const sel = selected[item.id]
             const isSelected = !!sel

@@ -239,10 +239,10 @@ export default function BuatPOPage() {
 
                 {/* Header tabel */}
                 <div className="hidden grid-cols-12 gap-2 pb-2 text-xs font-medium uppercase text-gray-500 sm:grid">
-                  <div className="col-span-5">Produk</div>
+                  <div className="col-span-4">Produk</div>
                   <div className="col-span-2 text-right">Qty</div>
                   <div className="col-span-3 text-right">Harga Beli</div>
-                  <div className="col-span-1 text-right">Subtotal</div>
+                  <div className="col-span-2 text-right">Subtotal</div>
                   <div className="col-span-1" />
                 </div>
 
@@ -255,7 +255,7 @@ export default function BuatPOPage() {
                         className="pt-3 first:pt-0 sm:grid sm:grid-cols-12 sm:items-start sm:gap-2"
                       >
                         {/* Produk */}
-                        <div className="col-span-5 mb-2 sm:mb-0">
+                        <div className="col-span-4 mb-2 sm:mb-0">
                           <Combobox
                             placeholder="Cari produk..."
                             options={products}
@@ -295,8 +295,8 @@ export default function BuatPOPage() {
                         </div>
 
                         {/* Subtotal */}
-                        <div className="col-span-1 flex items-center justify-end">
-                          <span className="text-sm font-medium text-gray-700">
+                        <div className="col-span-2 flex items-center justify-end">
+                          <span className="text-sm font-medium text-gray-700 whitespace-nowrap">
                             {formatRupiah(subtotal)}
                           </span>
                         </div>
