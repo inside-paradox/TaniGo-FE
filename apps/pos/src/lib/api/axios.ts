@@ -127,11 +127,30 @@ api.interceptors.request.use((config) => {
           }
         })
         const totalRefund = resolvedItems.reduce((s, i) => s + i.subtotal, 0)
-        // Update demo shift retur stats
+        const metodeRefund: string = body.metodeRefund ?? 'Tunai'
+
+        // Update qtyTersisa on stored transaction items so subsequent retur lookups are accurate
+        if (trx) {
+          returItems.forEach((ri) => {
+            const origItem = trx.items?.find((i: { id: string }) => i.id === ri.itemTransaksiId)
+            if (origItem) {
+              origItem.qtyTersisa = Math.max(0, (origItem.qtyTersisa ?? origItem.qty) - ri.qty)
+            }
+          })
+          stored[transaksiId] = trx
+          localStorage.setItem('demo_transactions', JSON.stringify(stored))
+        }
+
+        // Update demo shift retur stats — breakdown by metode for expectedCash accuracy
         const demoShiftRaw2 = localStorage.getItem('demo_active_shift')
         const demoShift2 = demoShiftRaw2 ? JSON.parse(demoShiftRaw2) : null
         if (demoShift2) {
-          demoShift2.totalRetur += totalRefund
+          demoShift2.totalRetur = (demoShift2.totalRetur ?? 0) + totalRefund
+          if (metodeRefund === 'Tunai') {
+            demoShift2.totalReturTunai = (demoShift2.totalReturTunai ?? 0) + totalRefund
+          } else {
+            demoShift2.totalReturTransfer = (demoShift2.totalReturTransfer ?? 0) + totalRefund
+          }
           localStorage.setItem('demo_active_shift', JSON.stringify(demoShift2))
         }
         const retur = {
@@ -173,6 +192,8 @@ api.interceptors.request.use((config) => {
           totalPenjualanTransfer: 0,
           totalDiskon: 0,
           totalRetur: 0,
+          totalReturTunai: 0,
+          totalReturTransfer: 0,
           status: 'aktif',
         }
         localStorage.setItem('demo_active_shift', JSON.stringify(shift))
