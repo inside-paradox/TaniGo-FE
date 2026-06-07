@@ -160,13 +160,13 @@ export default function ReturPage() {
 
         {/* Items list */}
         <div className="flex-1 overflow-auto p-6 space-y-3">
-          {transaksi.items.every((i) => getReturableQty(i) <= 0) && (
+          {(transaksi.items ?? []).every((i) => getReturableQty(i) <= 0) && (
             <div className="flex items-start gap-3 rounded-xl border border-blue-200 bg-blue-50 p-4 text-sm text-blue-700">
               <span className="mt-0.5 shrink-0 text-base">ℹ️</span>
               <span>Transaksi ini sudah dibatalkan atau dikembalikan sepenuhnya (Full Retur).</span>
             </div>
           )}
-          {transaksi.items.map((item) => {
+          {(transaksi.items ?? []).map((item) => {
             const sel = selected[item.id]
             const isSelected = !!sel
             const returableQty = getReturableQty(item)
