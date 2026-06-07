@@ -31,14 +31,14 @@ export default function ReturPage() {
   const { mutate: cariTransaksi, isPending: cariLoading } = useMutation({
     mutationFn: () => fetchTransaksi(trxId.trim()),
     onSuccess: (data) => {
-      // Guard: must be a valid transaksi with an items array.
-      // An API returning an empty object or missing items would otherwise
-      // crash on render when we call .every()/.map() on items.
-      if (!data || !Array.isArray(data.items)) {
+      if (!data || !data.id) {
         toast.error('Transaksi tidak ditemukan')
         return
       }
-      setTransaksi(data)
+      // Normalize items to always be an array — API may return null/object
+      // for items if transaction data is malformed. This guarantees that
+      // transaksi.items is always an array everywhere in the render tree.
+      setTransaksi({ ...data, items: Array.isArray(data.items) ? data.items : [] })
       setSelected({})
       setStep('select')
     },
@@ -88,7 +88,7 @@ export default function ReturPage() {
 
   const selectedItems = Object.values(selected)
   const totalRefund = selectedItems.reduce((sum, s) => {
-    const item = Array.isArray(transaksi?.items) ? transaksi.items.find((i) => i.id === s.itemTransaksiId) : undefined
+    const item = transaksi?.items.find((i) => i.id === s.itemTransaksiId)
     return sum + (item ? item.hargaSatuan * s.qty : 0)
   }, 0)
 
@@ -140,7 +140,8 @@ export default function ReturPage() {
   }
 
   // ── Item selection screen ────────────────────────────────────────────────────
-  if (step === 'select' && transaksi) {
+  if (step === 'select') {
+    if (!transaksi) return null
     return (
       <div className="flex h-full flex-col">
         {/* Header */}
@@ -155,7 +156,7 @@ export default function ReturPage() {
             <div>
               <h1 className="text-lg font-bold text-gray-900">Pilih Item Retur</h1>
               <p className="text-xs text-gray-500">
-                Struk {transaksi.nomorStruk} · {transaksi.kasirNama}
+                {transaksi.nomorStruk && `Struk ${transaksi.nomorStruk} · `}{transaksi.kasirNama ?? '-'}
               </p>
             </div>
           </div>
@@ -163,13 +164,13 @@ export default function ReturPage() {
 
         {/* Items list */}
         <div className="flex-1 overflow-auto p-6 space-y-3">
-          {(Array.isArray(transaksi.items) ? transaksi.items : []).every((i) => getReturableQty(i) <= 0) && (
+          {transaksi.items.every((i) => getReturableQty(i) <= 0) && (
             <div className="flex items-start gap-3 rounded-xl border border-blue-200 bg-blue-50 p-4 text-sm text-blue-700">
               <span className="mt-0.5 shrink-0 text-base">ℹ️</span>
               <span>Transaksi ini sudah dibatalkan atau dikembalikan sepenuhnya (Full Retur).</span>
             </div>
           )}
-          {(Array.isArray(transaksi.items) ? transaksi.items : []).map((item) => {
+          {transaksi.items.map((item) => {
             const sel = selected[item.id]
             const isSelected = !!sel
             const returableQty = getReturableQty(item)
@@ -294,8 +295,8 @@ export default function ReturPage() {
 
         <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-gray-200 space-y-4">
           <Input
-            label="ID Transaksi"
-            placeholder="trx-..."
+            label="ID atau Nomor Struk"
+            placeholder="trx-... atau STR-..."
             value={trxId}
             onChange={(e) => setTrxId(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && trxId.trim() && cariTransaksi()}
@@ -313,7 +314,7 @@ export default function ReturPage() {
         </div>
 
         <p className="text-center text-xs text-gray-400">
-          ID transaksi tertera di bagian bawah struk setelah &quot;ID:&quot;
+          Gunakan nomor struk (STR-...) atau ID transaksi (trx-...) yang tertera di struk
         </p>
       </div>
     </div>

@@ -94,12 +94,37 @@ api.interceptors.request.use((config) => {
         mock(transaksi, 201)
       }
 
-      // GET /api/transactions/:id
+      // GET /api/transactions/:id  (also supports lookup by nomorStruk)
       const trxGetMatch = url.match(/^\/api\/transactions\/([^/]+)$/)
       if (trxGetMatch && method === 'get') {
         const id = trxGetMatch[1]
-        const stored = JSON.parse(localStorage.getItem('demo_transactions') ?? '{}')
-        const trx = stored[id] ?? null
+        const stored: Record<string, unknown> = JSON.parse(localStorage.getItem('demo_transactions') ?? '{}')
+
+        // Seed a demo transaction if the store is empty so retur can be tested
+        // without having to make a sale first.
+        if (Object.keys(stored).length === 0) {
+          const demoTrx = {
+            id: 'trx-demo-001',
+            nomorStruk: 'STR-DEMO-001',
+            items: [
+              { id: 'item-demo-1', produkId: 'p-1', produkNama: 'Pupuk Urea 100kg', produkSku: 'SKU-001', satuan: 'karung', qty: 3, hargaSatuan: 175000, diskon: 0, subtotal: 525000, qtyTersisa: 3 },
+              { id: 'item-demo-2', produkId: 'p-2', produkNama: 'Pupuk NPK Mutiara', produkSku: 'SKU-002', satuan: 'kg', qty: 5, hargaSatuan: 16000, diskon: 0, subtotal: 80000, qtyTersisa: 5 },
+            ],
+            subtotal: 605000, totalDiskon: 0, total: 605000,
+            pembayaran: [{ metode: 'Tunai', nominal: 700000 }],
+            kembalian: 95000,
+            kasirId: 'u-3', kasirNama: 'Siti Kasir',
+            shiftId: 'shift-demo',
+            createdAt: new Date().toISOString(),
+          }
+          stored['trx-demo-001'] = demoTrx
+          localStorage.setItem('demo_transactions', JSON.stringify(stored))
+        }
+
+        // Lookup by id first, fallback to nomorStruk so kasir can search by struk number
+        const trx = stored[id]
+          ?? Object.values(stored).find((t: unknown) => (t as { nomorStruk?: string }).nomorStruk === id)
+          ?? null
         mock(trx)
       }
 
