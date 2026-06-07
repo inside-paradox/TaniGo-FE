@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft, AlertCircle, Printer, RotateCcw } from 'lucide-react'
+import { ArrowLeft, AlertCircle, Printer } from 'lucide-react'
 import { toast } from 'sonner'
 import { PageHeader } from '@/components/shared'
 import {
@@ -19,8 +19,6 @@ import {
   Textarea,
 } from '@/components/ui'
 import { useOrder, useUpdateOrderStatus } from '@/hooks/use-orders'
-import { useAuthStore } from '@/store/auth-store'
-import { ordersApi } from '@/lib/api'
 import { printStrukPOS } from '@/lib/print'
 import { formatRupiah, formatTanggalWaktu } from '@/lib/utils'
 import type { StatusPesanan, ItemPesanan, Pesanan } from '@/types'
@@ -110,125 +108,10 @@ function ReturSection({ pesanan }: { pesanan: Pesanan }) {
   )
 }
 
-// ── Retur modal (shared) ──────────────────────────────────────────────────────
-
-interface ReturItemState { checked: boolean; qty: number }
-
-function ReturModal({
-  open, onClose, pesanan, onSuccess,
-}: {
-  open: boolean; onClose: () => void; pesanan: Pesanan; onSuccess: () => void
-}) {
-  const [returItems, setReturItems] = useState<Record<string, ReturItemState>>({})
-  const [alasan, setAlasan] = useState('')
-  const [error, setError] = useState('')
-  const [loading, setLoading] = useState(false)
-
-  useEffect(() => {
-    if (open) {
-      const initial: Record<string, ReturItemState> = {}
-      pesanan.items.forEach((item) => { initial[item.id] = { checked: false, qty: 0 } })
-      setReturItems(initial)
-      setAlasan('')
-      setError('')
-    }
-  }, [open])
-
-  const handleConfirm = async () => {
-    if (!alasan.trim()) { setError('Alasan retur wajib diisi'); return }
-    const selected = pesanan.items
-      .filter((item) => returItems[item.id]?.checked)
-      .map((item) => ({ produkId: item.produkId, qty: returItems[item.id]?.qty ?? 0 }))
-    if (selected.length === 0) { setError('Pilih minimal satu item'); return }
-    for (const item of pesanan.items) {
-      const s = returItems[item.id]
-      if (s?.checked && (!s.qty || s.qty <= 0 || s.qty > item.qty)) {
-        setError(`Qty retur "${item.produkNama}" tidak valid (maks: ${item.qty})`)
-        return
-      }
-    }
-    try {
-      setLoading(true)
-      await ordersApi.prosesRetur(pesanan.id, { items: selected, alasan })
-      toast.success('Retur berhasil diproses')
-      onClose()
-      onSuccess()
-    } catch { toast.error('Gagal memproses retur') }
-    finally { setLoading(false) }
-  }
-
-  return (
-    <Modal
-      open={open}
-      onClose={onClose}
-      title="Proses Retur"
-      description={`Pilih item yang ingin diretur dari transaksi ${pesanan.nomorPesanan}`}
-      size="lg"
-    >
-      <div className="space-y-4">
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-gray-200">
-                <th className="pb-2 w-8"></th>
-                <th className="pb-2 text-left font-medium text-gray-500">Produk</th>
-                <th className="pb-2 text-center font-medium text-gray-500">Qty Beli</th>
-                <th className="pb-2 text-center font-medium text-gray-500">Qty Dikembalikan</th>
-                <th className="pb-2 text-right font-medium text-gray-500">Subtotal</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100">
-              {pesanan.items.map((item: ItemPesanan) => {
-                const state = returItems[item.id]
-                return (
-                  <tr key={item.id} className={state?.checked ? 'bg-orange-50' : ''}>
-                    <td className="py-2">
-                      <input type="checkbox" checked={state?.checked ?? false}
-                        onChange={(e) => setReturItems((p) => ({ ...p, [item.id]: { ...p[item.id], checked: e.target.checked } }))}
-                        className="h-4 w-4 rounded border-gray-300 text-green-600"
-                      />
-                    </td>
-                    <td className="py-2 font-medium text-gray-900">{item.produkNama}</td>
-                    <td className="py-2 text-center text-gray-700">{item.qty}</td>
-                    <td className="py-2 text-center">
-                      <input type="number" min={1} max={item.qty}
-                        value={state?.qty ?? item.qty} disabled={!state?.checked}
-                        onChange={(e) => setReturItems((p) => ({ ...p, [item.id]: { ...p[item.id], qty: Number(e.target.value) } }))}
-                        className="w-16 rounded border border-gray-300 px-2 py-1 text-center text-sm disabled:opacity-50 focus:border-green-500 focus:outline-none"
-                      />
-                    </td>
-                    <td className="py-2 text-right text-gray-700">{formatRupiah(item.subtotal)}</td>
-                  </tr>
-                )
-              })}
-            </tbody>
-          </table>
-        </div>
-        <Textarea label="Alasan Retur" required placeholder="Masukkan alasan retur..."
-          value={alasan} onChange={(e) => { setAlasan(e.target.value); setError('') }}
-          error={error} rows={3}
-        />
-        <div className="flex justify-end gap-3">
-          <Button variant="outline" onClick={onClose} disabled={loading}>Batal</Button>
-          <Button onClick={handleConfirm} loading={loading} className="bg-orange-600 hover:bg-orange-700 text-white">
-            Proses Retur
-          </Button>
-        </div>
-      </div>
-    </Modal>
-  )
-}
-
 // ── Detail Transaksi POS ──────────────────────────────────────────────────────
 
-function DetailPOS({ pesanan, refetch }: { pesanan: Pesanan; refetch: () => void }) {
+function DetailPOS({ pesanan, refetch: _refetch }: { pesanan: Pesanan; refetch: () => void }) {
   const router = useRouter()
-  const user = useAuthStore((s) => s.user)
-  const [showRetur, setShowRetur] = useState(false)
-
-  const canRetur =
-    !pesanan.hasRetur &&
-    (user?.role === 'manajer' || user?.role === 'admin' || user?.role === 'superadmin')
 
   return (
     <div className="space-y-6">
@@ -246,13 +129,6 @@ function DetailPOS({ pesanan, refetch }: { pesanan: Pesanan; refetch: () => void
         }
         actions={
           <div className="flex gap-2">
-            {canRetur && (
-              <Button variant="outline" size="sm" onClick={() => setShowRetur(true)}
-                className="border-orange-300 text-orange-700 hover:bg-orange-50">
-                <RotateCcw className="h-4 w-4" />
-                Proses Retur
-              </Button>
-            )}
             <Button variant="outline" size="sm" onClick={() => printStrukPOS(pesanan)}>
               <Printer className="h-4 w-4" />
               Cetak Struk
@@ -325,7 +201,10 @@ function DetailPOS({ pesanan, refetch }: { pesanan: Pesanan; refetch: () => void
       <ItemsTable items={pesanan.items} />
       <ReturSection pesanan={pesanan} />
 
-      <ReturModal open={showRetur} onClose={() => setShowRetur(false)} pesanan={pesanan} onSuccess={refetch} />
+      <div className="flex items-start gap-2.5 rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-500">
+        <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+        <span>Proses retur transaksi POS dilakukan melalui aplikasi kasir (POS).</span>
+      </div>
     </div>
   )
 }
