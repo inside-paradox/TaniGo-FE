@@ -529,6 +529,54 @@ export const mockTagihanVIP: TagihanVIP[] = [
 // ─── Pesanan ──────────────────────────────────────────────────────────────────
 
 export const mockPesanan: Pesanan[] = [
+  // ── [QA] POS transaction — already has retur ─────────────────────────────
+  {
+    id: 'ord-pos-retur',
+    nomorPesanan: 'STR-20260607-0012',
+    pelangganNama: 'Pak Agus',
+    pelangganTelepon: '0811-2222-3333',
+    items: [
+      { id: 'oi-pr-1', produkId: 'p-1', produkNama: 'Pupuk Urea 50kg', produkSku: 'PUP-001', qty: 5, hargaSatuan: 110000, subtotal: 550000 },
+      { id: 'oi-pr-2', produkId: 'p-2', produkNama: 'Pupuk NPK Mutiara', produkSku: 'PUP-002', qty: 10, hargaSatuan: 16000, subtotal: 160000 },
+    ],
+    subtotal: 710000,
+    diskon: 0,
+    total: 710000,
+    metodePembayaran: 'Tunai',
+    metodePengiriman: 'ambil_sendiri',
+    status: 'Selesai',
+    kasirId: 'u-3',
+    kasirNama: 'Siti Kasir',
+    sumber: 'pos',
+    hasRetur: true,
+    returNominal: 160000,
+    returItems: [
+      { produkId: 'p-2', produkNama: 'Pupuk NPK Mutiara', qty: 10, nominal: 160000 },
+    ],
+    createdAt: d(1), updatedAt: d(0),
+  },
+  // ── [QA] POS transaction — no retur yet (info note should appear) ─────────
+  {
+    id: 'ord-pos-noretur',
+    nomorPesanan: 'STR-20260607-0013',
+    pelangganNama: 'Ibu Rina',
+    pelangganTelepon: '0822-4444-5555',
+    items: [
+      { id: 'oi-nr-1', produkId: 'p-3', produkNama: 'Pestisida Roundup 1L', produkSku: 'PES-001', qty: 2, hargaSatuan: 75000, subtotal: 150000 },
+      { id: 'oi-nr-2', produkId: 'p-5', produkNama: 'Sprayer Manual 16L', produkSku: 'ALT-001', qty: 1, hargaSatuan: 175000, subtotal: 175000 },
+    ],
+    subtotal: 325000,
+    diskon: 0,
+    total: 325000,
+    metodePembayaran: 'QRIS',
+    metodePengiriman: 'ambil_sendiri',
+    status: 'Selesai',
+    kasirId: 'u-3',
+    kasirNama: 'Siti Kasir',
+    sumber: 'pos',
+    createdAt: d(0), updatedAt: d(0),
+  },
+  // ─────────────────────────────────────────────────────────────────────────
   {
     id: 'ord-1',
     nomorPesanan: 'ORD-2026-047',
