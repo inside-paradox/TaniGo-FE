@@ -31,7 +31,10 @@ export default function ReturPage() {
   const { mutate: cariTransaksi, isPending: cariLoading } = useMutation({
     mutationFn: () => fetchTransaksi(trxId.trim()),
     onSuccess: (data) => {
-      if (!data) {
+      // Guard: must be a valid transaksi with an items array.
+      // An API returning an empty object or missing items would otherwise
+      // crash on render when we call .every()/.map() on items.
+      if (!data || !Array.isArray(data.items)) {
         toast.error('Transaksi tidak ditemukan')
         return
       }
