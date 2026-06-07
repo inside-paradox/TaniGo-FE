@@ -200,13 +200,15 @@ export default function ShiftPage() {
   }
 
   const saldoAkhir = tutupForm.watch('saldoAkhir') ?? 0
-  // Uang fisik di laci = saldoAwal + tunai_masuk - kembalian_keluar - retur_keluar
-  // Jika backend belum mengirim totalKembalian, fallback ke 0 (formula tetap lebih baik dari sebelumnya)
+  // Uang fisik di laci = saldoAwal + tunai_masuk - kembalian_keluar - retur_tunai_keluar
+  // Hanya retur metode Tunai yang mengurangi kas fisik; retur Transfer tidak menyentuh laci.
+  // Fallback: jika BE belum kirim totalReturTunai, gunakan totalRetur (konservatif — over-deduct sementara).
+  const returTunai = activeShift.totalReturTunai ?? activeShift.totalRetur ?? 0
   const expectedCash =
     (activeShift.saldoAwal ?? 0) +
     (activeShift.totalPenjualanTunai ?? 0) -
     (activeShift.totalKembalian ?? 0) -
-    (activeShift.totalRetur ?? 0)
+    returTunai
   const selisih = saldoAkhir - expectedCash
 
   return (

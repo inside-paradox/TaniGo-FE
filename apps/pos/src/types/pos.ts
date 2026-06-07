@@ -74,6 +74,10 @@ export interface Shift {
   totalPenjualanTransfer: number
   totalDiskon: number
   totalRetur: number
+  /** Retur yang dikembalikan secara tunai (mempengaruhi kas fisik). Dikirim BE setelah adjustment. */
+  totalReturTunai?: number
+  /** Retur yang dikembalikan via transfer (tidak mempengaruhi kas fisik). */
+  totalReturTransfer?: number
   /** Total kembalian tunai yang diberikan ke pelanggan. Diperlukan agar ekspektasi kas akurat. */
   totalKembalian?: number
   status: 'aktif' | 'tutup'
@@ -104,7 +108,7 @@ export interface Retur {
   nomorStruk: string
   items: ItemRetur[]
   totalRefund: number
-  metodeRefund: 'Tunai' | 'Kredit'
+  metodeRefund: 'Tunai' | 'Transfer'
   kasirId: string
   kasirNama: string
   createdAt: string
@@ -112,7 +116,7 @@ export interface Retur {
 
 export interface CreateReturDto {
   items: { itemTransaksiId: string; qty: number }[]
-  metodeRefund: 'Tunai' | 'Kredit'
+  metodeRefund: 'Tunai' | 'Transfer'
 }
 
 export interface TransaksiTertahan {

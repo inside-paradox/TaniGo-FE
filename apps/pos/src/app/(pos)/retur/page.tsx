@@ -11,7 +11,7 @@ import type { Transaksi, ItemTransaksi, CreateReturDto } from '@/types/pos'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 
-type MetodeRefund = 'Tunai' | 'Kredit'
+type MetodeRefund = 'Tunai' | 'Transfer'
 
 interface SelectedItem {
   itemTransaksiId: string
@@ -240,7 +240,7 @@ export default function ReturPage() {
         <div className="border-t border-gray-200 bg-white p-6 space-y-4">
           {/* Metode refund */}
           <div className="flex gap-2">
-            {(['Tunai', 'Kredit'] as MetodeRefund[]).map((m) => (
+            {(['Tunai', 'Transfer'] as MetodeRefund[]).map((m) => (
               <button
                 key={m}
                 onClick={() => setMetodeRefund(m)}
