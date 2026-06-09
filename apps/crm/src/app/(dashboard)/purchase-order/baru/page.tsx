@@ -115,7 +115,19 @@ export default function BuatPOPage() {
     Number(watchedBiaya[3] || 0)
   const totalKeseluruhan = totalHargaBarang + totalBiayaTambahan
   const totalQty = items.reduce((acc, item) => acc + item.qtyPesan, 0)
-  const hppPerUnit = totalQty > 0 ? totalKeseluruhan / totalQty : 0
+
+  // HPP per unit hanya akurat jika PO berisi 1 jenis item.
+  // Jika >1 item, satu angka global menyebabkan subsidi silang antar SKU
+  // (barang murah jadi overvalued, barang mahal jadi undervalued).
+  // Solusi: distribusikan biaya tambahan (landed cost) secara proporsional
+  // berdasarkan nilai item masing-masing.
+  //   proportion_i   = (qty_i × hargaBeli_i) / totalHargaBarang
+  //   hppPerUnit_i   = hargaBeli_i × (1 + totalBiayaTambahan / totalHargaBarang)
+  const hppPerUnitSingle = totalQty > 0 ? totalKeseluruhan / totalQty : 0
+  const hppPerUnitItems = items.map((item) => {
+    if (totalHargaBarang === 0 || item.hargaBeli === 0) return 0
+    return Math.round(item.hargaBeli * (1 + totalBiayaTambahan / totalHargaBarang))
+  })
 
   // ---- Validasi & Submit ----
   const validate = (data: FormValues): boolean => {
@@ -249,6 +261,7 @@ export default function BuatPOPage() {
                 <div className="space-y-3 divide-y divide-gray-100">
                   {items.map((item, idx) => {
                     const subtotal = item.qtyPesan * item.hargaBeli
+                    const hpp = hppPerUnitItems[idx] ?? 0
                     return (
                       <div
                         key={item._key}
@@ -292,6 +305,11 @@ export default function BuatPOPage() {
                             error={errors[`item_${idx}_harga`]}
                             placeholder="Harga Beli"
                           />
+                          {totalBiayaTambahan > 0 && hpp > 0 && (
+                            <p className="mt-1 text-xs text-green-600">
+                              HPP/unit: {formatRupiah(hpp)}
+                            </p>
+                          )}
                         </div>
 
                         {/* Subtotal */}
@@ -391,18 +409,31 @@ export default function BuatPOPage() {
                     <dd className="font-bold text-gray-900">{formatRupiah(totalKeseluruhan)}</dd>
                   </div>
 
-                  {/* HPP per Unit — highlighted */}
-                  <div className="mt-2 rounded-xl bg-green-50 border border-green-200 p-4">
-                    <p className="text-xs font-medium text-green-600 uppercase tracking-wide mb-1">
-                      HPP per Unit
-                    </p>
-                    <p className="text-2xl font-bold text-green-700">
-                      {formatRupiah(hppPerUnit)}
-                    </p>
-                    <p className="mt-1 text-xs text-green-500">
-                      Total Keseluruhan ÷ Total Qty
-                    </p>
-                  </div>
+                  {/* HPP per Unit */}
+                  {items.length === 1 ? (
+                    // 1 jenis item — aman tampilkan satu angka global
+                    <div className="mt-2 rounded-xl bg-green-50 border border-green-200 p-4">
+                      <p className="text-xs font-medium text-green-600 uppercase tracking-wide mb-1">
+                        HPP per Unit
+                      </p>
+                      <p className="text-2xl font-bold text-green-700">
+                        {formatRupiah(hppPerUnitSingle)}
+                      </p>
+                      <p className="mt-1 text-xs text-green-500">
+                        Total Keseluruhan ÷ Total Qty
+                      </p>
+                    </div>
+                  ) : (
+                    // >1 jenis item — HPP global tidak akurat, tampilkan per item
+                    <div className="mt-2 rounded-xl bg-amber-50 border border-amber-200 p-4">
+                      <p className="text-xs font-medium text-amber-700 uppercase tracking-wide mb-1">
+                        HPP per Unit
+                      </p>
+                      <p className="text-xs text-amber-700 leading-relaxed">
+                        PO berisi {items.length} jenis item. HPP per unit ditampilkan di bawah kolom <strong>Harga Beli</strong> masing-masing item (sudah termasuk alokasi biaya tambahan proporsional).
+                      </p>
+                    </div>
+                  )}
                 </dl>
 
                 {/* Tombol aksi */}
