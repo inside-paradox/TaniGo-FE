@@ -183,8 +183,8 @@ function DashboardToko() {
   const { data: stok, isLoading: stokLoading } = useDashboardStok()
   const { data: operasional, isLoading: operasionalLoading } = useDashboardToko()
 
-  const penjualanHarian = penjualan?.harian || penjualanHarianMock
-  const metodePembayaran = penjualan?.metodePembayaran || metodePembayaranMock
+  const penjualanHarian = penjualan?.harian ?? penjualanHarianMock
+  const metodePembayaran = penjualan?.metodePembayaran ?? metodePembayaranMock
 
   return (
     <div className="space-y-6">
@@ -196,7 +196,7 @@ function DashboardToko() {
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
           <StatCard
             title="Pendapatan"
-            value={formatRupiah(penjualan?.totalPendapatan) ?? 39100000}
+            value={formatRupiah(penjualan?.totalPendapatan ?? 0)}
             subtitle="7 hari terakhir"
             icon={<TrendingUp className="h-5 w-5 text-green-600" />}
             color="bg-green-50"
@@ -204,7 +204,7 @@ function DashboardToko() {
           />
           <StatCard
             title="Total Transaksi"
-            value={penjualan?.totalTransaksi ?? 142}
+            value={penjualan?.totalTransaksi ?? 0}
             subtitle="7 hari terakhir"
             icon={<ShoppingCart className="h-5 w-5 text-purple-600" />}
             color="bg-purple-50"
@@ -212,11 +212,7 @@ function DashboardToko() {
           />
           <StatCard
             title="Rata-rata Transaksi"
-            value={
-              penjualan?.rataRataTransaksi
-                ? formatRupiah(penjualan.rataRataTransaksi)
-                : formatRupiah(275352)
-            }
+            value={formatRupiah(penjualan?.rataRataTransaksi ?? 0)}
             subtitle="Per transaksi"
             icon={<Users className="h-5 w-5 text-indigo-600" />}
             color="bg-indigo-50"
