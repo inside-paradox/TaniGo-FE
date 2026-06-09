@@ -198,7 +198,7 @@ function DashboardToko() {
             title="Pendapatan"
             value={
               penjualan?.totalPendapatan
-                ? formatRupiah(penjualan.totalPendapatan)
+                ? formatRupiah(penjualan?.totalPendapatan)
                 : formatRupiah(39100000)
             }
             subtitle="7 hari terakhir"
