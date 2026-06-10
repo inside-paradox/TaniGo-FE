@@ -155,12 +155,12 @@ function SummaryCards({
             <div className="space-y-2"><Skeleton className="h-4 w-24" /><Skeleton className="h-7 w-16" /></div>
           ) : (
             <div className="flex items-start justify-between">
-              <div>
+              <div className="min-w-0 flex-1">
                 <p className="text-sm font-medium text-gray-500">Total Pelanggan VIP</p>
                 <p className="mt-1 text-2xl font-bold text-gray-900">{totalPelanggan}</p>
                 <p className="mt-0.5 text-xs text-gray-400">Pelanggan terdaftar</p>
               </div>
-              <div className="rounded-xl bg-green-50 p-3">
+              <div className="shrink-0 ml-3 rounded-xl bg-green-50 p-3">
                 <Users className="h-5 w-5 text-green-600" />
               </div>
             </div>
@@ -179,14 +179,14 @@ function SummaryCards({
               onClick={() => onFilterChange('ada_hutang')}
             >
               <div className="flex items-start justify-between">
-                <div>
+                <div className="min-w-0 flex-1">
                   <p className="text-sm font-medium text-gray-500">Total Piutang</p>
-                  <p className="mt-1 text-2xl font-bold text-gray-900">
+                  <p className="mt-1 text-2xl font-bold text-gray-900 break-words">
                     {formatRupiah(ringkasan?.totalPiutang ?? 0)}
                   </p>
                   <p className="mt-0.5 text-xs text-blue-600 hover:underline">Lihat yang berhutang →</p>
                 </div>
-                <div className="rounded-xl bg-blue-50 p-3">
+                <div className="shrink-0 ml-3 rounded-xl bg-blue-50 p-3">
                   <Wallet className="h-5 w-5 text-blue-600" />
                 </div>
               </div>
@@ -207,7 +207,7 @@ function SummaryCards({
               disabled={!ringkasan || ringkasan.mendekatiJatuhTempo.count === 0}
             >
               <div className="flex items-start justify-between">
-                <div>
+                <div className="min-w-0 flex-1">
                   <p className="text-sm font-medium text-gray-500">Mendekati Jatuh Tempo</p>
                   <p className={`mt-1 text-2xl font-bold ${ringkasan && ringkasan.mendekatiJatuhTempo.count > 0 ? 'text-orange-600' : 'text-gray-900'}`}>
                     {ringkasan?.mendekatiJatuhTempo.count ?? 0}
@@ -219,7 +219,7 @@ function SummaryCards({
                       : 'Tidak ada dalam 7 hari'}
                   </p>
                 </div>
-                <div className={`rounded-xl p-3 ${ringkasan && ringkasan.mendekatiJatuhTempo.count > 0 ? 'bg-orange-50' : 'bg-gray-50'}`}>
+                <div className={`shrink-0 ml-3 rounded-xl p-3 ${ringkasan && ringkasan.mendekatiJatuhTempo.count > 0 ? 'bg-orange-50' : 'bg-gray-50'}`}>
                   <Clock className={`h-5 w-5 ${ringkasan && ringkasan.mendekatiJatuhTempo.count > 0 ? 'text-orange-500' : 'text-gray-400'}`} />
                 </div>
               </div>
@@ -240,7 +240,7 @@ function SummaryCards({
               disabled={!ringkasan || ringkasan.sudahJatuhTempo.count === 0}
             >
               <div className="flex items-start justify-between">
-                <div>
+                <div className="min-w-0 flex-1">
                   <p className="text-sm font-medium text-gray-500">Sudah Jatuh Tempo</p>
                   <p className={`mt-1 text-2xl font-bold ${ringkasan && ringkasan.sudahJatuhTempo.count > 0 ? 'text-red-600' : 'text-gray-900'}`}>
                     {ringkasan?.sudahJatuhTempo.count ?? 0}
@@ -252,7 +252,7 @@ function SummaryCards({
                       : 'Semua tagihan on-track'}
                   </p>
                 </div>
-                <div className={`rounded-xl p-3 ${ringkasan && ringkasan.sudahJatuhTempo.count > 0 ? 'bg-red-50' : 'bg-gray-50'}`}>
+                <div className={`shrink-0 ml-3 rounded-xl p-3 ${ringkasan && ringkasan.sudahJatuhTempo.count > 0 ? 'bg-red-50' : 'bg-gray-50'}`}>
                   <AlertTriangle className={`h-5 w-5 ${ringkasan && ringkasan.sudahJatuhTempo.count > 0 ? 'text-red-500' : 'text-gray-400'}`} />
                 </div>
               </div>
