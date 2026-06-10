@@ -96,6 +96,7 @@ function ApproveModal({ open, onClose, items, transferId }: ApproveModalProps) {
                   onChange={(e) =>
                     setQtyMap((prev) => ({ ...prev, [item.id]: Number(e.target.value) }))
                   }
+                  onFocus={(e) => e.target.select()}
                   className="h-9 w-full rounded-lg border border-gray-300 bg-white px-3 text-center text-sm focus:border-green-500 focus:outline-none focus:ring-1 focus:ring-green-500"
                 />
               </div>
@@ -471,6 +472,7 @@ export default function DetailTransferStokPage() {
                     max={item.qtyDisetujui ?? item.qtyDiminta}
                     value={terimaQty[item.id] ?? item.qtyDisetujui ?? item.qtyDiminta}
                     onChange={(e) => setTerimaQty((m) => ({ ...m, [item.id]: Number(e.target.value) }))}
+                    onFocus={(e) => e.target.select()}
                     className="h-8 w-full rounded-lg border border-gray-300 px-2 text-center text-xs focus:border-green-500 focus:outline-none focus:ring-1 focus:ring-green-500"
                   />
                 </div>

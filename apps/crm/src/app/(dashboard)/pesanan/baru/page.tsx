@@ -461,6 +461,7 @@ export default function PesananBaruPage() {
                         max={item.stok || undefined}
                         value={item.qty}
                         onChange={(e) => handleUbahQty(item.id, Number(e.target.value))}
+                        onFocus={(e) => e.target.select()}
                         className="h-10 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-center text-sm text-gray-900 focus:border-green-500 focus:outline-none focus:ring-1 focus:ring-green-500"
                         placeholder="Qty"
                       />

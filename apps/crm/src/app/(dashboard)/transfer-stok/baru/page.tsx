@@ -240,6 +240,7 @@ export default function BuatTransferStokPage() {
                       min={1}
                       value={item.qtyDiminta}
                       onChange={(e) => handleQty(item._key, Number(e.target.value))}
+                      onFocus={(e) => e.target.select()}
                       className="h-10 w-full rounded-lg border border-gray-300 bg-white px-3 text-center text-sm focus:border-green-500 focus:outline-none focus:ring-1 focus:ring-green-500"
                     />
                     {errors[`item_${idx}_qty`] && (
