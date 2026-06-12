@@ -317,14 +317,25 @@ export default function DetailTransferStokPage() {
                     {transfer.status === 'Selesai' && (
                       <div className="col-span-4 text-center sm:col-span-3">
                         {item.statusPenerimaan ? (
-                          <div className="space-y-0.5">
-                            <Badge variant={item.statusPenerimaan === 'diterima' ? 'success' : 'danger'}>
-                              {item.statusPenerimaan === 'diterima' ? 'Diterima' : 'Dikembalikan'}
-                            </Badge>
-                            {item.qtyDiterima != null && (
-                              <p className="text-xs text-gray-500">{item.qtyDiterima} {item.satuan}</p>
-                            )}
-                          </div>
+                          (() => {
+                            const diterima = item.qtyDiterima ?? 0
+                            const dikembalikan = Math.max(0, (item.qtyDisetujui ?? item.qtyDiminta) - diterima)
+                            return item.statusPenerimaan === 'diterima' ? (
+                              <div className="space-y-0.5">
+                                <Badge variant="success">Diterima</Badge>
+                                <p className="text-xs text-gray-500">{diterima} {item.satuan}</p>
+                              </div>
+                            ) : (
+                              // Penerimaan parsial: label merah menampilkan jumlah yang
+                              // dikembalikan (selisih), bukan yang diterima.
+                              <div className="space-y-0.5">
+                                <Badge variant="danger">Dikembalikan {dikembalikan} {item.satuan}</Badge>
+                                {diterima > 0 && (
+                                  <p className="text-xs text-gray-500">Diterima {diterima} {item.satuan}</p>
+                                )}
+                              </div>
+                            )
+                          })()
                         ) : (
                           <span className="text-gray-400">—</span>
                         )}
