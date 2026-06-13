@@ -26,7 +26,7 @@ export function ElemenDetailModal({ el, maxW, maxH, onUpdate, onDelete, onClose 
 
   return (
     <Modal open onClose={onClose} title={`${meta.label}: ${el.kode || '—'}`} size={isRak ? 'xl' : 'md'}>
-      <div className="max-h-[85vh] space-y-5 overflow-y-auto p-6">
+      <div className="max-h-[70vh] space-y-5 overflow-y-auto">
         <Input
           label="Kode / Label"
           value={el.kode}
