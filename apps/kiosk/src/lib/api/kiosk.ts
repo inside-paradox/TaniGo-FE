@@ -1,6 +1,7 @@
 import { api } from './axios'
 import { normalizeKategori } from '@/lib/categories'
-import { getDemoStores, getDemoProducts } from '@/lib/demo/data'
+import { getDemoStores, getDemoProducts, getDemoDenah } from '@/lib/demo/data'
+import type { Denah } from '@tanigo/types'
 import type { KioskStore, KioskProduct } from '@/types'
 
 // ── Config ───────────────────────────────────────────────────────────────────
@@ -91,5 +92,21 @@ export async function fetchProducts(storeId: string): Promise<KioskProduct[]> {
     return raw.map(mapProduct)
   } catch {
     return getDemoProducts(storeId)
+  }
+}
+
+// ── Denah (floor plan) ───────────────────────────────────────────────────────
+
+export async function fetchDenah(storeId: string): Promise<Denah> {
+  if (FORCE_DEMO) return getDemoDenah(storeId)
+  try {
+    const { data } = await api.get('/public/denah', { params: { cabangId: storeId } })
+    const raw = unwrap<Denah>(data)
+    // A store with no configured layout yet → fall back to the derived demo plan
+    // so the map view always shows something useful.
+    if (!raw || !Array.isArray(raw.elemen) || raw.elemen.length === 0) return getDemoDenah(storeId)
+    return raw
+  } catch {
+    return getDemoDenah(storeId)
   }
 }

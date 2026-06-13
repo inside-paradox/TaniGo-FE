@@ -1,14 +1,16 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
-import { ArrowLeft, MapPin, Loader2, PackageX } from 'lucide-react'
+import { ArrowLeft, MapPin, Loader2, PackageX, Map } from 'lucide-react'
 import { formatRupiah } from '@tanigo/utils'
 import { ProductImage } from '@/components/ProductImage'
 import { ProductCard } from '@/components/ProductCard'
 import { StockBadge } from '@/components/StockBadge'
+import { StoreMapModal } from '@/components/StoreMapModal'
 import { getCategoryDef } from '@/lib/categories'
 import { useProducts } from '@/hooks/useProducts'
+import { useDenah } from '@/hooks/useDenah'
 import { useStore } from '@/lib/store-context'
 
 export default function ProdukDetailPage() {
@@ -17,12 +19,21 @@ export default function ProdukDetailPage() {
   const id = typeof params.id === 'string' ? params.id : Array.isArray(params.id) ? params.id[0] : ''
   const { store, hydrated } = useStore()
   const { data, isLoading } = useProducts(store?.id)
+  const { data: denah } = useDenah(store?.id)
+  const [mapOpen, setMapOpen] = useState(false)
 
   useEffect(() => {
     if (hydrated && !store) router.replace('/')
   }, [hydrated, store, router])
 
   const product = (data ?? []).find((p) => p.id === id)
+
+  // Racks that actually carry this product in the saved layout. A product can
+  // sit on more than one rack, so collect them all for the location label + map.
+  const racks = useMemo(
+    () => (denah && product ? denah.elemen.filter((e) => e.tipe === 'rak' && e.produkIds.includes(product.id)) : []),
+    [denah, product]
+  )
   const related = product
     ? (data ?? []).filter((p) => p.kategori === product.kategori && p.id !== product.id).slice(0, 4)
     : []
@@ -52,7 +63,13 @@ export default function ProdukDetailPage() {
   }
 
   const def = getCategoryDef(product.kategori)
-  const lokasiText = [product.lokasiRak, product.lorong].filter(Boolean).join(' · ')
+  // Prefer the live layout (a product may be on several racks); fall back to the
+  // product's own location fields when the store has no floor plan yet.
+  const rackText = racks.length
+    ? racks.map((r) => [r.kode, r.lorong].filter(Boolean).join(' · ')).join('   •   ')
+    : ''
+  const lokasiText = rackText || [product.lokasiRak, product.lorong].filter(Boolean).join(' · ')
+  const canShowMap = !!denah && racks.length > 0
 
   return (
     <main className="min-h-screen bg-green-50 kiosk-fade-in">
@@ -101,16 +118,27 @@ export default function ProdukDetailPage() {
 
             {/* Prominent rak location */}
             {lokasiText && (
-              <div className="mt-6 flex items-center gap-4 rounded-2xl border-2 border-green-300 bg-green-100 p-5">
-                <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-green-600">
-                  <MapPin className="h-9 w-9 text-white" />
+              <div className="mt-6 rounded-2xl border-2 border-green-300 bg-green-100 p-5">
+                <div className="flex items-center gap-4">
+                  <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-green-600">
+                    <MapPin className="h-9 w-9 text-white" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold uppercase tracking-wide text-green-700">
+                      Lokasi Produk
+                    </p>
+                    <p className="text-3xl font-extrabold text-green-800">{lokasiText}</p>
+                  </div>
                 </div>
-                <div>
-                  <p className="text-sm font-semibold uppercase tracking-wide text-green-700">
-                    Lokasi Produk
-                  </p>
-                  <p className="text-3xl font-extrabold text-green-800">{lokasiText}</p>
-                </div>
+                {canShowMap && (
+                  <button
+                    onClick={() => setMapOpen(true)}
+                    className="mt-4 flex min-h-[60px] w-full items-center justify-center gap-3 rounded-2xl bg-green-600 px-6 text-xl font-bold text-white transition-colors hover:bg-green-700 active:scale-[0.98]"
+                  >
+                    <Map className="h-6 w-6" />
+                    Lihat di Peta Toko
+                  </button>
+                )}
               </div>
             )}
 
@@ -136,6 +164,17 @@ export default function ProdukDetailPage() {
           </section>
         )}
       </div>
+
+      {canShowMap && denah && (
+        <StoreMapModal
+          open={mapOpen}
+          onClose={() => setMapOpen(false)}
+          denah={denah}
+          productId={product.id}
+          productName={product.nama}
+          lokasiText={lokasiText}
+        />
+      )}
     </main>
   )
 }

@@ -1,3 +1,4 @@
+import type { Denah, ElemenDenah } from '@tanigo/types'
 import type { KioskStore, KioskProduct } from '@/types'
 
 // ── Demo data ────────────────────────────────────────────────────────────────
@@ -67,4 +68,63 @@ export function getDemoStores(): KioskStore[] {
 
 export function getDemoProducts(storeId: string): KioskProduct[] {
   return STORE_INVENTORY[storeId] ?? STORE_INVENTORY['toko-bone-bone']
+}
+
+// ── Demo floor plan ──────────────────────────────────────────────────────────
+// Derived from each store's inventory so the kiosk map stays consistent with the
+// product list: every distinct "lokasiRak" becomes a rack carrying its products,
+// laid out row-by-row per lorong. Mirrors the shape of the real public denah API.
+
+const KATEGORI_WARNA: Record<KioskProduct['kategori'], string> = {
+  Benih: 'green',
+  Pupuk: 'amber',
+  Pestisida: 'red',
+  'Alat & Mesin': 'blue',
+  Lainnya: 'purple',
+}
+
+export function getDemoDenah(storeId: string): Denah {
+  const products = STORE_INVENTORY[storeId] ?? STORE_INVENTORY['toko-bone-bone']
+
+  // Group products by their rack code, preserving first-seen order.
+  const racks = new Map<string, { lorong: string | null; kategori: KioskProduct['kategori']; ids: string[] }>()
+  for (const p of products) {
+    if (!p.lokasiRak) continue
+    const entry = racks.get(p.lokasiRak)
+    if (entry) entry.ids.push(p.id)
+    else racks.set(p.lokasiRak, { lorong: p.lorong, kategori: p.kategori, ids: [p.id] })
+  }
+
+  // Order racks by lorong then code so each lorong forms one row band.
+  const lorongs = [...new Set([...racks.values()].map((r) => r.lorong ?? ''))].sort()
+  const kolom = 16
+  const elemen: ElemenDenah[] = []
+
+  lorongs.forEach((lorong, row) => {
+    const inLorong = [...racks.entries()]
+      .filter(([, r]) => (r.lorong ?? '') === lorong)
+      .sort(([a], [b]) => a.localeCompare(b))
+    inLorong.forEach(([kode, r], col) => {
+      elemen.push({
+        id: `el-${storeId}-${kode}`.replace(/\s+/g, '-'),
+        tipe: 'rak',
+        kode,
+        lorong: r.lorong,
+        x: Math.min(1 + col * 3, kolom - 2),
+        y: 1 + row * 2,
+        w: 2,
+        h: 1,
+        warna: KATEGORI_WARNA[r.kategori],
+        produkIds: r.ids,
+      })
+    })
+  })
+
+  const baris = Math.max(8, lorongs.length * 2 + 3)
+  elemen.push(
+    { id: `el-${storeId}-pintu`, tipe: 'pintu', kode: 'Pintu Masuk', lorong: null, x: 1, y: baris - 2, w: 2, h: 1, warna: null, produkIds: [] },
+    { id: `el-${storeId}-kasir`, tipe: 'kasir', kode: 'Kasir', lorong: null, x: kolom - 4, y: baris - 2, w: 3, h: 1, warna: null, produkIds: [] }
+  )
+
+  return { cabangId: storeId, kolom, baris, elemen, updatedAt: now }
 }

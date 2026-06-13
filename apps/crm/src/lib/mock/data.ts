@@ -15,6 +15,7 @@ import type {
   Supplier,
   Shift,
   Notifikasi,
+  Denah,
 } from '@/types'
 
 const now = new Date().toISOString()
@@ -903,6 +904,48 @@ export const mockNotifikasi: Notifikasi[] = [
     createdByNama: 'Super Admin',
     readByUserIds: ['u-3'],
     createdAt: d(5),
+  },
+]
+
+// ─── Denah Toko (floor plans) ───────────────────────────────────────────────
+// One floor plan per toko. Grid is 16 cols × 10 rows of cells. Racks carry the
+// product ids stocked on them; pintu/kasir are fixtures with no products.
+
+export const mockDenah: Denah[] = [
+  {
+    cabangId: 'toko-1',
+    kolom: 16,
+    baris: 10,
+    updatedAt: now,
+    elemen: [
+      { id: 'el-1-a1', tipe: 'rak', kode: 'A1', lorong: 'Lorong 1', x: 1, y: 1, w: 2, h: 1, warna: 'amber', produkIds: ['p-1', 'p-6'] },
+      { id: 'el-1-a2', tipe: 'rak', kode: 'A2', lorong: 'Lorong 1', x: 1, y: 3, w: 2, h: 1, warna: 'amber', produkIds: ['p-2'] },
+      { id: 'el-1-b1', tipe: 'rak', kode: 'B1', lorong: 'Lorong 2', x: 6, y: 1, w: 2, h: 1, warna: 'red', produkIds: ['p-3'] },
+      { id: 'el-1-c1', tipe: 'rak', kode: 'C1', lorong: 'Lorong 2', x: 6, y: 3, w: 2, h: 1, warna: 'green', produkIds: ['p-4'] },
+      { id: 'el-1-d1', tipe: 'rak', kode: 'D1', lorong: 'Lorong 3', x: 11, y: 1, w: 2, h: 1, warna: 'blue', produkIds: ['p-5'] },
+      { id: 'el-1-pintu', tipe: 'pintu', kode: 'Pintu Masuk', x: 1, y: 8, w: 2, h: 1, warna: null, produkIds: [] },
+      { id: 'el-1-kasir', tipe: 'kasir', kode: 'Kasir', x: 12, y: 8, w: 3, h: 1, warna: null, produkIds: [] },
+    ],
+  },
+  {
+    cabangId: 'toko-2',
+    kolom: 16,
+    baris: 10,
+    updatedAt: now,
+    elemen: [
+      { id: 'el-2-a1', tipe: 'rak', kode: 'A1', lorong: 'Lorong 1', x: 2, y: 2, w: 2, h: 1, warna: 'amber', produkIds: ['p-1', 'p-2'] },
+      { id: 'el-2-b1', tipe: 'rak', kode: 'B1', lorong: 'Lorong 1', x: 7, y: 2, w: 2, h: 1, warna: 'red', produkIds: ['p-3'] },
+      { id: 'el-2-c1', tipe: 'rak', kode: 'C1', lorong: 'Lorong 2', x: 2, y: 5, w: 2, h: 1, warna: 'green', produkIds: ['p-4'] },
+      { id: 'el-2-pintu', tipe: 'pintu', kode: 'Pintu Masuk', x: 1, y: 8, w: 2, h: 1, warna: null, produkIds: [] },
+      { id: 'el-2-kasir', tipe: 'kasir', kode: 'Kasir', x: 12, y: 8, w: 3, h: 1, warna: null, produkIds: [] },
+    ],
+  },
+  {
+    cabangId: 'toko-3',
+    kolom: 16,
+    baris: 10,
+    updatedAt: now,
+    elemen: [],
   },
 ]
 

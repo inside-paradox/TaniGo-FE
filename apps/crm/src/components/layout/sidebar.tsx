@@ -20,6 +20,7 @@ import {
   ArrowLeftRight,
   Store,
   Bell,
+  LayoutGrid,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useUIStore } from '@/store/ui-store'
@@ -38,6 +39,7 @@ const navItems: NavItem[] = [
   { href: '/pengguna',       label: 'Pengguna',       icon: <Users className="h-5 w-5" /> },
   { href: '/produk',         label: 'Produk',         icon: <Package className="h-5 w-5" /> },
   { href: '/inventori',      label: 'Inventori',      icon: <Warehouse className="h-5 w-5" /> },
+  { href: '/denah-toko',     label: 'Denah Toko',     icon: <LayoutGrid className="h-5 w-5" /> },
   { href: '/purchase-order', label: 'Purchase Order', icon: <ShoppingBag className="h-5 w-5" /> },
   { href: '/transfer-stok',  label: 'Transfer Stok',  icon: <ArrowLeftRight className="h-5 w-5" /> },
   { href: '/stok-opname',    label: 'Stok Opname',    icon: <ClipboardCheck className="h-5 w-5" /> },

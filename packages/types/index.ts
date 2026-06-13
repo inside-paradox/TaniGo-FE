@@ -1,6 +1,7 @@
 export * from './auth'
 export * from './cabang'
 export * from './common'
+export * from './denah'
 export * from './customer'
 export * from './delivery'
 export * from './inventory'

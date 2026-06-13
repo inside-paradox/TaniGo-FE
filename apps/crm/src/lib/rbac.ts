@@ -37,6 +37,7 @@ export const ROUTE_ACCESS: RouteAccess[] = [
   { href: '/purchase-order', roles: ['admin', 'manajer', 'staf_gudang'], tipeCabang: ['gudang'] },
 
   // ── Toko only — admin tidak termasuk (admin hanya di gudang) ──
+  { href: '/denah-toko',     roles: ['manajer'],          tipeCabang: ['toko'] },
   { href: '/pesanan',        roles: ['manajer', 'kasir'], tipeCabang: ['toko'] },
   { href: '/pelanggan-vip',  roles: ['manajer'],          tipeCabang: ['toko'] },
   { href: '/pengiriman',     roles: ['manajer', 'kasir'], tipeCabang: ['toko'] },

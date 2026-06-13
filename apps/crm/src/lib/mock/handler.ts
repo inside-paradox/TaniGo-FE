@@ -16,9 +16,10 @@ import {
   mockPergerakanStok,
   mockShift,
   mockNotifikasi,
+  mockDenah,
   paginate,
 } from './data'
-import type { Cabang, User, TransferStok, Pengiriman, PurchaseOrder, PembayaranPO, Pesanan, PelangganVIP, TagihanVIP, StokOpname, CabangInventory, Supplier, PergerakanStok, Shift, StatusPenerimaanItem, Notifikasi } from '@/types'
+import type { Cabang, User, TransferStok, Pengiriman, PurchaseOrder, PembayaranPO, Pesanan, PelangganVIP, TagihanVIP, StokOpname, CabangInventory, Supplier, PergerakanStok, Shift, StatusPenerimaanItem, Notifikasi, Denah, SaveDenahDto } from '@/types'
 
 // In-memory mutable state for demo mutations
 let cabang = [...mockCabang] as Cabang[]
@@ -36,6 +37,7 @@ let suppliers = [...mockSuppliers] as Supplier[]
 const pergerakanStok = [...mockPergerakanStok] as PergerakanStok[]
 const shifts = [...mockShift] as Shift[]
 let notifikasi = [...mockNotifikasi] as Notifikasi[]
+const denah = [...mockDenah] as Denah[]
 
 // ── VIP helpers ───────────────────────────────────────────────────────────────
 
@@ -250,6 +252,32 @@ export function getMockResponse(config: AxiosRequestConfig): Omit<AxiosResponse,
     if (method === 'patch' && idx !== -1) {
       cabang[idx] = { ...cabang[idx], ...body, updatedAt: new Date().toISOString() }
       return ok(cabang[idx])
+    }
+  }
+
+  // ── Denah Toko (floor plan) ─────────────────────────────────────────────────
+  const denahMatch = matchPath(rawUrl, /^\/cabang\/([^/]+)\/denah$/)
+  if (denahMatch) {
+    const cabangId = denahMatch[1]
+    const idx = denah.findIndex((d) => d.cabangId === cabangId)
+    if (method === 'get') {
+      // Return an empty default plan for branches that have none yet.
+      return ok(
+        denah[idx] ?? { cabangId, kolom: 16, baris: 10, elemen: [], updatedAt: new Date().toISOString() }
+      )
+    }
+    if (method === 'put') {
+      const payload = body as SaveDenahDto
+      const next: Denah = {
+        cabangId,
+        kolom: payload.kolom,
+        baris: payload.baris,
+        elemen: payload.elemen,
+        updatedAt: new Date().toISOString(),
+      }
+      if (idx !== -1) denah[idx] = next
+      else denah.push(next)
+      return ok(next)
     }
   }
 
