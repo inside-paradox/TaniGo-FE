@@ -8,6 +8,9 @@ Fitur **Denah Toko** menambahkan tata letak fisik toko ke sistem:
   secara *drag-and-drop* di atas kanvas grid: menempatkan **rak**, **kasir**,
   **pintu**, dan **dinding**, lalu mengisi setiap rak dengan produk yang ada di
   sana. Satu produk boleh berada di **lebih dari satu rak**.
+  **Halaman ini dedikasi untuk satu toko** — tidak ada pemilih toko; FE memakai
+  `cabangId` milik pengguna yang login (manajer toko). Superadmin yang tidak
+  terikat cabang memakai toko pertama sebagai fallback.
 - Di **Kiosk** (`apps/kiosk`), pelanggan melihat denah tersebut sebagai **peta
   toko** dan rak tempat sebuah produk berada akan disorot (highlight).
 
@@ -23,7 +26,9 @@ Tipe data ada di `packages/types/denah.ts` (`Denah`, `ElemenDenah`,
 ## Model Data
 
 Satu denah dimiliki oleh satu **cabang bertipe `toko`**. Denah adalah kanvas
-grid `kolom × baris` (default `16 × 10`) berisi daftar **elemen**.
+grid `kolom × baris` (default `16 × 12`) berisi daftar **elemen**. Ukuran grid
+bisa diperbesar di CRM: `kolom` 8–32, `baris` 6–24. Grid tidak boleh diperkecil
+hingga lebih kecil dari area yang sudah ditempati elemen.
 
 ```ts
 type TipeElemen = 'rak' | 'pintu' | 'kasir' | 'dinding'
@@ -60,7 +65,7 @@ Saran skema DB: tabel `denah_toko` (`cabang_id` PK, `kolom`, `baris`,
 ## 1. `GET /cabang/:cabangId/denah` (CRM, perlu auth)
 
 Ambil denah satu toko. Jika belum ada, kembalikan denah kosong default
-(`kolom: 16, baris: 10, elemen: []`) — **jangan 404**.
+(`kolom: 16, baris: 12, elemen: []`) — **jangan 404**.
 
 **Response 200:**
 ```json
@@ -68,7 +73,7 @@ Ambil denah satu toko. Jika belum ada, kembalikan denah kosong default
   "data": {
     "cabangId": "toko-1",
     "kolom": 16,
-    "baris": 10,
+    "baris": 12,
     "updatedAt": "2026-06-13T00:00:00.000Z",
     "elemen": [
       {
@@ -86,7 +91,9 @@ Ambil denah satu toko. Jika belum ada, kembalikan denah kosong default
 ```
 
 **Akses:** `superadmin`, dan `manajer` pada toko tersebut. Validasi bahwa cabang
-bertipe `toko`.
+bertipe `toko`. Manajer **hanya** boleh mengakses denah cabang miliknya sendiri
+(`cabangId` harus sama dengan `cabangId` pengguna); selain itu `403`. Superadmin
+boleh mengakses cabang toko mana pun.
 
 ---
 
@@ -99,7 +106,7 @@ sekaligus. FE mengirim seluruh state denah saat tombol **Simpan Denah** ditekan.
 ```json
 {
   "kolom": 16,
-  "baris": 10,
+  "baris": 12,
   "elemen": [
     {
       "id": "el-1-a1", "tipe": "rak", "kode": "A1", "lorong": "Lorong 1",
@@ -111,6 +118,7 @@ sekaligus. FE mengirim seluruh state denah saat tombol **Simpan Denah** ditekan.
 ```
 
 **Validasi yang disarankan:**
+- `kolom` 8–32, `baris` 6–24.
 - `0 ≤ x`, `x + w ≤ kolom`; `0 ≤ y`, `y + h ≤ baris`; `w, h ≥ 1`.
 - `produkIds` hanya untuk `tipe === 'rak'`; abaikan untuk lainnya.
 - `produkIds` harus produk yang valid; duplikat dibuang.
@@ -152,3 +160,16 @@ menyembunyikan tombol "Lihat di Peta" untuk produk yang raknya tidak ditemukan.
   `lib/demo/data.ts` diturunkan dari `lokasiRak` produk.
 - `produkIds` memakai ID produk yang sama dengan katalog (`/products` di CRM,
   `/public/cabang-inventory` di kiosk).
+
+## Hubungan dengan lokasi produk
+
+Lokasi rak yang ditampilkan di kiosk kini **diturunkan dari denah ini** — yaitu
+rak (`tipe: 'rak'`) yang `produkIds`-nya memuat produk tersebut. Karena satu
+produk bisa di banyak rak, kiosk menampilkan semua rak terkait dan menyorotnya
+di peta.
+
+Field `lokasiRak`/`lorong` pada produk (lihat
+`spec-backend-kiosk-public-api.md`) kini hanya **fallback** ketika toko belum
+punya denah; jika denah sudah ada, field itu diabaikan. Tidak perlu menambah
+kolom lokasi baru di tabel produk — sumber kebenarannya adalah relasi
+`denah_rak_produk`.
