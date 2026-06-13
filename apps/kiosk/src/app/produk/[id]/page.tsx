@@ -142,13 +142,6 @@ export default function ProdukDetailPage() {
               </div>
             )}
 
-            {/* Description */}
-            {product.deskripsi && (
-              <div className="mt-6">
-                <h2 className="text-lg font-bold text-gray-700">Deskripsi</h2>
-                <p className="mt-2 text-lg leading-relaxed text-gray-600">{product.deskripsi}</p>
-              </div>
-            )}
           </div>
         </div>
 
