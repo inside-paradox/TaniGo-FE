@@ -263,7 +263,7 @@ export function getMockResponse(config: AxiosRequestConfig): Omit<AxiosResponse,
     if (method === 'get') {
       // Return an empty default plan for branches that have none yet.
       return ok(
-        denah[idx] ?? { cabangId, kolom: 16, baris: 10, elemen: [], updatedAt: new Date().toISOString() }
+        denah[idx] ?? { cabangId, kolom: 16, baris: 12, elemen: [], updatedAt: new Date().toISOString() }
       )
     }
     if (method === 'put') {

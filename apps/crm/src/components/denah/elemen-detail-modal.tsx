@@ -26,7 +26,7 @@ export function ElemenDetailModal({ el, maxW, maxH, onUpdate, onDelete, onClose 
 
   return (
     <Modal open onClose={onClose} title={`${meta.label}: ${el.kode || '—'}`} size={isRak ? 'xl' : 'md'}>
-      <div className="max-h-[70vh] space-y-5 overflow-y-auto p-6">
+      <div className="max-h-[85vh] space-y-5 overflow-y-auto p-6">
         <Input
           label="Kode / Label"
           value={el.kode}
@@ -151,7 +151,7 @@ function ProdukAssign({ el, onUpdate }: { el: ElemenDenah; onUpdate: (patch: Par
           className="pl-9"
         />
       </div>
-      <div className="max-h-56 space-y-1 overflow-y-auto rounded-lg border border-gray-100 p-1">
+      <div className="max-h-72 space-y-1 overflow-y-auto rounded-lg border border-gray-100 p-1">
         {isLoading && <p className="p-3 text-sm text-gray-400">Memuat produk…</p>}
         {!isLoading && filtered.length === 0 && (
           <p className="p-3 text-sm text-gray-400">Tidak ada produk yang cocok.</p>

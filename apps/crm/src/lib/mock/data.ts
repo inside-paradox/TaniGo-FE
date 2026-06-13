@@ -915,7 +915,7 @@ export const mockDenah: Denah[] = [
   {
     cabangId: 'toko-1',
     kolom: 16,
-    baris: 10,
+    baris: 12,
     updatedAt: now,
     elemen: [
       { id: 'el-1-a1', tipe: 'rak', kode: 'A1', lorong: 'Lorong 1', x: 1, y: 1, w: 2, h: 1, warna: 'amber', produkIds: ['p-1', 'p-6'] },
@@ -930,7 +930,7 @@ export const mockDenah: Denah[] = [
   {
     cabangId: 'toko-2',
     kolom: 16,
-    baris: 10,
+    baris: 12,
     updatedAt: now,
     elemen: [
       { id: 'el-2-a1', tipe: 'rak', kode: 'A1', lorong: 'Lorong 1', x: 2, y: 2, w: 2, h: 1, warna: 'amber', produkIds: ['p-1', 'p-2'] },
@@ -943,7 +943,7 @@ export const mockDenah: Denah[] = [
   {
     cabangId: 'toko-3',
     kolom: 16,
-    baris: 10,
+    baris: 12,
     updatedAt: now,
     elemen: [],
   },
