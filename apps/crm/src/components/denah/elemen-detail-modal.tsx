@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Trash2, Search, Minus, Plus, Check } from 'lucide-react'
 import { Modal } from '@/components/ui/modal'
 import { Button } from '@/components/ui/button'
@@ -118,14 +118,23 @@ function SizeStepper({
 
 function ProdukAssign({ el, onUpdate }: { el: ElemenDenah; onUpdate: (patch: Partial<ElemenDenah>) => void }) {
   const [search, setSearch] = useState('')
-  const { data, isLoading } = useProducts({ page: 1, limit: 200 })
-  const produk = data?.data ?? []
+  const [debouncedSearch, setDebouncedSearch] = useState('')
 
-  const filtered = useMemo(() => {
-    const q = search.trim().toLowerCase()
-    if (!q) return produk
-    return produk.filter((p) => p.nama.toLowerCase().includes(q) || p.sku.toLowerCase().includes(q))
-  }, [produk, search])
+  // Debounce so each keystroke doesn't hit the API.
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedSearch(search.trim()), 300)
+    return () => clearTimeout(t)
+  }, [search])
+
+  // Server-side search: the catalog has thousands of products across many pages,
+  // so filtering only a client-loaded first page would hide most of them (the
+  // original bug). Query the backend with the search term instead.
+  const { data, isLoading, isFetching } = useProducts({
+    page: 1,
+    limit: 50,
+    search: debouncedSearch || undefined,
+  })
+  const filtered = data?.data ?? []
 
   const selected = new Set(el.produkIds)
 
@@ -152,9 +161,11 @@ function ProdukAssign({ el, onUpdate }: { el: ElemenDenah; onUpdate: (patch: Par
         />
       </div>
       <div className="max-h-72 space-y-1 overflow-y-auto rounded-lg border border-gray-100 p-1">
-        {isLoading && <p className="p-3 text-sm text-gray-400">Memuat produk…</p>}
-        {!isLoading && filtered.length === 0 && (
-          <p className="p-3 text-sm text-gray-400">Tidak ada produk yang cocok.</p>
+        {(isLoading || isFetching) && <p className="p-3 text-sm text-gray-400">Memuat produk…</p>}
+        {!isLoading && !isFetching && filtered.length === 0 && (
+          <p className="p-3 text-sm text-gray-400">
+            {debouncedSearch ? 'Tidak ada produk yang cocok.' : 'Ketik untuk mencari produk.'}
+          </p>
         )}
         {filtered.map((p) => {
           const isOn = selected.has(p.id)
@@ -184,6 +195,11 @@ function ProdukAssign({ el, onUpdate }: { el: ElemenDenah; onUpdate: (patch: Par
           )
         })}
       </div>
+      {(data?.meta?.total ?? 0) > filtered.length && (
+        <p className="mt-1.5 text-xs text-gray-400">
+          Menampilkan {filtered.length} dari {data?.meta?.total} produk. Ketik kata kunci untuk mempersempit pencarian.
+        </p>
+      )}
     </div>
   )
 }
