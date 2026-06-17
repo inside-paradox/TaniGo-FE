@@ -25,7 +25,11 @@ export function StoreMap({ denah, highlightProductId, className }: StoreMapProps
   return (
     <div
       className={cn('relative w-full rounded-2xl border border-gray-200 bg-gray-50', className)}
-      style={{ aspectRatio: `${kolom} / ${baris}` }}
+      // Keep the grid aspect ratio, but enforce a minimum row height (~46px) so
+      // each cell is tall enough for its icon + label (e.g. "Pintu Masuk") without
+      // clipping on narrow viewports. The container can grow taller than the
+      // aspect ratio; %-based element positions scale to the actual height.
+      style={{ aspectRatio: `${kolom} / ${baris}`, minHeight: `${baris * 46}px` }}
     >
       {elemen.map((el) => {
         const highlighted = isHighlighted(el)
@@ -37,7 +41,7 @@ export function StoreMap({ denah, highlightProductId, className }: StoreMapProps
           <div
             key={el.id}
             className={cn(
-              'absolute flex flex-col items-center justify-center rounded-lg border-2 p-1 text-center',
+              'absolute flex flex-col items-center justify-center gap-0.5 overflow-hidden rounded-lg border-2 px-0.5 py-1 text-center leading-none',
               palette && [palette.bg, palette.border, palette.text],
               fixture && [fixture.bg, fixture.border, fixture.text],
               highlighted
@@ -57,7 +61,7 @@ export function StoreMap({ denah, highlightProductId, className }: StoreMapProps
               <MapPin className="absolute -top-7 h-7 w-7 animate-bounce fill-green-500 text-green-700" />
             )}
             <Icon className="h-4 w-4 shrink-0 sm:h-5 sm:w-5" />
-            <span className="max-w-full truncate text-[11px] font-bold leading-tight sm:text-sm">{el.kode}</span>
+            <span className="line-clamp-2 max-w-full text-[11px] font-bold leading-[1.1] sm:text-sm">{el.kode}</span>
           </div>
         )
       })}
