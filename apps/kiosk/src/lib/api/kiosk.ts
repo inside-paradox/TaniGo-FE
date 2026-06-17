@@ -68,7 +68,10 @@ interface RawProduct {
 
 function mapProduct(r: RawProduct): KioskProduct {
   return {
-    id: r.id ?? r.produkId ?? '',
+    // Use the catalog produkId as the kiosk product identity: the floor-plan
+    // (denah) references products by produkId, so matching racks to products
+    // relies on this. Fall back to the inventory row id only if absent.
+    id: r.produkId ?? r.id ?? '',
     nama: r.produkNama ?? r.nama ?? '',
     sku: r.produkSku ?? r.sku ?? '',
     kategori: normalizeKategori(r.kategori),
