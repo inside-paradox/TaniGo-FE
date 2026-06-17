@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { X, MapPin } from 'lucide-react'
+import { X, MapPin, DoorOpen, Calculator } from 'lucide-react'
 import { StoreMap } from './StoreMap'
 import type { Denah } from '@tanigo/types'
 
@@ -30,6 +30,9 @@ export function StoreMapModal({ open, onClose, denah, productId, productName, lo
 
   if (!open || !mounted) return null
 
+  const hasPintu = denah.elemen.some((e) => e.tipe === 'pintu')
+  const hasKasir = denah.elemen.some((e) => e.tipe === 'kasir')
+
   // Portal to <body> so the fixed overlay is positioned against the viewport.
   // The product page's <main> has an animated transform (kiosk-fade-in), which
   // would otherwise become the containing block for `position: fixed`.
@@ -37,7 +40,7 @@ export function StoreMapModal({ open, onClose, denah, productId, productName, lo
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6">
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
       {/* Standard centered modal: capped at 90vh, body scrolls if it ever overflows. */}
-      <div className="relative z-10 flex max-h-[90vh] w-full max-w-xl flex-col overflow-hidden rounded-3xl bg-white shadow-2xl kiosk-fade-in">
+      <div className="relative z-10 flex max-h-[90vh] w-full max-w-2xl flex-col overflow-hidden rounded-3xl bg-white shadow-2xl kiosk-fade-in">
         <header className="flex shrink-0 items-center justify-between border-b border-gray-200 p-4">
           <div className="min-w-0">
             <p className="text-xs font-semibold uppercase tracking-wide text-green-700">Lokasi di Toko</p>
@@ -62,8 +65,31 @@ export function StoreMapModal({ open, onClose, denah, productId, productName, lo
           <div className="pt-4">
             <StoreMap denah={denah} highlightProductId={productId} />
           </div>
-          <p className="mt-3 text-center text-sm text-gray-500">
-            Cari rak yang berkedip hijau untuk menemukan produk ini.
+
+          {/* Legend — helps customers read the map symbols at a glance. */}
+          <div className="mt-4 flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-sm font-medium text-gray-600">
+            <span className="flex items-center gap-1.5">
+              <span className="flex h-5 w-5 items-center justify-center rounded-md border-2 border-green-600 bg-green-100 ring-2 ring-green-400">
+                <MapPin className="h-3 w-3 fill-green-500 text-green-700" />
+              </span>
+              Produk Anda
+            </span>
+            {hasPintu && (
+              <span className="flex items-center gap-1.5">
+                <DoorOpen className="h-5 w-5 text-sky-600" />
+                Pintu Masuk
+              </span>
+            )}
+            {hasKasir && (
+              <span className="flex items-center gap-1.5">
+                <Calculator className="h-5 w-5 text-slate-600" />
+                Kasir
+              </span>
+            )}
+          </div>
+
+          <p className="mt-3 text-center text-base font-semibold text-green-700">
+            Ikuti rak yang berkedip hijau untuk menemukan produk ini.
           </p>
         </div>
       </div>
