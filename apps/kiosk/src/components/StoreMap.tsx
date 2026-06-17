@@ -25,11 +25,11 @@ export function StoreMap({ denah, highlightProductId, className }: StoreMapProps
   return (
     <div
       className={cn('relative w-full rounded-2xl border border-gray-200 bg-gray-50', className)}
-      // Keep the grid aspect ratio, but enforce a minimum row height (~46px) so
-      // each cell is tall enough for its icon + label (e.g. "Pintu Masuk") without
-      // clipping on narrow viewports. The container can grow taller than the
-      // aspect ratio; %-based element positions scale to the actual height.
-      style={{ aspectRatio: `${kolom} / ${baris}`, minHeight: `${baris * 46}px` }}
+      // Keep the grid aspect ratio, but enforce a comfortable minimum row height
+      // (~60px) so each cell fits its icon + label (e.g. "Pintu Masuk" on two
+      // lines) without clipping. The container can grow taller than the aspect
+      // ratio; %-based element positions scale to the actual height.
+      style={{ aspectRatio: `${kolom} / ${baris}`, minHeight: `${baris * 60}px` }}
     >
       {elemen.map((el) => {
         const highlighted = isHighlighted(el)
@@ -41,7 +41,7 @@ export function StoreMap({ denah, highlightProductId, className }: StoreMapProps
           <div
             key={el.id}
             className={cn(
-              'absolute flex flex-col items-center justify-center gap-0.5 overflow-hidden rounded-lg border-2 px-0.5 py-1 text-center leading-none',
+              'absolute flex flex-col items-center justify-center gap-0.5 overflow-hidden rounded-lg border-2 px-1 py-0.5 text-center leading-none',
               palette && [palette.bg, palette.border, palette.text],
               fixture && [fixture.bg, fixture.border, fixture.text],
               highlighted
