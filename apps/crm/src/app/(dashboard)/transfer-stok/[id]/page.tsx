@@ -38,6 +38,17 @@ function statusVariant(s: StatusTransferStok) {
   }
 }
 
+// Split a received item into accepted vs returned quantities. Returned is derived
+// from the quantity gap (disetujui − diterima), NOT the statusPenerimaan flag —
+// a partial receipt (e.g. 40 of 50) may still be flagged 'diterima' yet have 10
+// returned, which must remain visible.
+function splitPenerimaan(item: TransferStokItem) {
+  const diterima = item.qtyDiterima ?? 0
+  const dasar = item.qtyDisetujui ?? item.qtyDiminta
+  const dikembalikan = Math.max(0, dasar - diterima)
+  return { diterima, dikembalikan }
+}
+
 // ─── Modal Approve ────────────────────────────────────────────────────────────
 
 interface ApproveModalProps {
@@ -276,10 +287,10 @@ export default function DetailTransferStokPage() {
                 {transfer.status === 'Selesai' && (
                   <div className="flex gap-2">
                     <Badge variant="success">
-                      {transfer.items.filter((i) => i.statusPenerimaan === 'diterima').length} Diterima
+                      {transfer.items.filter((i) => i.statusPenerimaan && splitPenerimaan(i).diterima > 0).length} Diterima
                     </Badge>
                     <Badge variant="danger">
-                      {transfer.items.filter((i) => i.statusPenerimaan === 'dikembalikan').length} Dikembalikan
+                      {transfer.items.filter((i) => i.statusPenerimaan && splitPenerimaan(i).dikembalikan > 0).length} Dikembalikan
                     </Badge>
                   </div>
                 )}
@@ -318,20 +329,19 @@ export default function DetailTransferStokPage() {
                       <div className="col-span-4 text-center sm:col-span-3">
                         {item.statusPenerimaan ? (
                           (() => {
-                            const diterima = item.qtyDiterima ?? 0
-                            const dikembalikan = Math.max(0, (item.qtyDisetujui ?? item.qtyDiminta) - diterima)
-                            return item.statusPenerimaan === 'diterima' ? (
-                              <div className="space-y-0.5">
-                                <Badge variant="success">Diterima</Badge>
-                                <p className="text-xs text-gray-500">{diterima} {item.satuan}</p>
-                              </div>
-                            ) : (
-                              // Penerimaan parsial: label merah menampilkan jumlah yang
-                              // dikembalikan (selisih), bukan yang diterima.
-                              <div className="space-y-0.5">
-                                <Badge variant="danger">Dikembalikan {dikembalikan} {item.satuan}</Badge>
+                            const { diterima, dikembalikan } = splitPenerimaan(item)
+                            if (diterima === 0 && dikembalikan === 0) {
+                              return <span className="text-gray-400">—</span>
+                            }
+                            // Tampilkan kedua sisi bila parsial: diterima (hijau) dan
+                            // dikembalikan/rusak (merah), berbasis selisih kuantitas.
+                            return (
+                              <div className="flex flex-col items-center gap-1">
                                 {diterima > 0 && (
-                                  <p className="text-xs text-gray-500">Diterima {diterima} {item.satuan}</p>
+                                  <Badge variant="success">Diterima {diterima} {item.satuan}</Badge>
+                                )}
+                                {dikembalikan > 0 && (
+                                  <Badge variant="danger">Dikembalikan {dikembalikan} {item.satuan}</Badge>
                                 )}
                               </div>
                             )
