@@ -251,9 +251,10 @@ export default function BuatPOPage() {
 
                 {/* Header tabel */}
                 <div className="hidden grid-cols-12 gap-2 pb-2 text-xs font-medium uppercase text-gray-500 sm:grid">
-                  <div className="col-span-4">Produk</div>
+                  <div className="col-span-3">Produk</div>
                   <div className="col-span-2 text-right">Qty</div>
-                  <div className="col-span-3 text-right">Harga Beli</div>
+                  <div className="col-span-2 text-right">Harga Beli</div>
+                  <div className="col-span-2 text-right">HPP/Unit</div>
                   <div className="col-span-2 text-right">Subtotal</div>
                   <div className="col-span-1" />
                 </div>
@@ -268,7 +269,7 @@ export default function BuatPOPage() {
                         className="pt-3 first:pt-0 sm:grid sm:grid-cols-12 sm:items-start sm:gap-2"
                       >
                         {/* Produk */}
-                        <div className="col-span-4 mb-2 sm:mb-0">
+                        <div className="col-span-3 mb-2 sm:mb-0">
                           <Combobox
                             placeholder="Cari produk..."
                             options={products}
@@ -299,22 +300,24 @@ export default function BuatPOPage() {
                         </div>
 
                         {/* Harga Beli */}
-                        <div className="col-span-3 mb-2 sm:mb-0">
+                        <div className="col-span-2 mb-2 sm:mb-0">
                           <InputNominal
                             value={item.hargaBeli}
                             onChange={(v) => updateItem(item._key, 'hargaBeli', v)}
                             error={errors[`item_${idx}_harga`]}
                             placeholder="Harga Beli"
                           />
-                          {totalBiayaTambahan > 0 && hpp > 0 && (
-                            <p className="mt-1 text-xs text-green-600">
-                              HPP/unit: {formatRupiah(hpp)}
-                            </p>
-                          )}
+                        </div>
+
+                        {/* HPP/Unit (read-only, terkalkulasi otomatis) */}
+                        <div className="col-span-2 mb-2 flex items-center justify-end sm:mb-0 sm:h-10">
+                          <span className="text-sm font-medium text-gray-700 whitespace-nowrap">
+                            {hpp > 0 ? formatRupiah(hpp) : '—'}
+                          </span>
                         </div>
 
                         {/* Subtotal */}
-                        <div className="col-span-2 flex items-center justify-end">
+                        <div className="col-span-2 flex items-center justify-end sm:h-10">
                           <span className="text-sm font-medium text-gray-700 whitespace-nowrap">
                             {formatRupiah(subtotal)}
                           </span>
@@ -431,7 +434,7 @@ export default function BuatPOPage() {
                         HPP per Unit
                       </p>
                       <p className="text-xs text-amber-700 leading-relaxed">
-                        PO berisi {items.length} jenis item. HPP per unit ditampilkan di bawah kolom <strong>Harga Beli</strong> masing-masing item (sudah termasuk alokasi biaya tambahan proporsional).
+                        PO berisi {items.length} jenis item. HPP per unit ditampilkan di kolom <strong>HPP/Unit</strong> masing-masing item (sudah termasuk alokasi biaya tambahan proporsional).
                       </p>
                     </div>
                   )}
