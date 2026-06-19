@@ -14,3 +14,27 @@ body {
 * {
   box-sizing: border-box;
 }
+
+/* ── Print: only the receipt ──────────────────────────────────────────────────
+   window.print() would otherwise capture the whole screen (modal chrome, action
+   buttons, sidebar). Hide everything and show only .printable-receipt, lifted to
+   the page origin. .no-print removes on-screen-only controls from the printout. */
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  .printable-receipt,
+  .printable-receipt * {
+    visibility: visible;
+  }
+  .printable-receipt {
+    position: fixed;
+    inset: 0;
+    margin: 0;
+    padding: 16px;
+    background: #fff;
+  }
+  .no-print {
+    display: none !important;
+  }
+}
