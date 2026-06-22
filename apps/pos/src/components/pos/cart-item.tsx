@@ -1,5 +1,6 @@
 'use client'
 
+import { useEffect, useState } from 'react'
 import { Trash2, Minus, Plus } from 'lucide-react'
 import type { ItemKeranjang } from '@/types/pos'
 import { formatRupiah } from '@tanigo/utils'
@@ -14,11 +15,23 @@ interface CartItemProps {
 export function CartItemRow({ item }: CartItemProps) {
   const { updateQty, updateDiskon, removeItem } = useCartStore()
 
-  const handleDiskonChange = (value: string) => {
-    const num = parseFloat(value)
-    if (isNaN(num) || num < 0) return
-    const maxDiskon = item.hargaSatuan * item.qty
-    updateDiskon(item.produkId, Math.min(num, maxDiskon))
+  // Local draft so the field can be typed/cleared directly. We only commit valid
+  // numbers (>= 1) to the store — an empty field mid-typing must NOT trigger the
+  // store's qty<=0 removeItem. Sync back whenever qty changes via +/- buttons.
+  const [qtyDraft, setQtyDraft] = useState(String(item.qty))
+  useEffect(() => setQtyDraft(String(item.qty)), [item.qty])
+
+  const handleQtyChange = (raw: string) => {
+    const digits = raw.replace(/\D/g, '') // angka saja, tolak huruf & minus
+    setQtyDraft(digits)
+    if (digits === '') return // tunggu blur
+    const n = parseInt(digits, 10)
+    if (n >= 1) updateQty(item.produkId, n) // store meng-cap ke stok
+  }
+
+  const handleQtyBlur = () => {
+    // Kosong / tidak valid → kembalikan ke qty terakhir yang valid.
+    if (qtyDraft === '' || parseInt(qtyDraft, 10) < 1) setQtyDraft(String(item.qty))
   }
 
   return (
@@ -47,7 +60,16 @@ export function CartItemRow({ item }: CartItemProps) {
           >
             <Minus size={13} />
           </button>
-          <span className="w-8 text-center text-sm font-medium">{item.qty}</span>
+          <input
+            type="text"
+            inputMode="numeric"
+            value={qtyDraft}
+            onChange={(e) => handleQtyChange(e.target.value)}
+            onFocus={(e) => e.target.select()}
+            onBlur={handleQtyBlur}
+            aria-label="Kuantitas"
+            className="h-7 w-10 border-x border-gray-200 text-center text-sm font-medium text-gray-900 outline-none focus:bg-green-50"
+          />
           <button
             onClick={() => updateQty(item.produkId, item.qty + 1)}
             disabled={item.qty >= item.stok}
