@@ -434,32 +434,7 @@ export function printLaporanPdf(tab: string, data: any, meta: { tanggalDari: str
   const period = `${meta.tanggalDari} s/d ${meta.tanggalSampai}`
   let body = ''
 
-  if (tab === 'penjualan') {
-    const hRows = (data.harian ?? []).map((h: { tanggal: string; total: number; transaksi: number }) =>
-      `<tr><td>${h.tanggal}</td><td style="text-align:center">${h.transaksi}</td><td style="text-align:right">${fmtRp(h.total)}</td></tr>`
-    ).join('')
-    const topRows = (data.topProduk ?? []).map((p: { nama: string; qty: number }, i: number) =>
-      `<tr><td style="text-align:center">${i + 1}</td><td>${p.nama}</td><td style="text-align:center;font-weight:600">${p.qty}</td></tr>`
-    ).join('')
-    body = `
-      ${laporanHeader('Laporan Penjualan', period)}
-      ${summaryRows([
-        ['Total Transaksi', String(data.totalTransaksi ?? 0)],
-        ['Total Pendapatan', fmtRp(data.totalPendapatan ?? 0)],
-        ['Rata-rata Transaksi', fmtRp(data.rataRataTransaksi ?? 0)],
-      ])}
-      <div class="section-title" style="margin-bottom:8px">Penjualan Harian</div>
-      <table style="margin-bottom:20px">
-        <thead><tr><th>Tanggal</th><th style="text-align:center">Transaksi</th><th style="text-align:right">Total</th></tr></thead>
-        <tbody>${hRows}</tbody>
-      </table>
-      ${topRows ? `
-      <div class="section-title" style="margin-bottom:8px">Top Produk Terjual</div>
-      <table>
-        <thead><tr><th style="text-align:center;width:40px">No</th><th>Produk</th><th style="text-align:center;width:80px">Qty</th></tr></thead>
-        <tbody>${topRows}</tbody>
-      </table>` : ''}`
-  } else if (tab === 'stok') {
+  if (tab === 'stok') {
     const menipisRows = (data.itemsMenipis ?? []).map((i: { nama: string; sku: string; stok: number; threshold: number; satuan: string }) =>
       `<tr><td>${i.nama}</td><td style="color:#6b7280;font-size:10px">${i.sku}</td><td style="text-align:center;color:#d97706;font-weight:600">${i.stok} ${i.satuan}</td><td style="text-align:center">${i.threshold}</td></tr>`
     ).join('')
@@ -485,38 +460,6 @@ export function printLaporanPdf(tab: string, data: any, meta: { tanggalDari: str
         <thead><tr><th>Nama</th><th style="width:90px">SKU</th><th style="width:70px">Satuan</th></tr></thead>
         <tbody>${habisRows}</tbody>
       </table>` : ''}`
-  } else if (tab === 'shift') {
-    const shiftRows = (data.shifts ?? []).map((sh: {
-      kasirNama: string; cabangNama: string; mulaiAt: string
-      selesaiAt?: string | null; totalTransaksi: number; totalPendapatan: number; status: string
-    }) =>
-      `<tr>
-        <td>${sh.kasirNama}</td><td>${sh.cabangNama}</td>
-        <td>${fmtDtShort(sh.mulaiAt)}</td>
-        <td>${sh.selesaiAt ? fmtDtShort(sh.selesaiAt) : '—'}</td>
-        <td style="text-align:center">${sh.totalTransaksi}</td>
-        <td style="text-align:right">${fmtRp(sh.totalPendapatan)}</td>
-        <td style="text-align:center">${sh.status}</td>
-      </tr>`
-    ).join('')
-    body = `
-      ${laporanHeader('Laporan Shift', period)}
-      ${summaryRows([
-        ['Total Shift', String(data.totalShift ?? 0)],
-        ['Total Transaksi', String(data.totalTransaksi ?? 0)],
-        ['Total Pendapatan', fmtRp(data.totalPendapatan ?? 0)],
-        ['Tunai', fmtRp(data.totalTunai ?? 0)],
-        ['Non-Tunai', fmtRp(data.totalNonTunai ?? 0)],
-        ['Total Diskon', fmtRp(data.totalDiskon ?? 0)],
-      ])}
-      <div class="section-title" style="margin-bottom:8px">Riwayat Shift</div>
-      <table>
-        <thead><tr>
-          <th>Kasir</th><th>Cabang</th><th>Mulai</th><th>Selesai</th>
-          <th style="text-align:center">Transaksi</th><th style="text-align:right">Pendapatan</th><th style="text-align:center">Status</th>
-        </tr></thead>
-        <tbody>${shiftRows}</tbody>
-      </table>`
   } else if (tab === 'pembelian') {
     const sbRows = (data.statusBreakdown ?? []).map((s: { status: string; count: number }) =>
       `<tr><td>${s.status}</td><td style="text-align:center;font-weight:600">${s.count}</td></tr>`
@@ -542,23 +485,6 @@ export function printLaporanPdf(tab: string, data: any, meta: { tanggalDari: str
           <table><thead><tr><th>Supplier</th><th style="text-align:right">Total Nilai</th></tr></thead><tbody>${supRows}</tbody></table>
         </div>
       </div>`
-  } else if (tab === 'pelangganVIP') {
-    const skRows = (data.statusKredit ?? []).map((s: { status: string; count: number }) =>
-      `<tr><td style="text-transform:capitalize">${s.status.replace('_', ' ')}</td><td style="text-align:center;font-weight:600">${s.count}</td></tr>`
-    ).join('')
-    body = `
-      ${laporanHeader('Laporan Pelanggan VIP', period)}
-      ${summaryRows([
-        ['Total Pelanggan VIP', String(data.totalPelanggan ?? 0)],
-        ['Total Kredit Limit', fmtRp(data.totalKreditLimit ?? 0)],
-        ['Kredit Terpakai', fmtRp(data.totalKreditTerpakai ?? 0)],
-        ['Tagihan Outstanding', fmtRp(data.totalTagihanOutstanding ?? 0)],
-      ])}
-      <div class="section-title" style="margin-bottom:8px">Status Kredit Pelanggan</div>
-      <table>
-        <thead><tr><th>Status</th><th style="text-align:center">Jumlah Pelanggan</th></tr></thead>
-        <tbody>${skRows}</tbody>
-      </table>`
   } else if (tab === 'pengiriman') {
     body = `
       ${laporanHeader('Laporan Pengiriman', period)}
@@ -602,26 +528,7 @@ function triggerCsv(csv: string, fileName: string) {
 export function downloadLaporanCsv(tab: string, data: any, fileName: string) {
   let rows: string[] = []
 
-  if (tab === 'penjualan') {
-    rows = [
-      csvRow(['Ringkasan', '']),
-      csvRow(['Total Transaksi', data.totalTransaksi ?? 0]),
-      csvRow(['Total Pendapatan', data.totalPendapatan ?? 0]),
-      csvRow(['Rata-rata Transaksi', data.rataRataTransaksi ?? 0]),
-      '',
-      csvRow(['Penjualan Harian']),
-      csvRow(['Tanggal', 'Transaksi', 'Total']),
-      ...(data.harian ?? []).map((h: { tanggal: string; total: number; transaksi: number }) =>
-        csvRow([h.tanggal, h.transaksi, h.total])
-      ),
-      '',
-      csvRow(['Top Produk']),
-      csvRow(['No', 'Nama', 'Qty Terjual']),
-      ...(data.topProduk ?? []).map((p: { nama: string; qty: number }, i: number) =>
-        csvRow([i + 1, p.nama, p.qty])
-      ),
-    ]
-  } else if (tab === 'stok') {
+  if (tab === 'stok') {
     rows = [
       csvRow(['Ringkasan', '']),
       csvRow(['Produk Menipis', data.produkMenipis ?? 0]),
@@ -638,25 +545,6 @@ export function downloadLaporanCsv(tab: string, data: any, fileName: string) {
       csvRow(['Nama', 'SKU', 'Satuan']),
       ...(data.itemsHabis ?? []).map((i: { nama: string; sku: string; satuan: string }) =>
         csvRow([i.nama, i.sku, i.satuan])
-      ),
-    ]
-  } else if (tab === 'shift') {
-    rows = [
-      csvRow(['Ringkasan', '']),
-      csvRow(['Total Shift', data.totalShift ?? 0]),
-      csvRow(['Total Transaksi', data.totalTransaksi ?? 0]),
-      csvRow(['Total Pendapatan', data.totalPendapatan ?? 0]),
-      csvRow(['Tunai', data.totalTunai ?? 0]),
-      csvRow(['Non-Tunai', data.totalNonTunai ?? 0]),
-      csvRow(['Total Diskon', data.totalDiskon ?? 0]),
-      '',
-      csvRow(['Riwayat Shift']),
-      csvRow(['Kasir', 'Cabang', 'Mulai', 'Selesai', 'Transaksi', 'Pendapatan', 'Status']),
-      ...(data.shifts ?? []).map((sh: {
-        kasirNama: string; cabangNama: string; mulaiAt: string
-        selesaiAt?: string | null; totalTransaksi: number; totalPendapatan: number; status: string
-      }) =>
-        csvRow([sh.kasirNama, sh.cabangNama, sh.mulaiAt, sh.selesaiAt ?? '—', sh.totalTransaksi, sh.totalPendapatan, sh.status])
       ),
     ]
   } else if (tab === 'pembelian') {
@@ -677,20 +565,6 @@ export function downloadLaporanCsv(tab: string, data: any, fileName: string) {
       csvRow(['Supplier', 'Total Nilai']),
       ...(data.topSupplier ?? []).map((s: { nama: string; nilai: number }) =>
         csvRow([s.nama, s.nilai])
-      ),
-    ]
-  } else if (tab === 'pelangganVIP') {
-    rows = [
-      csvRow(['Ringkasan', '']),
-      csvRow(['Total Pelanggan VIP', data.totalPelanggan ?? 0]),
-      csvRow(['Total Kredit Limit', data.totalKreditLimit ?? 0]),
-      csvRow(['Kredit Terpakai', data.totalKreditTerpakai ?? 0]),
-      csvRow(['Tagihan Outstanding', data.totalTagihanOutstanding ?? 0]),
-      '',
-      csvRow(['Status Kredit']),
-      csvRow(['Status', 'Jumlah Pelanggan']),
-      ...(data.statusKredit ?? []).map((s: { status: string; count: number }) =>
-        csvRow([s.status, s.count])
       ),
     ]
   } else if (tab === 'pengiriman') {

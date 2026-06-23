@@ -2,48 +2,26 @@
 
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { FileText, FileSpreadsheet, RefreshCw, AlertTriangle, Package, Clock, CheckCircle } from 'lucide-react'
-import {
-  AreaChart,
-  Area,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  PieChart,
-  Pie,
-  Cell,
-  Legend,
-} from 'recharts'
+import { FileText, FileSpreadsheet, RefreshCw, AlertTriangle, Package, Clock } from 'lucide-react'
 import { PageHeader } from '@/components/shared/page-header'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { reportsApi } from '@/lib/api'
 import { useAuthStore } from '@/store/auth-store'
-import { formatRupiah, formatTanggalWaktu } from '@/lib/utils'
+import { formatRupiah } from '@/lib/utils'
 import { printLaporanPdf, downloadLaporanCsv } from '@/lib/print'
-import type { Shift } from '@/types'
 
-type TabId = 'penjualan' | 'stok' | 'shift' | 'pembelian' | 'pelangganVIP' | 'pengiriman'
+type TabId = 'stok' | 'pembelian' | 'pengiriman'
 
 const ALL_TABS: { id: TabId; label: string; gudangOnly?: boolean }[] = [
-  { id: 'penjualan', label: 'Penjualan' },
   { id: 'stok', label: 'Stok' },
-  { id: 'shift', label: 'Shift' },
   { id: 'pembelian', label: 'Pembelian', gudangOnly: true },
-  { id: 'pelangganVIP', label: 'Pelanggan VIP' },
   { id: 'pengiriman', label: 'Pengiriman' },
 ]
 
-const COLORS = ['#16a34a', '#2563eb', '#d97706', '#dc2626', '#7c3aed']
-
 const tabToJenis: Record<TabId, string> = {
-  penjualan: 'penjualan',
   stok: 'stok',
-  shift: 'shift',
   pembelian: 'pembelian',
-  pelangganVIP: 'pelanggan-vip',
   pengiriman: 'pengiriman',
 }
 
@@ -82,7 +60,7 @@ export default function LaporanPage() {
   const isGudang = user?.tipeCabang === 'gudang' || user?.role === 'superadmin'
   const TABS = ALL_TABS.filter((t) => !t.gudangOnly || isGudang)
 
-  const [activeTab, setActiveTab] = useState<TabId>('penjualan')
+  const [activeTab, setActiveTab] = useState<TabId>('stok')
   const [tanggalDari, setTanggalDari] = useState(get7DaysAgoStr())
   const [tanggalSampai, setTanggalSampai] = useState(getTodayStr())
   const [enabled, setEnabled] = useState(false)
@@ -93,16 +71,10 @@ export default function LaporanPage() {
 
   const fetchFn = () => {
     switch (activeTab) {
-      case 'penjualan':
-        return reportsApi.getPenjualan(params)
       case 'stok':
         return reportsApi.getStok(params)
-      case 'shift':
-        return reportsApi.getShift(params)
       case 'pembelian':
         return reportsApi.getPembelian(params)
-      case 'pelangganVIP':
-        return reportsApi.getPelangganVIP(params)
       case 'pengiriman':
         return reportsApi.getPengiriman(params)
     }
@@ -150,18 +122,15 @@ export default function LaporanPage() {
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const d = data as any
-  const penjualanData = activeTab === 'penjualan' ? d : null
   const stokData = activeTab === 'stok' ? d : null
   const pembelianData = activeTab === 'pembelian' ? d : null
-  const vipData = activeTab === 'pelangganVIP' ? d : null
   const pengirimanData = activeTab === 'pengiriman' ? d : null
-  const shiftData = activeTab === 'shift' ? d : null
 
   return (
     <div className="space-y-6">
       <PageHeader
         title="Laporan"
-        subtitle="Analisis data penjualan, stok, shift, dan pengiriman"
+        subtitle="Analisis data stok, pembelian, dan pengiriman"
       />
 
       {/* Tabs */}
@@ -247,111 +216,6 @@ export default function LaporanPage() {
             <p className="text-sm">Pilih rentang tanggal dan klik Muat Data</p>
           </CardContent>
         </Card>
-      )}
-
-      {/* Penjualan */}
-      {activeTab === 'penjualan' && data && penjualanData && (
-        <div className="space-y-6">
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-            <SummaryCard
-              label="Total Transaksi"
-              value={penjualanData.totalTransaksi ?? 0}
-              sub="Dalam periode ini"
-            />
-            <SummaryCard
-              label="Total Pendapatan"
-              value={formatRupiah(penjualanData.totalPendapatan ?? 0)}
-              sub="Dalam periode ini"
-            />
-            <SummaryCard
-              label="Rata-rata Transaksi"
-              value={formatRupiah(penjualanData.rataRataTransaksi ?? 0)}
-              sub="Per transaksi"
-            />
-          </div>
-
-          <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-            <Card className="lg:col-span-2">
-              <CardHeader>
-                <CardTitle>Grafik Penjualan Harian</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ResponsiveContainer width="100%" height={240}>
-                  <AreaChart data={penjualanData.harian ?? []}>
-                    <defs>
-                      <linearGradient id="colorTotal" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#16a34a" stopOpacity={0.15} />
-                        <stop offset="95%" stopColor="#16a34a" stopOpacity={0} />
-                      </linearGradient>
-                    </defs>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                    <XAxis
-                      dataKey="tanggal"
-                      tick={{ fontSize: 11, fill: '#6b7280' }}
-                      axisLine={false}
-                      tickLine={false}
-                    />
-                    <YAxis
-                      tick={{ fontSize: 11, fill: '#6b7280' }}
-                      axisLine={false}
-                      tickLine={false}
-                      tickFormatter={(v) => `${(v / 1000000).toFixed(0)}jt`}
-                    />
-                    <Tooltip
-                      formatter={(value) => [formatRupiah(Number(value)), 'Penjualan']}
-                      contentStyle={{ fontSize: 12, borderRadius: 8, border: '1px solid #e5e7eb' }}
-                    />
-                    <Area
-                      type="monotone"
-                      dataKey="total"
-                      stroke="#16a34a"
-                      strokeWidth={2}
-                      fill="url(#colorTotal)"
-                    />
-                  </AreaChart>
-                </ResponsiveContainer>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>Metode Pembayaran</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ResponsiveContainer width="100%" height={240}>
-                  <PieChart>
-                    <Pie
-                      data={penjualanData.metodePembayaran ?? []}
-                      cx="50%"
-                      cy="45%"
-                      innerRadius={50}
-                      outerRadius={80}
-                      paddingAngle={3}
-                      dataKey="value"
-                    >
-                      {(penjualanData.metodePembayaran ?? []).map(
-                        (_: unknown, index: number) => (
-                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                        )
-                      )}
-                    </Pie>
-                    <Legend
-                      iconType="circle"
-                      iconSize={8}
-                      formatter={(value) => (
-                        <span style={{ fontSize: 11, color: '#374151' }}>{value}</span>
-                      )}
-                    />
-                    <Tooltip
-                      formatter={(value) => [`${value}%`, '']}
-                      contentStyle={{ fontSize: 12, borderRadius: 8 }}
-                    />
-                  </PieChart>
-                </ResponsiveContainer>
-              </CardContent>
-            </Card>
-          </div>
-        </div>
       )}
 
       {/* Stok */}
@@ -454,29 +318,6 @@ export default function LaporanPage() {
         </div>
       )}
 
-      {/* Penjualan — top produk */}
-      {activeTab === 'penjualan' && data && penjualanData?.topProduk?.length > 0 && (
-        <Card>
-          <CardHeader><CardTitle>Top Produk Terjual</CardTitle></CardHeader>
-          <CardContent className="p-0">
-            <table className="w-full text-sm">
-              <thead><tr className="border-b bg-gray-50 text-xs font-semibold uppercase text-gray-500">
-                <th className="px-4 py-3 text-left">Produk</th>
-                <th className="px-4 py-3 text-center">Qty Terjual</th>
-              </tr></thead>
-              <tbody className="divide-y">
-                {penjualanData.topProduk.map((p: { nama: string; qty: number }, i: number) => (
-                  <tr key={p.nama}>
-                    <td className="px-4 py-3"><span className="mr-2 text-gray-400">#{i + 1}</span>{p.nama}</td>
-                    <td className="px-4 py-3 text-center font-semibold">{p.qty}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </CardContent>
-        </Card>
-      )}
-
       {/* Pembelian */}
       {activeTab === 'pembelian' && data && pembelianData && (
         <div className="space-y-6">
@@ -521,36 +362,6 @@ export default function LaporanPage() {
         </div>
       )}
 
-      {/* Pelanggan VIP */}
-      {activeTab === 'pelangganVIP' && data && vipData && (
-        <div className="space-y-6">
-          <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-            <SummaryCard label="Total Pelanggan VIP" value={vipData.totalPelanggan ?? 0} />
-            <SummaryCard label="Total Kredit Limit" value={formatRupiah(vipData.totalKreditLimit ?? 0)} />
-            <SummaryCard label="Kredit Terpakai" value={formatRupiah(vipData.totalKreditTerpakai ?? 0)} />
-            <SummaryCard label="Tagihan Outstanding" value={formatRupiah(vipData.totalTagihanOutstanding ?? 0)} sub="Belum lunas" />
-          </div>
-          <Card>
-            <CardHeader><CardTitle>Status Kredit Pelanggan</CardTitle></CardHeader>
-            <CardContent className="p-0">
-              <table className="w-full text-sm">
-                <thead><tr className="border-b bg-gray-50 text-xs font-semibold uppercase text-gray-500">
-                  <th className="px-4 py-3 text-left">Status</th><th className="px-4 py-3 text-center">Jumlah Pelanggan</th>
-                </tr></thead>
-                <tbody className="divide-y">
-                  {(vipData.statusKredit ?? []).map((s: { status: string; count: number }) => (
-                    <tr key={s.status}>
-                      <td className="px-4 py-3 font-medium capitalize">{s.status.replace('_', ' ')}</td>
-                      <td className="px-4 py-3 text-center">{s.count}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </CardContent>
-          </Card>
-        </div>
-      )}
-
       {/* Pengiriman */}
       {activeTab === 'pengiriman' && data && pengirimanData && (
         <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
@@ -561,76 +372,6 @@ export default function LaporanPage() {
         </div>
       )}
 
-      {/* Shift */}
-      {activeTab === 'shift' && data && shiftData && (
-        <div className="space-y-6">
-          <div className="grid grid-cols-2 gap-4 lg:grid-cols-3">
-            <SummaryCard label="Total Shift" value={shiftData.totalShift ?? 0} sub="Dalam periode ini" />
-            <SummaryCard label="Total Transaksi" value={shiftData.totalTransaksi ?? 0} sub="Semua kasir" />
-            <SummaryCard label="Total Pendapatan" value={formatRupiah(shiftData.totalPendapatan ?? 0)} sub="Dalam periode ini" />
-            <SummaryCard label="Tunai" value={formatRupiah(shiftData.totalTunai ?? 0)} />
-            <SummaryCard label="Non-Tunai" value={formatRupiah(shiftData.totalNonTunai ?? 0)} />
-            <SummaryCard label="Total Diskon" value={formatRupiah(shiftData.totalDiskon ?? 0)} />
-          </div>
-          <Card>
-            <CardHeader><CardTitle>Riwayat Shift</CardTitle></CardHeader>
-            <CardContent className="p-0">
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b bg-gray-50 text-xs font-semibold uppercase text-gray-500">
-                      <th className="px-4 py-3 text-left">Kasir</th>
-                      <th className="px-4 py-3 text-left">Cabang</th>
-                      <th className="px-4 py-3 text-left">Mulai</th>
-                      <th className="px-4 py-3 text-left">Selesai</th>
-                      <th className="px-4 py-3 text-center">Transaksi</th>
-                      <th className="px-4 py-3 text-right">Pendapatan</th>
-                      <th className="px-4 py-3 text-right">Modal Awal</th>
-                      <th className="px-4 py-3 text-right">Saldo Akhir</th>
-                      <th className="px-4 py-3 text-right">Selisih Kas</th>
-                      <th className="px-4 py-3 text-center">Status</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y">
-                    {(shiftData.shifts ?? []).map((sh: Shift) => {
-                      const selisih = sh.saldoAkhir != null
-                        ? sh.saldoAkhir - (sh.modalAwal + sh.totalTunai)
-                        : null
-                      return (
-                      <tr key={sh.id} className="hover:bg-gray-50">
-                        <td className="px-4 py-3 font-medium">{sh.kasirNama}</td>
-                        <td className="px-4 py-3 text-gray-500">{sh.cabangNama}</td>
-                        <td className="px-4 py-3 text-gray-600">{formatTanggalWaktu(sh.mulaiAt)}</td>
-                        <td className="px-4 py-3 text-gray-600">{sh.selesaiAt ? formatTanggalWaktu(sh.selesaiAt) : '—'}</td>
-                        <td className="px-4 py-3 text-center">{sh.totalTransaksi}</td>
-                        <td className="px-4 py-3 text-right font-semibold">{formatRupiah(sh.totalPendapatan)}</td>
-                        <td className="px-4 py-3 text-right text-gray-600">{formatRupiah(sh.modalAwal)}</td>
-                        <td className="px-4 py-3 text-right text-gray-600">
-                          {sh.saldoAkhir != null ? formatRupiah(sh.saldoAkhir) : '—'}
-                        </td>
-                        <td className="px-4 py-3 text-right font-medium">
-                          {selisih == null ? '—' : (
-                            <span className={selisih >= 0 ? 'text-green-600' : 'text-red-600'}>
-                              {selisih >= 0 ? '+' : ''}{formatRupiah(selisih)}
-                            </span>
-                          )}
-                        </td>
-                        <td className="px-4 py-3 text-center">
-                          {sh.status === 'Aktif'
-                            ? <span className="inline-flex items-center gap-1 rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700"><span className="h-1.5 w-1.5 rounded-full bg-green-500 animate-pulse inline-block" />Aktif</span>
-                            : <span className="inline-flex items-center gap-1 rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-600"><CheckCircle className="h-3 w-3" />Selesai</span>
-                          }
-                        </td>
-                      </tr>
-                    )})}
-
-                  </tbody>
-                </table>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      )}
     </div>
   )
 }
