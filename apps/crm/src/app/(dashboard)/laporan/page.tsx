@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { FileText, FileSpreadsheet, RefreshCw, AlertTriangle, Package, Clock } from 'lucide-react'
 import { PageHeader } from '@/components/shared/page-header'
@@ -11,17 +11,27 @@ import { useAuthStore } from '@/store/auth-store'
 import { formatRupiah } from '@/lib/utils'
 import { printLaporanPdf, downloadLaporanCsv } from '@/lib/print'
 
-type TabId = 'stok' | 'pembelian' | 'pengiriman'
+type TabId = 'penjualan' | 'stok' | 'shift' | 'pembelian' | 'pelangganVIP' | 'pengiriman'
 
-const ALL_TABS: { id: TabId; label: string; gudangOnly?: boolean }[] = [
+// `commercial`: laporan komersial/finansial (omzet, transaksi, shift, VIP) —
+//   eksklusif Superadmin & Manajer Toko, disembunyikan dari Admin Gudang.
+// `gudangOnly`: laporan logistik gudang (pembelian) — Admin Gudang & Superadmin.
+// Tanpa flag: laporan logistik umum (stok, pengiriman) — semua role.
+const ALL_TABS: { id: TabId; label: string; commercial?: boolean; gudangOnly?: boolean }[] = [
+  { id: 'penjualan', label: 'Penjualan', commercial: true },
   { id: 'stok', label: 'Stok' },
+  { id: 'shift', label: 'Shift', commercial: true },
   { id: 'pembelian', label: 'Pembelian', gudangOnly: true },
+  { id: 'pelangganVIP', label: 'Pelanggan VIP', commercial: true },
   { id: 'pengiriman', label: 'Pengiriman' },
 ]
 
 const tabToJenis: Record<TabId, string> = {
+  penjualan: 'penjualan',
   stok: 'stok',
+  shift: 'shift',
   pembelian: 'pembelian',
+  pelangganVIP: 'pelanggan-vip',
   pengiriman: 'pengiriman',
 }
 
@@ -57,10 +67,30 @@ function SummaryCard({
 
 export default function LaporanPage() {
   const { user } = useAuthStore()
-  const isGudang = user?.tipeCabang === 'gudang' || user?.role === 'superadmin'
-  const TABS = ALL_TABS.filter((t) => !t.gudangOnly || isGudang)
+  const role = user?.role
+  const isSuperadmin = role === 'superadmin'
+  // Laporan komersial eksklusif Superadmin & Manajer Toko (Least Privilege:
+  // Admin/Staf Gudang tidak berkepentingan atas omzet/transaksi/VIP).
+  const canSeeCommercial = isSuperadmin || role === 'manajer'
+  // Laporan logistik gudang (pembelian) untuk sisi gudang & superadmin.
+  const canSeeGudang = isSuperadmin || user?.tipeCabang === 'gudang'
 
-  const [activeTab, setActiveTab] = useState<TabId>('stok')
+  const TABS = useMemo(
+    () =>
+      ALL_TABS.filter((t) => {
+        if (t.commercial) return canSeeCommercial
+        if (t.gudangOnly) return canSeeGudang
+        return true // logistik umum: semua role
+      }),
+    [canSeeCommercial, canSeeGudang]
+  )
+
+  const [activeTab, setActiveTab] = useState<TabId>('penjualan')
+
+  // Pastikan tab aktif selalu termasuk yang boleh dilihat role ini — mencegah
+  // Admin Gudang "mendarat" di tab komersial yang disembunyikan (mis. Penjualan).
+  // Derived during render (no effect needed) so there's no cascading-render risk.
+  const safeTab: TabId = TABS.some((t) => t.id === activeTab) ? activeTab : (TABS[0]?.id ?? 'stok')
   const [tanggalDari, setTanggalDari] = useState(get7DaysAgoStr())
   const [tanggalSampai, setTanggalSampai] = useState(getTodayStr())
   const [enabled, setEnabled] = useState(false)
@@ -70,18 +100,24 @@ export default function LaporanPage() {
   const params = { tanggalDari, tanggalSampai }
 
   const fetchFn = () => {
-    switch (activeTab) {
+    switch (safeTab) {
+      case 'penjualan':
+        return reportsApi.getPenjualan(params)
       case 'stok':
         return reportsApi.getStok(params)
+      case 'shift':
+        return reportsApi.getShift(params)
       case 'pembelian':
         return reportsApi.getPembelian(params)
+      case 'pelangganVIP':
+        return reportsApi.getPelangganVIP(params)
       case 'pengiriman':
         return reportsApi.getPengiriman(params)
     }
   }
 
   const { data, isLoading, refetch } = useQuery({
-    queryKey: ['laporan', activeTab, tanggalDari, tanggalSampai],
+    queryKey: ['laporan', safeTab, tanggalDari, tanggalSampai],
     queryFn: fetchFn,
     enabled,
   })
@@ -98,7 +134,7 @@ export default function LaporanPage() {
     if (!data) return
     setExportingPdf(true)
     try {
-      printLaporanPdf(activeTab, data, { tanggalDari, tanggalSampai })
+      printLaporanPdf(safeTab, data, { tanggalDari, tanggalSampai })
     } finally {
       setExportingPdf(false)
     }
@@ -108,8 +144,8 @@ export default function LaporanPage() {
     if (!data) return
     setExportingExcel(true)
     try {
-      const fileName = `laporan-${tabToJenis[activeTab]}-${tanggalDari}-${tanggalSampai}.csv`
-      downloadLaporanCsv(activeTab, data, fileName)
+      const fileName = `laporan-${tabToJenis[safeTab]}-${tanggalDari}-${tanggalSampai}.csv`
+      downloadLaporanCsv(safeTab, data, fileName)
     } finally {
       setExportingExcel(false)
     }
@@ -122,15 +158,18 @@ export default function LaporanPage() {
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const d = data as any
-  const stokData = activeTab === 'stok' ? d : null
-  const pembelianData = activeTab === 'pembelian' ? d : null
-  const pengirimanData = activeTab === 'pengiriman' ? d : null
+  const penjualanData = safeTab === 'penjualan' ? d : null
+  const stokData = safeTab === 'stok' ? d : null
+  const shiftData = safeTab === 'shift' ? d : null
+  const pembelianData = safeTab === 'pembelian' ? d : null
+  const pelangganVIPData = safeTab === 'pelangganVIP' ? d : null
+  const pengirimanData = safeTab === 'pengiriman' ? d : null
 
   return (
     <div className="space-y-6">
       <PageHeader
         title="Laporan"
-        subtitle="Analisis data stok, pembelian, dan pengiriman"
+        subtitle="Analisis data penjualan, stok, shift, pembelian, dan pengiriman"
       />
 
       {/* Tabs */}
@@ -141,7 +180,7 @@ export default function LaporanPage() {
               key={tab.id}
               onClick={() => handleTabChange(tab.id)}
               className={`rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
-                activeTab === tab.id
+                safeTab === tab.id
                   ? 'bg-white text-green-700 shadow-sm'
                   : 'text-gray-600 hover:text-gray-900'
               }`}
@@ -218,8 +257,54 @@ export default function LaporanPage() {
         </Card>
       )}
 
+      {/* Penjualan */}
+      {safeTab === 'penjualan' && data && penjualanData && (
+        <div className="space-y-6">
+          <div className="grid grid-cols-2 gap-4 lg:grid-cols-3">
+            <SummaryCard label="Total Transaksi" value={penjualanData.totalTransaksi ?? 0} sub="Pesanan selesai" />
+            <SummaryCard label="Total Pendapatan" value={formatRupiah(penjualanData.totalPendapatan ?? 0)} sub="Omzet kotor" />
+            <SummaryCard label="Rata-rata / Transaksi" value={formatRupiah(penjualanData.rataRataTransaksi ?? 0)} />
+          </div>
+          {penjualanData.topProduk?.length > 0 && (
+            <Card>
+              <CardHeader><CardTitle>Top Produk Terjual</CardTitle></CardHeader>
+              <CardContent className="p-0">
+                <table className="w-full text-sm">
+                  <thead><tr className="border-b bg-gray-50 text-xs font-semibold uppercase text-gray-500">
+                    <th className="px-4 py-2 text-left">Produk</th>
+                    <th className="px-4 py-2 text-center">Qty Terjual</th>
+                  </tr></thead>
+                  <tbody className="divide-y">
+                    {penjualanData.topProduk.map((p: { nama: string; qty: number }) => (
+                      <tr key={p.nama}>
+                        <td className="px-4 py-2 font-medium">{p.nama}</td>
+                        <td className="px-4 py-2 text-center">{p.qty}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </CardContent>
+            </Card>
+          )}
+        </div>
+      )}
+
+      {/* Shift */}
+      {safeTab === 'shift' && data && shiftData && (
+        <div className="space-y-6">
+          <div className="grid grid-cols-2 gap-4 lg:grid-cols-3">
+            <SummaryCard label="Total Shift" value={shiftData.totalShift ?? 0} />
+            <SummaryCard label="Total Transaksi" value={shiftData.totalTransaksi ?? 0} />
+            <SummaryCard label="Total Pendapatan" value={formatRupiah(shiftData.totalPendapatan ?? 0)} />
+            <SummaryCard label="Tunai" value={formatRupiah(shiftData.totalTunai ?? 0)} />
+            <SummaryCard label="Non-Tunai" value={formatRupiah(shiftData.totalNonTunai ?? 0)} />
+            <SummaryCard label="Total Diskon" value={formatRupiah(shiftData.totalDiskon ?? 0)} />
+          </div>
+        </div>
+      )}
+
       {/* Stok */}
-      {activeTab === 'stok' && data && stokData && (
+      {safeTab === 'stok' && data && stokData && (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
           <Card className="border-yellow-200 bg-yellow-50">
             <CardContent className="flex items-start gap-4 p-5">
@@ -267,7 +352,7 @@ export default function LaporanPage() {
       )}
 
       {/* Stok — detail tables */}
-      {activeTab === 'stok' && data && stokData && (
+      {safeTab === 'stok' && data && stokData && (
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
           {stokData.itemsMenipis?.length > 0 && (
             <Card>
@@ -319,7 +404,7 @@ export default function LaporanPage() {
       )}
 
       {/* Pembelian */}
-      {activeTab === 'pembelian' && data && pembelianData && (
+      {safeTab === 'pembelian' && data && pembelianData && (
         <div className="space-y-6">
           <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
             <SummaryCard label="Total PO" value={pembelianData.totalPO ?? 0} sub="Purchase order" />
@@ -362,8 +447,41 @@ export default function LaporanPage() {
         </div>
       )}
 
+      {/* Pelanggan VIP */}
+      {safeTab === 'pelangganVIP' && data && pelangganVIPData && (
+        <div className="space-y-6">
+          <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+            <SummaryCard label="Total Pelanggan VIP" value={pelangganVIPData.totalPelanggan ?? 0} />
+            <SummaryCard label="Kredit Terpakai" value={formatRupiah(pelangganVIPData.totalKreditTerpakai ?? 0)} />
+            <SummaryCard label="Total Limit Kredit" value={formatRupiah(pelangganVIPData.totalKreditLimit ?? 0)} />
+            <SummaryCard label="Tagihan Outstanding" value={formatRupiah(pelangganVIPData.totalTagihanOutstanding ?? 0)} sub="Belum lunas" />
+          </div>
+          {pelangganVIPData.statusKredit?.length > 0 && (
+            <Card>
+              <CardHeader><CardTitle>Status Kredit</CardTitle></CardHeader>
+              <CardContent className="p-0">
+                <table className="w-full text-sm">
+                  <thead><tr className="border-b bg-gray-50 text-xs font-semibold uppercase text-gray-500">
+                    <th className="px-4 py-2 text-left">Status</th>
+                    <th className="px-4 py-2 text-center">Jumlah</th>
+                  </tr></thead>
+                  <tbody className="divide-y">
+                    {pelangganVIPData.statusKredit.map((s: { status: string; count: number }) => (
+                      <tr key={s.status}>
+                        <td className="px-4 py-2 font-medium">{s.status}</td>
+                        <td className="px-4 py-2 text-center">{s.count}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </CardContent>
+            </Card>
+          )}
+        </div>
+      )}
+
       {/* Pengiriman */}
-      {activeTab === 'pengiriman' && data && pengirimanData && (
+      {safeTab === 'pengiriman' && data && pengirimanData && (
         <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
           <SummaryCard label="Total Pengiriman" value={pengirimanData.totalPengiriman ?? 0} />
           <SummaryCard label="Selesai" value={pengirimanData.selesai ?? 0} sub="Terkirim sukses" />
