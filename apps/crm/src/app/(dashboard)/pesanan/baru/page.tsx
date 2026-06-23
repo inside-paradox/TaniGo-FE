@@ -17,12 +17,22 @@ import {
   Select,
 } from '@/components/ui'
 import { useCreateOrder } from '@/hooks/use-orders'
-import { useProducts } from '@/hooks/use-products'
+import { useCabangInventory } from '@/hooks/use-inventory'
 import { usePelangganVIP } from '@/hooks/use-customers'
+import { useAuthStore } from '@/store/auth-store'
 import { formatRupiah } from '@/lib/utils'
 import type { MetodePembayaran, MetodePengiriman } from '@/types'
-import type { Produk } from '@/types'
 import type { PelangganVIP } from '@/types'
+
+/** Bentuk ringkas produk untuk picker pesanan, diturunkan dari inventori cabang. */
+interface ProdukOpsi {
+  id: string
+  nama: string
+  sku: string
+  stok: number
+  satuan: string
+  hargaJual: number
+}
 
 interface ItemBaris {
   id: string
@@ -78,11 +88,25 @@ export default function PesananBaruPage() {
   // Errors
   const [errors, setErrors] = useState<Record<string, string>>({})
 
-  // Data
-  const { data: produksData } = useProducts({ page: 1, limit: 200 })
+  // Data — produk bersumber dari INVENTORI CABANG manajer (produk yang benar-benar
+  // tersedia di toko, lengkap dengan stok riil & harga jual). Master /products
+  // selalu stok 0 (stok dikelola per-cabang), itu sebabnya dropdown sebelumnya kosong.
+  const user = useAuthStore((s) => s.user)
+  const { data: invData } = useCabangInventory(user?.cabangId ?? undefined)
   const { data: vipData } = usePelangganVIP({ page: 1, limit: 200 })
 
-  const produkList: Produk[] = useMemo(() => produksData?.data ?? [], [produksData])
+  const produkList: ProdukOpsi[] = useMemo(
+    () =>
+      (invData ?? []).map((inv) => ({
+        id: inv.produkId,
+        nama: inv.produkNama,
+        sku: inv.produkSku,
+        stok: inv.stok,
+        satuan: inv.satuan,
+        hargaJual: inv.hargaJual ?? 0,
+      })),
+    [invData]
+  )
   const vipList: PelangganVIP[] = useMemo(() => [
     // mock — hapus setelah review
     {
@@ -428,8 +452,8 @@ export default function PesananBaruPage() {
                   >
                     {/* Pilih Produk */}
                     <div className="col-span-12 sm:col-span-4">
-                      <Combobox<Produk>
-                        options={produkList.filter((p) => p.statusAktif && p.stok > 0)}
+                      <Combobox<ProdukOpsi>
+                        options={produkList.filter((p) => p.stok > 0)}
                         value={item.produkId}
                         onChange={(id) => handlePilihProduk(item.id, id)}
                         getOptionValue={(p) => p.id}

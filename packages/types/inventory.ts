@@ -1,11 +1,15 @@
 export interface CabangInventory {
   id: string
   cabangId: string
+  cabangNama?: string
   produkId: string
   produkNama: string
   produkSku: string
   satuan: string
   stok: number
+  /** Harga jual per unit di cabang ini (dikirim API; opsional di tipe). */
+  hargaJual?: number
+  statusStok?: string
   updatedAt: string
 }
 
