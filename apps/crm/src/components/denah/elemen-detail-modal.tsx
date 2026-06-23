@@ -1,14 +1,16 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Trash2, Search, Minus, Plus, Check } from 'lucide-react'
+import { useQueries, useQueryClient } from '@tanstack/react-query'
+import { Trash2, Search, Minus, Plus, Check, X } from 'lucide-react'
 import { Modal } from '@/components/ui/modal'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
 import { ELEMEN_META, WARNA_RAK } from '@/lib/denah-elemen'
-import { useProducts } from '@/hooks/use-products'
+import { useProducts, PRODUCTS_KEY } from '@/hooks/use-products'
+import { productsApi } from '@/lib/api'
 import type { ElemenDenah } from '@/types'
 
 interface ElemenDetailModalProps {
@@ -119,6 +121,7 @@ function SizeStepper({
 function ProdukAssign({ el, onUpdate }: { el: ElemenDenah; onUpdate: (patch: Partial<ElemenDenah>) => void }) {
   const [search, setSearch] = useState('')
   const [debouncedSearch, setDebouncedSearch] = useState('')
+  const qc = useQueryClient()
 
   // Debounce so each keystroke doesn't hit the API.
   useEffect(() => {
@@ -136,6 +139,24 @@ function ProdukAssign({ el, onUpdate }: { el: ElemenDenah; onUpdate: (patch: Par
   })
   const filtered = data?.data ?? []
 
+  // Seed the per-product cache from each search page so the chip lookups below
+  // reuse data we've already loaded instead of re-fetching every id.
+  useEffect(() => {
+    if (!data?.data) return
+    for (const p of data.data) qc.setQueryData([PRODUCTS_KEY, p.id], p)
+  }, [data, qc])
+
+  // Resolve names for the selected products — including ones outside the current
+  // search page — so the chips always render real labels. Each id is cached
+  // individually, so toggling only fetches the newly added product.
+  const selectedQueries = useQueries({
+    queries: el.produkIds.map((id) => ({
+      queryKey: [PRODUCTS_KEY, id],
+      queryFn: () => productsApi.getById(id),
+      staleTime: 5 * 60 * 1000,
+    })),
+  })
+
   const selected = new Set(el.produkIds)
 
   function toggle(id: string) {
@@ -151,6 +172,30 @@ function ProdukAssign({ el, onUpdate }: { el: ElemenDenah; onUpdate: (patch: Par
         <p className="text-sm font-medium text-gray-700">Produk di rak ini</p>
         <Badge variant="info">{el.produkIds.length} dipilih</Badge>
       </div>
+
+      {/* Selected products gathered as removable chips so the manager can review
+          and clear assignments without scrolling the full list. */}
+      {el.produkIds.length > 0 && (
+        <div className="mb-2 flex flex-wrap gap-1.5 rounded-lg border border-green-100 bg-green-50/60 p-2">
+          {el.produkIds.map((id, i) => (
+            <span
+              key={id}
+              className="inline-flex max-w-full items-center gap-1 rounded-full border border-green-200 bg-white py-1 pl-2.5 pr-1 text-xs font-medium text-gray-700"
+            >
+              <span className="truncate">{selectedQueries[i]?.data?.nama ?? 'Memuat…'}</span>
+              <button
+                type="button"
+                onClick={() => toggle(id)}
+                title="Hapus dari rak"
+                className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full text-gray-400 hover:bg-green-100 hover:text-gray-700"
+              >
+                <X className="h-3 w-3" />
+              </button>
+            </span>
+          ))}
+        </div>
+      )}
+
       <div className="relative mb-2">
         <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
         <Input
