@@ -20,7 +20,7 @@ import { useCreateOrder } from '@/hooks/use-orders'
 import { useCabangInventory } from '@/hooks/use-inventory'
 import { usePelangganVIP } from '@/hooks/use-customers'
 import { useAuthStore } from '@/store/auth-store'
-import { formatRupiah } from '@/lib/utils'
+import { formatRupiah, cn } from '@/lib/utils'
 import type { MetodePembayaran, MetodePengiriman } from '@/types'
 import type { PelangganVIP } from '@/types'
 
@@ -479,19 +479,26 @@ export default function PesananBaruPage() {
 
                     {/* Qty */}
                     <div className="col-span-4 sm:col-span-2">
-                      <input
-                        type="number"
-                        min={1}
-                        max={item.stok || undefined}
-                        value={item.qty}
-                        onChange={(e) => handleUbahQty(item.id, Number(e.target.value))}
-                        onFocus={(e) => e.target.select()}
-                        className="h-10 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-center text-sm text-gray-900 focus:border-green-500 focus:outline-none focus:ring-1 focus:ring-green-500"
-                        placeholder="Qty"
-                      />
-                      {item.satuan && (
-                        <p className="mt-0.5 text-center text-xs text-gray-500">{item.satuan}</p>
-                      )}
+                      <div className="relative">
+                        <input
+                          type="number"
+                          min={1}
+                          max={item.stok || undefined}
+                          value={item.qty}
+                          onChange={(e) => handleUbahQty(item.id, Number(e.target.value))}
+                          onFocus={(e) => e.target.select()}
+                          className={cn(
+                            'h-10 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-center text-sm text-gray-900 focus:border-green-500 focus:outline-none focus:ring-1 focus:ring-green-500',
+                            item.satuan && 'pr-8'
+                          )}
+                          placeholder="Qty"
+                        />
+                        {item.satuan && (
+                          <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-xs text-gray-400">
+                            {item.satuan}
+                          </span>
+                        )}
+                      </div>
                     </div>
 
                     {/* Harga Satuan */}
