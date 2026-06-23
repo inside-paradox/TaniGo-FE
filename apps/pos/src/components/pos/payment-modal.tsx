@@ -134,7 +134,7 @@ export function PaymentModal({ open, onClose }: PaymentModalProps) {
       <Modal open={open} onClose={handleClose} title="Transaksi Berhasil" size="md">
         <div className="space-y-6">
           {/* Only this container is sent to the printer (see @media print in globals.css). */}
-          <div className="printable-receipt space-y-6">
+          <div className="print-area space-y-6">
           <div className="flex flex-col items-center gap-2 py-2">
             <CheckCircle className="text-green-500" size={48} />
             <p className="text-lg font-bold text-gray-900">Pembayaran Diterima</p>

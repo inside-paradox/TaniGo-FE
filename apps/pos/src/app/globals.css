@@ -15,19 +15,20 @@ body {
   box-sizing: border-box;
 }
 
-/* ── Print: only the receipt ──────────────────────────────────────────────────
+/* ── Print: only the designated print area ────────────────────────────────────
    window.print() would otherwise capture the whole screen (modal chrome, action
-   buttons, sidebar). Hide everything and show only .printable-receipt, lifted to
-   the page origin. .no-print removes on-screen-only controls from the printout. */
+   buttons, sidebar). Hide everything and show only the active .print-area (e.g.
+   the receipt or the close-shift report), lifted to the page origin. .no-print
+   removes on-screen-only controls (buttons, inputs) from the printout. */
 @media print {
   body * {
     visibility: hidden;
   }
-  .printable-receipt,
-  .printable-receipt * {
+  .print-area,
+  .print-area * {
     visibility: visible;
   }
-  .printable-receipt {
+  .print-area {
     position: fixed;
     inset: 0;
     margin: 0;

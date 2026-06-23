@@ -212,7 +212,7 @@ export default function ShiftPage() {
   const selisih = saldoAkhir - expectedCash
 
   return (
-    <div className="p-6 max-w-2xl mx-auto space-y-6">
+    <div className="p-6 max-w-2xl mx-auto space-y-6 print-area">
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-bold text-gray-900">Manajemen Shift</h1>
         <Badge variant="success">Shift Aktif</Badge>
@@ -288,7 +288,7 @@ export default function ShiftPage() {
             </div>
           )}
 
-          <div className="flex gap-3">
+          <div className="flex gap-3 no-print">
             <Button variant="outline" type="button" onClick={() => window.print()} className="flex-shrink-0">
               <Printer size={16} />
               Cetak Laporan
