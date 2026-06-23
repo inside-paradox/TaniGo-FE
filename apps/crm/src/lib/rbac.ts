@@ -65,7 +65,9 @@ export function canAccess(user: RbacUser | null | undefined, pathname: string): 
   if (!rule.roles.includes(user.role)) return false
 
   if (rule.tipeCabang) {
-    if (!user.tipeCabang || !rule.tipeCabang.includes(user.tipeCabang)) return false
+    // staf_gudang implicitly belongs to a gudang branch; guard against tipeCabang being null from BE
+    const effectiveTipeCabang = user.tipeCabang ?? (user.role === 'staf_gudang' ? 'gudang' : null)
+    if (!effectiveTipeCabang || !rule.tipeCabang.includes(effectiveTipeCabang)) return false
   }
 
   return true
