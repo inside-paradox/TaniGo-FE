@@ -126,6 +126,99 @@ export function printStrukPOS(pesanan: Pesanan, namaToko = 'TaniGo') {
   }, 300)
 }
 
+// ─── Invoice / Faktur Tagihan (A4) ─────────────────────────────────────────────
+
+export function printInvoicePesanan(pesanan: Pesanan, namaToko = 'TaniGo') {
+  const fmtRp = (n: number) =>
+    new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(n)
+
+  const tanggal = new Date(pesanan.createdAt).toLocaleString('id-ID', {
+    day: '2-digit', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit',
+  })
+
+  const itemRows = pesanan.items.map((item, i) => `
+    <tr>
+      <td style="text-align:center;width:32px">${i + 1}</td>
+      <td>${item.produkNama} <span style="color:#9ca3af">(${item.produkSku})</span></td>
+      <td style="text-align:center;width:60px">${item.qty}</td>
+      <td style="text-align:right;width:110px">${fmtRp(item.hargaSatuan)}</td>
+      <td style="text-align:right;width:120px;font-weight:600">${fmtRp(item.subtotal)}</td>
+    </tr>`).join('')
+
+  const pengiriman = pesanan.metodePengiriman === 'ambil_sendiri' ? 'Ambil Sendiri' : 'Dikirim'
+
+  const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Invoice ${pesanan.nomorPesanan}</title><style>${BASE_CSS}</style></head><body>
+    <div class="header">
+      <div>
+        <div class="logo">🌱 ${namaToko}</div>
+        <div style="font-size:10px;color:#6b7280;margin-top:2px;">Toko Perlengkapan Pertanian</div>
+      </div>
+      <div style="text-align:right">
+        <div class="doc-title">Invoice / Faktur Tagihan</div>
+        <div class="doc-meta">No: <b>${pesanan.nomorPesanan}</b></div>
+        <div class="doc-meta">Tanggal: ${tanggal}</div>
+      </div>
+    </div>
+
+    <div class="info-grid">
+      <div class="info-block"><label>Ditagihkan kepada</label><span>${pesanan.pelangganNama}</span></div>
+      ${pesanan.pelangganTelepon ? `<div class="info-block"><label>Telepon</label><span>${pesanan.pelangganTelepon}</span></div>` : ''}
+      <div class="info-block"><label>Metode Pembayaran</label><span>${pesanan.metodePembayaran}</span></div>
+      <div class="info-block"><label>Metode Pengiriman</label><span>${pengiriman}</span></div>
+      ${pesanan.metodePengiriman === 'dikirim' && pesanan.alamatPengiriman ? `<div class="info-block"><label>Alamat Pengiriman</label><span>${pesanan.alamatPengiriman}</span></div>` : ''}
+      <div class="info-block"><label>Dibuat oleh</label><span>${pesanan.kasirNama}</span></div>
+    </div>
+
+    <div class="section-title" style="margin-bottom:12px">Rincian Item</div>
+    <table style="margin-bottom:16px">
+      <thead>
+        <tr>
+          <th style="text-align:center">No</th>
+          <th>Produk</th>
+          <th style="text-align:center">Qty</th>
+          <th style="text-align:right">Harga Satuan</th>
+          <th style="text-align:right">Subtotal</th>
+        </tr>
+      </thead>
+      <tbody>${itemRows}</tbody>
+    </table>
+
+    <div style="display:flex;justify-content:flex-end">
+      <table style="width:280px">
+        <tr>
+          <td style="border:none;padding:4px 8px;color:#6b7280">Subtotal</td>
+          <td style="border:none;padding:4px 8px;text-align:right">${fmtRp(pesanan.subtotal)}</td>
+        </tr>
+        ${pesanan.diskon > 0 ? `<tr>
+          <td style="border:none;padding:4px 8px;color:#6b7280">Diskon</td>
+          <td style="border:none;padding:4px 8px;text-align:right;color:#dc2626">- ${fmtRp(pesanan.diskon)}</td>
+        </tr>` : ''}
+        <tr>
+          <td style="border:none;border-top:2px solid #16a34a;padding:8px;font-weight:700;font-size:13px">Total Tagihan</td>
+          <td style="border:none;border-top:2px solid #16a34a;padding:8px;text-align:right;font-weight:700;font-size:13px;color:#16a34a">${fmtRp(pesanan.total)}</td>
+        </tr>
+      </table>
+    </div>
+
+    ${pesanan.catatan ? `<div style="margin-top:20px"><div class="section-title" style="margin-bottom:8px">Catatan</div><div style="font-size:11px;color:#374151">${pesanan.catatan}</div></div>` : ''}
+
+    <div class="sig-grid" style="grid-template-columns:repeat(2,1fr)">
+      <div class="sig-block">
+        <div class="sig-label">Hormat kami</div>
+        <div class="sig-name">( _________________________ )</div>
+      </div>
+      <div class="sig-block">
+        <div class="sig-label">Penerima</div>
+        <div class="sig-name">( _________________________ )</div>
+      </div>
+    </div>
+
+    <div class="footer-note">Invoice ini diterbitkan oleh sistem TaniGo sebagai dasar penagihan. Harap lakukan pembayaran sesuai metode yang tertera.</div>
+  </body></html>`
+
+  printHTML(html)
+}
+
 // ─── Formulir Stok Opname ─────────────────────────────────────────────────────
 
 export function printFormulirStokOpname(

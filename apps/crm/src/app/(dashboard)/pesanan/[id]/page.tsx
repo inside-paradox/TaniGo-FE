@@ -19,7 +19,7 @@ import {
   Textarea,
 } from '@/components/ui'
 import { useOrder, useUpdateOrderStatus } from '@/hooks/use-orders'
-import { printStrukPOS } from '@/lib/print'
+import { printStrukPOS, printInvoicePesanan } from '@/lib/print'
 import { formatRupiah, formatTanggalWaktu } from '@/lib/utils'
 import type { StatusPesanan, ItemPesanan, Pesanan } from '@/types'
 
@@ -238,10 +238,16 @@ function DetailManual({ pesanan, refetch }: { pesanan: Pesanan; refetch: () => v
         title={pesanan.nomorPesanan}
         subtitle={`Dibuat pada ${formatTanggalWaktu(pesanan.createdAt)} · oleh ${pesanan.kasirNama}`}
         actions={
-          <Button variant="outline" onClick={() => router.push('/pesanan')}>
-            <ArrowLeft className="h-4 w-4" />
-            Kembali
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="outline" size="sm" onClick={() => printInvoicePesanan(pesanan)}>
+              <Printer className="h-4 w-4" />
+              Cetak Invoice
+            </Button>
+            <Button variant="outline" onClick={() => router.push('/pesanan')}>
+              <ArrowLeft className="h-4 w-4" />
+              Kembali
+            </Button>
+          </div>
         }
       />
 
