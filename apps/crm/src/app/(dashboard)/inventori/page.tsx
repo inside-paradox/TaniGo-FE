@@ -61,7 +61,7 @@ function StatCard({
   )
 }
 
-function getPergerakanColumns(): ColumnDef<PergerakanStok>[] {
+function getPergerakanColumns(showLokasi: boolean): ColumnDef<PergerakanStok>[] {
   return [
     {
       accessorKey: 'createdAt',
@@ -80,6 +80,17 @@ function getPergerakanColumns(): ColumnDef<PergerakanStok>[] {
         </div>
       ),
     },
+    ...(showLokasi
+      ? [
+          {
+            accessorKey: 'cabangNama',
+            header: 'Lokasi',
+            cell: ({ getValue }) => (
+              <Badge variant="default">{getValue<string>()}</Badge>
+            ),
+          } as ColumnDef<PergerakanStok>,
+        ]
+      : []),
     {
       accessorKey: 'jenis',
       header: 'Jenis',
@@ -173,6 +184,7 @@ function getSupplierColumns(
 export default function InventoriPage() {
   const { user } = useAuthStore()
   const isGudang = user?.tipeCabang === 'gudang' || user?.role === 'superadmin'
+  const isSuperadmin = user?.role === 'superadmin'
 
   const [tab, setTab] = useState<TabKey>('stok')
   const [supplierFormOpen, setSupplierFormOpen] = useState(false)
@@ -280,7 +292,7 @@ export default function InventoriPage() {
               <SearchInput value={riwayatSearch} onChange={(v) => { setRiwayatSearch(v); setRiwayatPage(1) }} placeholder="Cari nama produk atau SKU..." className="w-full sm:w-72" />
             </div>
             <DataTable
-              columns={getPergerakanColumns()}
+              columns={getPergerakanColumns(isSuperadmin)}
               data={riwayat?.data ?? []}
               loading={riwayatLoading}
               sorting={riwayatSorting}

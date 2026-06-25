@@ -181,6 +181,35 @@ function matchPath(url: string, pattern: RegExp): RegExpMatchArray | null {
   return path.match(pattern)
 }
 
+// Current logged-in demo user (persisted by the auth store under `user`).
+function getCurrentUser(): User | null {
+  if (typeof window === 'undefined') return null
+  const stored = localStorage.getItem('user')
+  return stored ? (JSON.parse(stored) as User) : null
+}
+
+// Generic client-side sort for demo/mock list endpoints. Reads sortBy/sortOrder
+// (sent by DataTable via the page hooks) and reorders by the matching field.
+// Returns the list untouched when no sort param is present, so each endpoint's
+// own default ordering is preserved.
+function applySort<T>(list: T[], params: Record<string, unknown>): T[] {
+  const sortBy = params.sortBy as string | undefined
+  if (!sortBy) return list
+  const dir = (params.sortOrder as string) === 'desc' ? -1 : 1
+  return [...list].sort((a, b) => {
+    const av = (a as Record<string, unknown>)[sortBy]
+    const bv = (b as Record<string, unknown>)[sortBy]
+    if (av == null && bv == null) return 0
+    if (av == null) return 1
+    if (bv == null) return -1
+    if (typeof av === 'number' && typeof bv === 'number') return (av - bv) * dir
+    const ad = Date.parse(av as string)
+    const bd = Date.parse(bv as string)
+    if (!Number.isNaN(ad) && !Number.isNaN(bd)) return (ad - bd) * dir
+    return String(av).localeCompare(String(bv), 'id', { numeric: true }) * dir
+  })
+}
+
 export function getMockResponse(config: AxiosRequestConfig): Omit<AxiosResponse, 'config'> | null {
   const rawUrl = config.url ?? ''
   const method = (config.method ?? 'get').toLowerCase()
@@ -224,7 +253,7 @@ export function getMockResponse(config: AxiosRequestConfig): Omit<AxiosResponse,
       if (params.aktif !== undefined) list = list.filter((c) => c.aktif === (params.aktif === true || params.aktif === 'true'))
       const q = params.search as string | undefined
       if (q) list = list.filter((c) => c.nama.toLowerCase().includes(q.toLowerCase()) || c.lokasi.toLowerCase().includes(q.toLowerCase()))
-      return ok(paginate(list, Number(params.page ?? 1), Number(params.limit ?? 25)))
+      return ok(paginate(applySort(list, params), Number(params.page ?? 1), Number(params.limit ?? 25)))
     }
     if (method === 'post') {
       const newItem: Cabang = {
@@ -289,7 +318,7 @@ export function getMockResponse(config: AxiosRequestConfig): Omit<AxiosResponse,
       if (q) list = list.filter((u) => u.nama.toLowerCase().includes(q.toLowerCase()) || u.email.toLowerCase().includes(q.toLowerCase()))
       if (params.cabangId) list = list.filter((u) => u.cabangId === params.cabangId)
       if (params.role) list = list.filter((u) => u.role === params.role)
-      return ok(paginate(list, Number(params.page ?? 1), Number(params.limit ?? 25)))
+      return ok(paginate(applySort(list, params), Number(params.page ?? 1), Number(params.limit ?? 25)))
     }
     if (method === 'post') {
       const cabangItem = body.cabangId ? cabang.find((c) => c.id === body.cabangId) : null
@@ -358,12 +387,18 @@ export function getMockResponse(config: AxiosRequestConfig): Omit<AxiosResponse,
   if (rawUrl === '/inventory/pergerakan' || rawUrl.startsWith('/inventory/pergerakan?')) {
     if (method === 'get') {
       let list = [...pergerakanStok]
+      // Data scoping by role: non-superadmin users only see movements that
+      // happened at their own cabang, so Stok Sebelum/Sesudah read sequentially.
+      const me = getCurrentUser()
+      if (me && me.role !== 'superadmin' && me.cabangId) {
+        list = list.filter((p) => p.cabangId === me.cabangId)
+      }
       const q = params.search as string | undefined
       if (q) list = list.filter((p) => p.produkNama.toLowerCase().includes(q.toLowerCase()) || p.produkSku.toLowerCase().includes(q.toLowerCase()))
       if (params.produkId) list = list.filter((p) => p.produkId === params.produkId)
       if (params.jenis) list = list.filter((p) => p.jenis === params.jenis)
       list = list.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-      return ok(paginate(list, Number(params.page ?? 1), Number(params.limit ?? 25)))
+      return ok(paginate(applySort(list, params), Number(params.page ?? 1), Number(params.limit ?? 25)))
     }
   }
 
@@ -373,6 +408,7 @@ export function getMockResponse(config: AxiosRequestConfig): Omit<AxiosResponse,
     const storedUser = typeof window !== 'undefined' ? localStorage.getItem('user') : null
     const currentUser = storedUser ? JSON.parse(storedUser) : null
     const cabangId = currentUser?.cabangId ?? 'gudang-1'
+    const cabangNama = currentUser?.cabang ?? cabang.find((c) => c.id === cabangId)?.nama ?? '—'
     const invIdx = cabangInventory.findIndex((i) => i.cabangId === cabangId && i.produkId === body.produkId)
     const stokSebelum = invIdx !== -1 ? cabangInventory[invIdx].stok : 0
     const stokSesudah = Math.max(0, stokSebelum + body.jumlah)
@@ -380,6 +416,7 @@ export function getMockResponse(config: AxiosRequestConfig): Omit<AxiosResponse,
     const entry: PergerakanStok = {
       id: `pg-s-${Date.now()}`,
       produkId: produk.id, produkNama: produk.nama, produkSku: produk.sku,
+      cabangId, cabangNama,
       jenis: 'penyesuaian', jumlah: body.jumlah, stokSebelum, stokSesudah,
       referensi: null, userId: currentUser?.id ?? '', userNama: currentUser?.nama ?? '',
       catatan: body.catatan, alasan: body.alasan,
@@ -395,7 +432,7 @@ export function getMockResponse(config: AxiosRequestConfig): Omit<AxiosResponse,
       let list = [...suppliers]
       const q = params.search as string | undefined
       if (q) list = list.filter((s) => s.nama.toLowerCase().includes(q.toLowerCase()) || s.kontak.includes(q))
-      return ok(paginate(list, Number(params.page ?? 1), Number(params.limit ?? 25)))
+      return ok(paginate(applySort(list, params), Number(params.page ?? 1), Number(params.limit ?? 25)))
     }
     if (method === 'post') {
       const newSupplier: Supplier = {
@@ -441,7 +478,7 @@ export function getMockResponse(config: AxiosRequestConfig): Omit<AxiosResponse,
       if (q) list = list.filter((p) => p.nama.toLowerCase().includes(q.toLowerCase()) || p.sku.toLowerCase().includes(q.toLowerCase()))
       if (params.kategori) list = list.filter((p) => p.kategori === params.kategori)
       if (params.statusStok) list = list.filter((p) => p.statusStok === params.statusStok)
-      return ok(paginate(list, Number(params.page ?? 1), Number(params.limit ?? 25)))
+      return ok(paginate(applySort(list, params), Number(params.page ?? 1), Number(params.limit ?? 25)))
     }
   }
 
@@ -460,7 +497,7 @@ export function getMockResponse(config: AxiosRequestConfig): Omit<AxiosResponse,
       if (params.status) list = list.filter((t) => t.status === params.status)
       const q = params.search as string | undefined
       if (q) list = list.filter((t) => t.nomorTransfer.toLowerCase().includes(q.toLowerCase()) || t.tokNama?.toLowerCase().includes(q.toLowerCase()))
-      return ok(paginate(list, Number(params.page ?? 1), Number(params.limit ?? 25)))
+      return ok(paginate(applySort(list, params), Number(params.page ?? 1), Number(params.limit ?? 25)))
     }
     if (method === 'post') {
       const storedUser = typeof window !== 'undefined' ? localStorage.getItem('user') : null
@@ -545,7 +582,7 @@ export function getMockResponse(config: AxiosRequestConfig): Omit<AxiosResponse,
       if (params.status) list = list.filter((p) => p.status === params.status)
       const q = params.search as string | undefined
       if (q) list = list.filter((p) => p.nomorPengiriman.toLowerCase().includes(q.toLowerCase()) || p.driverNama?.toLowerCase().includes(q.toLowerCase()))
-      return ok(paginate(list, Number(params.page ?? 1), Number(params.limit ?? 25)))
+      return ok(paginate(applySort(list, params), Number(params.page ?? 1), Number(params.limit ?? 25)))
     }
     if (method === 'post') {
       const newPg: Pengiriman = {
@@ -624,7 +661,7 @@ export function getMockResponse(config: AxiosRequestConfig): Omit<AxiosResponse,
       if (params.supplierId) list = list.filter((p) => p.supplierId === params.supplierId)
       const q = params.search as string | undefined
       if (q) list = list.filter((p) => p.nomorPO.toLowerCase().includes(q.toLowerCase()) || p.supplierNama.toLowerCase().includes(q.toLowerCase()))
-      return ok(paginate(list, Number(params.page ?? 1), Number(params.limit ?? 25)))
+      return ok(paginate(applySort(list, params), Number(params.page ?? 1), Number(params.limit ?? 25)))
     }
     if (method === 'post') {
       const items = (body.items as Array<{ produkId: string; qtyPesan: number; hargaBeli: number }>).map((item, i) => {
@@ -761,7 +798,7 @@ export function getMockResponse(config: AxiosRequestConfig): Omit<AxiosResponse,
       if (q) list = list.filter((o) => o.nomorPesanan.toLowerCase().includes(q.toLowerCase()) || o.pelangganNama.toLowerCase().includes(q.toLowerCase()))
       // sort newest first
       list = list.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-      return ok(paginate(list, Number(params.page ?? 1), Number(params.limit ?? 25)))
+      return ok(paginate(applySort(list, params), Number(params.page ?? 1), Number(params.limit ?? 25)))
     }
     if (method === 'post') {
       const items = (body.items as Array<{ produkId: string; qty: number; hargaSatuan: number }>).map((item, i) => {
@@ -894,7 +931,7 @@ export function getMockResponse(config: AxiosRequestConfig): Omit<AxiosResponse,
 
       // Enrich each customer with tagihanTerdekat
       const enriched = list.map((c) => ({ ...c, tagihanTerdekat: computeTagihanTerdekat(c.id) }))
-      return ok(paginate(enriched, Number(params.page ?? 1), Number(params.limit ?? 25)))
+      return ok(paginate(applySort(enriched, params), Number(params.page ?? 1), Number(params.limit ?? 25)))
     }
     if (method === 'post') {
       const newVIP: PelangganVIP = {
@@ -956,12 +993,12 @@ export function getMockResponse(config: AxiosRequestConfig): Omit<AxiosResponse,
 
     if (action === 'tagihan' && method === 'get') {
       const list = tagihanVIP.filter((t) => t.pelangganId === id)
-      return ok(paginate(list, Number(params.page ?? 1), Number(params.limit ?? 25)))
+      return ok(paginate(applySort(list, params), Number(params.page ?? 1), Number(params.limit ?? 25)))
     }
 
     if (action === 'transaksi' && method === 'get') {
       const list = pesanan.filter((o) => o.pelangganId === id)
-      return ok(paginate(list, Number(params.page ?? 1), Number(params.limit ?? 25)))
+      return ok(paginate(applySort(list, params), Number(params.page ?? 1), Number(params.limit ?? 25)))
     }
 
     if (method === 'patch' && idx !== -1) {
@@ -982,7 +1019,7 @@ export function getMockResponse(config: AxiosRequestConfig): Omit<AxiosResponse,
       if (params.cabangId) list = list.filter((s) => s.cabangId === params.cabangId)
       if (params.status) list = list.filter((s) => s.status === params.status)
       list = list.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-      return ok(paginate(list, Number(params.page ?? 1), Number(params.limit ?? 25)))
+      return ok(paginate(applySort(list, params), Number(params.page ?? 1), Number(params.limit ?? 25)))
     }
     if (method === 'post') {
       const storedUser = typeof window !== 'undefined' ? localStorage.getItem('user') : null

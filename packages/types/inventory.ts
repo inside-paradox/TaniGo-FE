@@ -22,6 +22,9 @@ export interface PergerakanStok {
   produkId: string
   produkNama: string
   produkSku: string
+  /** Lokasi (cabang) tempat pergerakan stok ini terjadi. */
+  cabangId: string
+  cabangNama: string
   jenis: JenisPergerakan
   jumlah: number
   stokSebelum: number

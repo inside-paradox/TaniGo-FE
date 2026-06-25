@@ -165,6 +165,8 @@ PergerakanStok {
   produkId     : string (FK)
   produkNama   : string (denormalized)
   produkSku    : string (denormalized)
+  cabangId     : string (FK)  — lokasi (cabang) tempat pergerakan terjadi
+  cabangNama   : string (denormalized)
   jenis        : 'masuk' | 'keluar' | 'penyesuaian'
   jumlah       : integer (can be negative for 'keluar')
   stokSebelum  : integer
@@ -671,6 +673,19 @@ Paginated response `data` payload:
 }
 ```
 
+**Sorting behavior (wajib diimplementasikan per endpoint).** Frontend
+(`<DataTable />`) memakai server-side sorting (`manualSorting: true`), jadi klik
+header kolom tidak berarti apa-apa kecuali backend menerapkan ordering:
+- `sortBy` berisi nama field versi API (camelCase, mis. `hargaJual`); backend
+  memetakannya ke kolom/anotasi ORM lalu `ORDER BY` sebelum pagination.
+- `sortBy` kosong → pakai ordering default endpoint (biasanya `createdAt` desc).
+- `sortOrder` kosong tapi `sortBy` ada → default `asc`.
+- Whitelist field yang boleh di-sort per endpoint; `sortBy` di luar whitelist
+  diabaikan (fallback default) atau `400`. Sertakan tie-breaker stabil (mis. `id`)
+  agar pagination konsisten.
+- Detail field sortable per endpoint: lihat
+  `docs/spec-backend-sorting-list-endpoints.md`.
+
 ## 6. API Endpoints by Domain
 
 ### 6.1 Auth
@@ -1021,10 +1036,19 @@ List stock movement entries (paginated).
 | `search` | string | Search by `produkNama` or `produkSku` |
 | `produkId` | string | Filter by product |
 | `jenis` | `'masuk'` \| `'keluar'` \| `'penyesuaian'` | Filter by movement type |
+| `cabangId` | string | Filter by location (cabang) |
 | `page` | integer | |
 | `limit` | integer | |
 
 **Response `data`:** `PaginatedResponse<PergerakanStok>` (sorted newest-first)
+
+**Data scoping by role:** the backend must scope results by the authenticated user
+so that `stokSebelum`/`stokSesudah` read sequentially per location:
+- `superadmin` — all movements across every cabang (frontend shows a **Lokasi** column).
+- any other role — only movements where `cabangId` equals the user's own `cabangId`.
+
+Detail (schema, backfill data lama, titik pencatatan `cabangId`): lihat
+`docs/spec-backend-riwayat-pergerakan-lokasi-scoping.md`.
 
 #### `POST /inventory/penyesuaian`
 Manually adjust stock for a product at the current user's branch.
@@ -2369,7 +2393,7 @@ The frontend enforces these role gates. The Django backend must mirror them with
 | **Pesanan** — view | ✓ | ✓ | ✓ | ✓ | — |
 | **Pesanan** — create | ✓ | ✓ | ✓ | ✓ | — |
 | **Pesanan** — retur | ✓ | ✓ | ✓ | — | — |
-| **Pengiriman** — view | ✓ | ✓ | ✓ | — | — |
+| **Pengiriman** — view | ✓ | ✓ | ✓ | ✓ | — |
 | **Pengiriman** — create/edit | ✓ | ✓ | ✓ | — | — |
 | **Transfer Stok** — create (toko) | ✓ | ✓ | ✓ | — | — |
 | **Transfer Stok** — approve/kirim (gudang) | ✓ | ✓ | — | — | ✓ |
@@ -2380,12 +2404,12 @@ The frontend enforces these role gates. The Django backend must mirror them with
 | **Purchase Orders** — view | ✓ | ✓ | ✓ | — | ✓ |
 | **Purchase Orders** — create/edit | ✓ | ✓ | — | — | — |
 | **Purchase Orders** — goods-receipt | ✓ | ✓ | — | — | ✓ |
-| **Pelanggan VIP** — view | ✓ | ✓ | ✓ | ✓ | — |
+| **Pelanggan VIP** — view | ✓ | ✓ | ✓ | — | — |
 | **Pelanggan VIP** — create/edit | ✓ | ✓ | ✓ | — | — |
-| **Laporan** | ✓ | ✓ | ✓ | — | — |
+| **Laporan** | ✓ | ✓ | ✓ | ✓ | — |
 | **Notifikasi** — create | ✓ | ✓ | — | — | — |
-| **Pengaturan** | ✓ | ✓ | — | — | — |
-| **Audit Log** | ✓ | — | — | — | — |
+| **Pengaturan** | ✓ | ✓ | ✓ | — | — |
+| **Audit Log** | ✓ | ✓ | — | — | — |
 | **POS Shift** | — | — | — | ✓ | — |
 | **POS Transactions** | — | — | — | ✓ | — |
 
