@@ -13,6 +13,7 @@ import { ProdukForm } from '@/components/produk/produk-form'
 import { ProdukFilter } from '@/components/produk/produk-filter'
 import { getProdukColumns } from '@/components/produk/produk-columns'
 import { useProducts } from '@/hooks/use-products'
+import { useCabangList } from '@/hooks/use-cabang'
 import { useAuthStore } from '@/store/auth-store'
 import type { Produk, StatusStok } from '@/types'
 
@@ -21,6 +22,7 @@ interface FilterState {
   kategori: string
   statusStok: StatusStok | ''
   satuan: string
+  lokasi: string
 }
 
 export default function ProdukPage() {
@@ -35,6 +37,7 @@ export default function ProdukPage() {
     kategori: '',
     statusStok: '',
     satuan: '',
+    lokasi: '',
   })
   const [formOpen, setFormOpen] = useState(false)
   const [editProduk, setEditProduk] = useState<Produk | null>(null)
@@ -46,6 +49,7 @@ export default function ProdukPage() {
     kategori: filter.kategori || undefined,
     statusStok: filter.statusStok || undefined,
     satuan: filter.satuan || undefined,
+    locationId: filter.lokasi || undefined,
     sortBy: sorting[0]?.id,
     sortOrder: sorting[0] ? (sorting[0].desc ? 'desc' : 'asc') : undefined,
   })
@@ -73,7 +77,13 @@ export default function ProdukPage() {
     setEditProduk(null)
   }
 
-  const columns = getProdukColumns(canManage ? handleEdit : null)
+  const { data: cabangData } = useCabangList({ aktif: true })
+  const lokasiNama = filter.lokasi
+    ? cabangData?.data.find((c) => c.id === filter.lokasi)?.nama
+    : undefined
+  const stokHeader = lokasiNama ? `Stok · ${lokasiNama}` : 'Stok Global'
+
+  const columns = getProdukColumns(canManage ? handleEdit : null, stokHeader)
 
   return (
     <div className="space-y-6">
@@ -106,7 +116,7 @@ export default function ProdukPage() {
             <div className="flex flex-col items-center justify-center gap-3 py-16 text-gray-400">
               <PackageX className="h-12 w-12" />
               <p className="text-sm">
-                {filter.search || filter.kategori || filter.statusStok
+                {filter.search || filter.kategori || filter.statusStok || filter.lokasi
                   ? 'Tidak ada produk yang sesuai filter'
                   : 'Belum ada produk. Klik "Tambah Produk" untuk mulai.'}
               </p>

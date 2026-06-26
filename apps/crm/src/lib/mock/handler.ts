@@ -19,7 +19,7 @@ import {
   mockDenah,
   paginate,
 } from './data'
-import type { Cabang, User, TransferStok, Pengiriman, PurchaseOrder, PembayaranPO, Pesanan, PelangganVIP, TagihanVIP, StokOpname, CabangInventory, Supplier, PergerakanStok, Shift, StatusPenerimaanItem, Notifikasi, Denah, SaveDenahDto } from '@/types'
+import type { Produk, Cabang, User, TransferStok, Pengiriman, PurchaseOrder, PembayaranPO, Pesanan, PelangganVIP, TagihanVIP, StokOpname, CabangInventory, Supplier, PergerakanStok, Shift, StatusPenerimaanItem, Notifikasi, Denah, SaveDenahDto } from '@/types'
 
 // In-memory mutable state for demo mutations
 let cabang = [...mockCabang] as Cabang[]
@@ -530,8 +530,22 @@ export function getMockResponse(config: AxiosRequestConfig): Omit<AxiosResponse,
       const q = params.search as string | undefined
       if (q) list = list.filter((p) => p.nama.toLowerCase().includes(q.toLowerCase()) || p.sku.toLowerCase().includes(q.toLowerCase()))
       if (params.kategori) list = list.filter((p) => p.kategori === params.kategori)
-      if (params.statusStok) list = list.filter((p) => p.statusStok === params.statusStok)
       if (params.supplierId) list = list.filter((p) => p.supplierId === params.supplierId)
+      // Filter lokasi: hitung ulang stok & statusStok untuk cabang/gudang terpilih
+      // (bukan akumulasi global) agar angka stok mencerminkan kuantitas fisik di
+      // lokasi tsb. Produk tanpa catatan inventory di lokasi itu dianggap 0/habis.
+      const locationId = params.locationId as string | undefined
+      if (locationId) {
+        list = list.map((p) => {
+          const inv = cabangInventory.find((i) => i.cabangId === locationId && i.produkId === p.id)
+          const stok = inv?.stok ?? 0
+          const statusStok: Produk['statusStok'] =
+            stok === 0 ? 'habis' : stok <= p.thresholdStok ? 'menipis' : 'normal'
+          return { ...p, stok, statusStok }
+        })
+      }
+      // statusStok difilter setelah perhitungan lokasi agar konsisten dgn angka tampil.
+      if (params.statusStok) list = list.filter((p) => p.statusStok === params.statusStok)
       return ok(paginate(applySort(list, params), Number(params.page ?? 1), Number(params.limit ?? 25)))
     }
   }

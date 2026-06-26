@@ -45,4 +45,10 @@ export interface ProdukFilter {
   search?: string
   /** Filter produk berdasarkan relasi supplier (dipakai dropdown produk di PO). */
   supplierId?: string
+  /**
+   * Filter stok berdasarkan lokasi fisik (cabang/gudang). Bila diisi, kolom
+   * `stok` & `statusStok` dihitung ulang untuk lokasi tsb (bukan akumulasi global)
+   * untuk mencegah overselling. Kosong = stok global seluruh lokasi.
+   */
+  locationId?: string
 }

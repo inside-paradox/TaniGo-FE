@@ -71,7 +71,8 @@ function AksiCell({
 }
 
 export function getProdukColumns(
-  onEdit: ((produk: Produk) => void) | null
+  onEdit: ((produk: Produk) => void) | null,
+  stokHeader: string = 'Stok'
 ): ColumnDef<Produk>[] {
   return [
     {
@@ -133,7 +134,7 @@ export function getProdukColumns(
     },
     {
       accessorKey: 'stok',
-      header: 'Stok',
+      header: stokHeader,
       enableSorting: true,
       cell: ({ row }) => (
         <div>

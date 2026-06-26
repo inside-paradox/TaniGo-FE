@@ -1,8 +1,9 @@
 'use client'
 
-import { Filter, X } from 'lucide-react'
+import { Filter, MapPin, X } from 'lucide-react'
 import { SearchInput } from '@/components/shared/search-input'
 import { useKategoriProduk } from '@/hooks/use-kategori'
+import { useCabangList } from '@/hooks/use-cabang'
 import type { StatusStok } from '@/types'
 
 interface ProdukFilterState {
@@ -10,6 +11,7 @@ interface ProdukFilterState {
   kategori: string
   statusStok: StatusStok | ''
   satuan: string
+  lokasi: string
 }
 
 interface ProdukFilterProps {
@@ -25,14 +27,16 @@ const STATUS_STOK_OPTIONS: { value: StatusStok | ''; label: string }[] = [
 ]
 
 const hasActiveFilter = (filter: ProdukFilterState) =>
-  filter.kategori !== '' || filter.statusStok !== '' || filter.satuan !== ''
+  filter.kategori !== '' || filter.statusStok !== '' || filter.satuan !== '' || filter.lokasi !== ''
 
 export function ProdukFilter({ filter, onChange }: ProdukFilterProps) {
   const active = hasActiveFilter(filter)
   const { data: kategoriList = [] } = useKategoriProduk()
+  const { data: cabangData } = useCabangList({ aktif: true })
+  const lokasiList = cabangData?.data ?? []
 
   const resetFilter = () =>
-    onChange({ ...filter, kategori: '', statusStok: '', satuan: '' })
+    onChange({ ...filter, kategori: '', statusStok: '', satuan: '', lokasi: '' })
 
   return (
     <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
@@ -42,6 +46,23 @@ export function ProdukFilter({ filter, onChange }: ProdukFilterProps) {
         placeholder="Cari nama atau SKU produk..."
         className="w-full sm:w-64"
       />
+
+      <div className="flex items-center gap-2">
+        <MapPin className="h-4 w-4 shrink-0 text-gray-400" />
+
+        <select
+          value={filter.lokasi}
+          onChange={(e) => onChange({ ...filter, lokasi: e.target.value })}
+          className="h-10 rounded-lg border border-gray-300 bg-white px-3 text-sm text-gray-700 focus:border-green-500 focus:outline-none"
+        >
+          <option value="">Semua Lokasi (Global)</option>
+          {lokasiList.map((c) => (
+            <option key={c.id} value={c.id}>
+              {c.tipe === 'gudang' ? 'Gudang' : 'Toko'} · {c.nama}
+            </option>
+          ))}
+        </select>
+      </div>
 
       <div className="flex items-center gap-2">
         <Filter className="h-4 w-4 shrink-0 text-gray-400" />
