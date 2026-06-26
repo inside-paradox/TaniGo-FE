@@ -16,6 +16,7 @@ import {
 import { useCreateTransferStok } from '@/hooks/use-transfer-stok'
 import { useProducts } from '@/hooks/use-products'
 import { useCabangList } from '@/hooks/use-cabang'
+import { useCabangInventory } from '@/hooks/use-inventory'
 import { useAuthStore } from '@/store/auth-store'
 import type { Produk, Cabang } from '@/types'
 
@@ -52,6 +53,15 @@ export default function BuatTransferStokPage() {
   ])
   const [catatan, setCatatan] = useState('')
   const [errors, setErrors] = useState<Record<string, string>>({})
+
+  // Stok ditampilkan per gudang tujuan, bukan stok global. Reaktif terhadap gudangId.
+  const { data: inventoryData } = useCabangInventory(gudangId || undefined)
+  const stokGudangMap = useMemo(() => {
+    const map: Record<string, number> = {}
+    inventoryData?.forEach((inv) => { map[inv.produkId] = inv.stok })
+    return map
+  }, [inventoryData])
+  const stokDiGudang = (produkId: string): number => stokGudangMap[produkId] ?? 0
 
   // Gudang users cannot create requests — they only process them
   if (user?.tipeCabang === 'gudang' || user?.role === 'staf_gudang') {
@@ -113,6 +123,14 @@ export default function BuatTransferStokPage() {
       if (!item.produkId) errs[`item_${idx}_produk`] = 'Pilih produk'
       if (!item.satuan) errs[`item_${idx}_satuan`] = 'Pilih satuan'
       if (item.qtyDiminta < 1) errs[`item_${idx}_qty`] = 'Qty minimal 1'
+      if (item.produkId) {
+        const stok = stokDiGudang(item.produkId)
+        if (stok <= 0) {
+          errs[`item_${idx}_produk`] = 'Stok di gudang tujuan kosong'
+        } else if (item.qtyDiminta > stok) {
+          errs[`item_${idx}_qty`] = `Maks ${stok} (stok gudang)`
+        }
+      }
     })
     const duplikat = items
       .map((i) => i.produkId)
@@ -208,7 +226,7 @@ export default function BuatTransferStokPage() {
                   {/* Produk */}
                   <div className="col-span-12 sm:col-span-5">
                     <Combobox<Produk>
-                      options={produkList.filter((p) => p.statusAktif)}
+                      options={gudangId ? produkList.filter((p) => p.statusAktif) : []}
                       value={item.produkId}
                       onChange={(id) => handlePilihProduk(item._key, id)}
                       getOptionValue={(p) => p.id}
@@ -217,20 +235,28 @@ export default function BuatTransferStokPage() {
                         p.nama.toLowerCase().includes(q.toLowerCase()) ||
                         p.sku.toLowerCase().includes(q.toLowerCase())
                       }
-                      renderOption={(p) => (
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <span>{p.nama}</span>
-                            <span className="ml-2 text-xs text-gray-500">{p.sku}</span>
+                      renderOption={(p) => {
+                        const stok = stokDiGudang(p.id)
+                        return (
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <span>{p.nama}</span>
+                              <span className="ml-2 text-xs text-gray-500">{p.sku}</span>
+                            </div>
+                            <span className={`ml-4 shrink-0 text-xs ${stok > 0 ? 'text-gray-500' : 'text-red-500'}`}>
+                              Stok {stok} {p.satuan}
+                            </span>
                           </div>
-                          <span className="ml-4 shrink-0 text-xs text-gray-500">
-                            Stok {p.stok} {p.satuan}
-                          </span>
-                        </div>
-                      )}
-                      placeholder="Cari produk..."
+                        )
+                      }}
+                      placeholder={gudangId ? 'Cari produk...' : 'Pilih gudang tujuan dulu'}
                       error={errors[`item_${idx}_produk`]}
                     />
+                    {item.produkId && (
+                      <p className={`mt-1 text-xs ${stokDiGudang(item.produkId) > 0 ? 'text-gray-500' : 'text-red-500'}`}>
+                        Stok di gudang: {stokDiGudang(item.produkId)} {item.satuan}
+                      </p>
+                    )}
                   </div>
 
                   {/* Qty */}
