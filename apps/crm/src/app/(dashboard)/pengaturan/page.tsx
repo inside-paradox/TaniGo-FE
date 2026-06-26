@@ -10,9 +10,16 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { settingsApi, type InfoToko } from '@/lib/api'
+import { useAuthStore } from '@/store/auth-store'
 
 export default function PengaturanPage() {
   const qc = useQueryClient()
+  const tipeCabang = useAuthStore((s) => s.user?.tipeCabang)
+
+  // Halaman context-aware: user gudang melihat "Info Gudang", user toko "Info Toko".
+  const isGudang = tipeCabang === 'gudang'
+  const entitas = isGudang ? 'Gudang' : 'Toko'
+  const entitasLower = isGudang ? 'gudang' : 'toko'
 
   const { data: infoToko, isLoading } = useQuery({
     queryKey: ['settings', 'toko'],
@@ -36,11 +43,11 @@ export default function PengaturanPage() {
     mutationFn: (data: InfoToko) => settingsApi.updateInfoToko(data),
     onSuccess: (updated) => {
       qc.setQueryData(['settings', 'toko'], updated)
-      toast.success('Info toko berhasil disimpan')
+      toast.success(`Info ${entitasLower} berhasil disimpan`)
       reset({ nama: updated.nama, alamat: updated.alamat, telepon: updated.telepon })
     },
     onError: (err: { response?: { data?: { message?: string } } }) => {
-      toast.error(err.response?.data?.message || 'Gagal menyimpan info toko')
+      toast.error(err.response?.data?.message || `Gagal menyimpan info ${entitasLower}`)
     },
   })
 
@@ -50,12 +57,12 @@ export default function PengaturanPage() {
     <div className="space-y-6">
       <PageHeader
         title="Pengaturan"
-        subtitle="Konfigurasi informasi toko"
+        subtitle={`Konfigurasi informasi ${entitasLower}`}
       />
 
       <Card className="max-w-lg">
         <CardHeader>
-          <CardTitle>Info Toko</CardTitle>
+          <CardTitle>Info {entitas}</CardTitle>
         </CardHeader>
         <CardContent>
           {isLoading ? (
@@ -67,18 +74,18 @@ export default function PengaturanPage() {
           ) : (
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
               <Input
-                label="Nama Toko"
+                label={`Nama ${entitas}`}
                 required
-                {...register('nama', { required: 'Nama toko wajib diisi' })}
+                {...register('nama', { required: `Nama ${entitasLower} wajib diisi` })}
                 error={errors.nama?.message}
-                placeholder="Nama toko Anda"
+                placeholder={`Nama ${entitasLower} Anda`}
               />
               <Input
                 label="Alamat"
                 required
                 {...register('alamat', { required: 'Alamat wajib diisi' })}
                 error={errors.alamat?.message}
-                placeholder="Alamat lengkap toko"
+                placeholder={`Alamat lengkap ${entitasLower}`}
               />
               <Input
                 label="Nomor Telepon"
