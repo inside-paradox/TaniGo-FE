@@ -9,10 +9,12 @@ import { Modal } from '@/components/ui/modal'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Select } from '@/components/ui/select'
+import { MultiSelect } from '@/components/ui/multi-select'
 import { Textarea } from '@/components/ui/textarea'
 import { produkSchema, type ProdukFormData } from '@/lib/validations/product'
 import { useCreateProduct, useUpdateProduct } from '@/hooks/use-products'
 import { useKategoriProduk } from '@/hooks/use-kategori'
+import { useSuppliers } from '@/hooks/use-inventory'
 import { productsApi } from '@/lib/api'
 import type { Produk } from '@/types'
 
@@ -44,6 +46,8 @@ export function ProdukForm({ open, onClose, produk }: ProdukFormProps) {
   const updateMutation = useUpdateProduct()
   const { data: kategoriList = [] } = useKategoriProduk()
   const kategoriOptions = kategoriList.map((k) => ({ value: k.id, label: k.nama }))
+  const { data: supplierData } = useSuppliers({ page: 1, limit: 100 })
+  const supplierList = supplierData?.data ?? []
 
   const {
     register,
@@ -61,6 +65,7 @@ export function ProdukForm({ open, onClose, produk }: ProdukFormProps) {
       stok: 0,
       hargaBeli: 0,
       hargaJual: 0,
+      supplierIds: [],
     },
   })
 
@@ -84,6 +89,7 @@ export function ProdukForm({ open, onClose, produk }: ProdukFormProps) {
         tanggalKedaluwarsa: produk.tanggalKedaluwarsa ?? undefined,
         thresholdStok: produk.thresholdStok,
         statusAktif: produk.statusAktif,
+        supplierIds: produk.supplierIds ?? [],
       })
       setFotoPreview(produk.foto ?? null)
       setFotoFile(null)
@@ -94,6 +100,7 @@ export function ProdukForm({ open, onClose, produk }: ProdukFormProps) {
         stok: 0,
         hargaBeli: 0,
         hargaJual: 0,
+        supplierIds: [],
       })
       setFotoPreview(null)
       setFotoFile(null)
@@ -254,6 +261,30 @@ export function ProdukForm({ open, onClose, produk }: ProdukFormProps) {
                 </button>
               </div>
             )}
+          </div>
+
+          {/* Supplier (multi-sourcing) */}
+          <div className="sm:col-span-2">
+            <Controller
+              control={control}
+              name="supplierIds"
+              render={({ field }) => (
+                <MultiSelect
+                  label="Supplier"
+                  options={supplierList}
+                  value={field.value ?? []}
+                  onChange={field.onChange}
+                  getOptionValue={(s) => s.id}
+                  getOptionLabel={(s) => s.nama}
+                  placeholder="Pilih satu atau lebih supplier"
+                  emptyText="Belum ada supplier terdaftar"
+                  error={errors.supplierIds?.message}
+                />
+              )}
+            />
+            <p className="mt-1 text-xs text-gray-400">
+              Produk dapat dipasok oleh beberapa supplier. Relasi ini dipakai untuk filter produk di modul Purchase Order.
+            </p>
           </div>
 
           {/* Harga Beli */}

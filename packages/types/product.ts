@@ -17,7 +17,11 @@ export interface Produk {
   thresholdStok: number
   statusAktif: boolean
   statusStok: StatusStok
-  supplierId?: string | null
+  /**
+   * Relasi multi-sourcing: id supplier yang memasok produk ini. Dipakai modul PO
+   * untuk memetakan produk per pemasok. Kosong/absen = belum ada supplier ditetapkan.
+   */
+  supplierIds?: string[]
   createdAt: string
   updatedAt: string
 }
@@ -34,6 +38,8 @@ export interface CreateProdukDto {
   foto?: File | null
   thresholdStok: number
   statusAktif: boolean
+  /** Id supplier yang memasok produk ini (multi-sourcing). */
+  supplierIds?: string[]
 }
 
 export interface UpdateProdukDto extends Partial<CreateProdukDto> {}

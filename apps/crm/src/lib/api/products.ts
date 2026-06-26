@@ -18,6 +18,10 @@ export const productsApi = {
       if (value !== null && value !== undefined) {
         if (value instanceof File) {
           formData.append(key, value)
+        } else if (Array.isArray(value)) {
+          // Relasi many-to-many (mis. supplierIds) dikirim sbg key berulang
+          // agar backend bisa membacanya sebagai list (DRF: getlist).
+          value.forEach((item) => formData.append(`${key}[]`, String(item)))
         } else {
           formData.append(key, String(value))
         }
@@ -35,6 +39,10 @@ export const productsApi = {
       if (value !== null && value !== undefined) {
         if (value instanceof File) {
           formData.append(key, value)
+        } else if (Array.isArray(value)) {
+          // Relasi many-to-many (mis. supplierIds) dikirim sbg key berulang
+          // agar backend bisa membacanya sebagai list (DRF: getlist).
+          value.forEach((item) => formData.append(`${key}[]`, String(item)))
         } else {
           formData.append(key, String(value))
         }

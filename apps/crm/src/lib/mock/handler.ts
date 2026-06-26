@@ -530,7 +530,7 @@ export function getMockResponse(config: AxiosRequestConfig): Omit<AxiosResponse,
       const q = params.search as string | undefined
       if (q) list = list.filter((p) => p.nama.toLowerCase().includes(q.toLowerCase()) || p.sku.toLowerCase().includes(q.toLowerCase()))
       if (params.kategori) list = list.filter((p) => p.kategori === params.kategori)
-      if (params.supplierId) list = list.filter((p) => p.supplierId === params.supplierId)
+      if (params.supplierId) list = list.filter((p) => p.supplierIds?.includes(params.supplierId as string))
       // Filter lokasi: hitung ulang stok & statusStok untuk cabang/gudang terpilih
       // (bukan akumulasi global) agar angka stok mencerminkan kuantitas fisik di
       // lokasi tsb. Produk tanpa catatan inventory di lokasi itu dianggap 0/habis.

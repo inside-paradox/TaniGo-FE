@@ -11,6 +11,7 @@ export const produkSchema = z.object({
   tanggalKedaluwarsa: z.string().optional().nullable(),
   thresholdStok: z.number().min(0, 'Threshold stok tidak boleh negatif'),
   statusAktif: z.boolean(),
+  supplierIds: z.array(z.string()),
 })
 
 export type ProdukFormData = z.infer<typeof produkSchema>

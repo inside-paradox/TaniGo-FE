@@ -1,5 +1,6 @@
 export * from './button'
 export * from './combobox'
+export * from './multi-select'
 export * from './input'
 export * from './select'
 export * from './textarea'
