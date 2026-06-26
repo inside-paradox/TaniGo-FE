@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { purchaseOrdersApi } from '@/lib/api'
-import type { CreatePODto, TableParams } from '@/types'
+import type { CreatePODto, UpdatePODto, TableParams } from '@/types'
 
 export const PO_KEY = 'purchase-orders'
 
@@ -39,6 +39,22 @@ export function useCreatePO() {
     },
     onError: (err: { response?: { data?: { message?: string } } }) => {
       toast.error(err.response?.data?.message || 'Gagal membuat Purchase Order')
+    },
+  })
+}
+
+export function useUpdatePO() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, data }: { id: string; data: UpdatePODto }) =>
+      purchaseOrdersApi.update(id, data),
+    onSuccess: (po) => {
+      qc.invalidateQueries({ queryKey: [PO_KEY] })
+      toast.success('Draft PO berhasil diperbarui')
+      return po
+    },
+    onError: (err: { response?: { data?: { message?: string } } }) => {
+      toast.error(err.response?.data?.message || 'Gagal memperbarui draft PO')
     },
   })
 }

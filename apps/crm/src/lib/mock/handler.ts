@@ -155,6 +155,59 @@ function deductInventory(branchId: string, produkId: string, qty: number, now: s
   }
 }
 
+// Nomor PO resmi hanya digenerate saat "Kirim ke Supplier", bukan saat draft.
+function generateNomorPO(): string {
+  const year = new Date().getFullYear()
+  const prefix = `PO-${year}-`
+  const max = purchaseOrders
+    .map((p) => p.nomorPO)
+    .filter((n) => n.startsWith(prefix))
+    .map((n) => parseInt(n.slice(prefix.length), 10))
+    .filter((n) => !Number.isNaN(n))
+    .reduce((m, n) => Math.max(m, n), 0)
+  return `${prefix}${String(max + 1).padStart(3, '0')}`
+}
+
+// Penanda sementara untuk dokumen yang masih draft (belum punya nomor resmi).
+function generateNomorDraft(): string {
+  return `DRAFT-${Math.random().toString(16).slice(2, 10)}`
+}
+
+// Bangun item + kalkulasi finansial PO dari body (dipakai saat create & update draft).
+function buildPOFinansial(body: Record<string, unknown>) {
+  const items = (body.items as Array<{ produkId: string; qtyPesan: number; hargaBeli: number }>).map((item, i) => {
+    const produk = mockProduk.find((p) => p.id === item.produkId)
+    return {
+      id: `poi-new-${i}`,
+      produkId: item.produkId,
+      produkNama: produk?.nama ?? item.produkId,
+      produkSku: produk?.sku ?? '',
+      qtyPesan: item.qtyPesan,
+      qtyDiterima: 0,
+      hargaBeli: item.hargaBeli,
+      subtotal: item.qtyPesan * item.hargaBeli,
+    }
+  })
+  const bt = (body.biayaTambahan as PurchaseOrder['biayaTambahan']) ?? { ongkosKirim: 0, biayaBongkarMuat: 0, upahKurir: 0, lainnya: 0 }
+  const totalHargaBarang = items.reduce((s, i) => s + i.subtotal, 0)
+  const totalBiayaTambahan = (bt.ongkosKirim ?? 0) + (bt.biayaBongkarMuat ?? 0) + (bt.upahKurir ?? 0) + (bt.lainnya ?? 0)
+  const totalKeseluruhan = totalHargaBarang + totalBiayaTambahan
+  const totalQty = items.reduce((s, i) => s + i.qtyPesan, 0)
+  const supplierId = (body.supplierId as string) ?? 'sup-1'
+  const supplierNama = suppliers.find((s) => s.id === supplierId)?.nama ?? 'Supplier Demo'
+  return {
+    items,
+    biayaTambahan: bt,
+    totalHargaBarang,
+    totalBiayaTambahan,
+    totalKeseluruhan,
+    totalQty,
+    hppPerUnit: totalQty > 0 ? Math.round(totalKeseluruhan / totalQty) : 0,
+    supplierId,
+    supplierNama,
+  }
+}
+
 function ok(data: unknown, status = 200): Omit<AxiosResponse, 'config'> {
   // Paginated responses from paginate() already have { data, meta } shape —
   // spread them so the mock matches the real backend envelope: { data: [...], meta: {...} }
@@ -664,44 +717,29 @@ export function getMockResponse(config: AxiosRequestConfig): Omit<AxiosResponse,
       return ok(paginate(applySort(list, params), Number(params.page ?? 1), Number(params.limit ?? 25)))
     }
     if (method === 'post') {
-      const items = (body.items as Array<{ produkId: string; qtyPesan: number; hargaBeli: number }>).map((item, i) => {
-        const produk = mockProduk.find((p) => p.id === item.produkId)
-        return {
-          id: `poi-new-${i}`,
-          produkId: item.produkId,
-          produkNama: produk?.nama ?? item.produkId,
-          produkSku: produk?.sku ?? '',
-          qtyPesan: item.qtyPesan,
-          qtyDiterima: 0,
-          hargaBeli: item.hargaBeli,
-          subtotal: item.qtyPesan * item.hargaBeli,
-        }
-      })
-      const bt = body.biayaTambahan ?? { ongkosKirim: 0, biayaBongkarMuat: 0, upahKurir: 0, lainnya: 0 }
-      const totalBarang = items.reduce((s, i) => s + i.subtotal, 0)
-      const totalBiaya = (bt.ongkosKirim ?? 0) + (bt.biayaBongkarMuat ?? 0) + (bt.upahKurir ?? 0) + (bt.lainnya ?? 0)
-      const totalKeseluruhan = totalBarang + totalBiaya
-      const totalQty = items.reduce((s, i) => s + i.qtyPesan, 0)
+      const f = buildPOFinansial(body)
+      const now = new Date().toISOString()
       const newPO: PurchaseOrder = {
         id: `po-${Date.now()}`,
-        nomorPO: `PO-2026-${String(purchaseOrders.length + 1).padStart(3, '0')}`,
-        supplierId: body.supplierId ?? 'sup-1',
-        supplierNama: 'Supplier Demo',
-        items,
-        biayaTambahan: bt,
-        totalHargaBarang: totalBarang,
-        totalBiayaTambahan: totalBiaya,
-        totalKeseluruhan,
-        hppPerUnit: totalQty > 0 ? Math.round(totalKeseluruhan / totalQty) : 0,
-        totalQty,
+        // Draft belum punya nomor resmi — pakai penanda sementara sampai dikirim ke supplier.
+        nomorPO: generateNomorDraft(),
+        supplierId: f.supplierId,
+        supplierNama: f.supplierNama,
+        items: f.items,
+        biayaTambahan: f.biayaTambahan,
+        totalHargaBarang: f.totalHargaBarang,
+        totalBiayaTambahan: f.totalBiayaTambahan,
+        totalKeseluruhan: f.totalKeseluruhan,
+        hppPerUnit: f.hppPerUnit,
+        totalQty: f.totalQty,
         status: 'Draft',
         statusPembayaran: 'Belum Bayar',
         totalDibayar: 0,
-        sisaHutang: totalKeseluruhan,
+        sisaHutang: f.totalKeseluruhan,
         catatan: body.catatan,
         estimasiTanggalTiba: body.estimasiTanggalTiba,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
+        createdAt: now,
+        updatedAt: now,
       }
       purchaseOrders.push(newPO)
       return ok(newPO, 201)
@@ -726,7 +764,35 @@ export function getMockResponse(config: AxiosRequestConfig): Omit<AxiosResponse,
       const now = new Date().toISOString()
       const po = { ...purchaseOrders[idx] }
 
+      // Edit draft — hanya boleh saat status masih Draft.
+      if (!action && method === 'patch') {
+        if (po.status !== 'Draft') {
+          return ok({ message: 'Hanya PO berstatus Draft yang bisa diedit' }, 422)
+        }
+        const f = buildPOFinansial(body)
+        const updated: PurchaseOrder = {
+          ...po,
+          supplierId: f.supplierId,
+          supplierNama: f.supplierNama,
+          items: f.items,
+          biayaTambahan: f.biayaTambahan,
+          totalHargaBarang: f.totalHargaBarang,
+          totalBiayaTambahan: f.totalBiayaTambahan,
+          totalKeseluruhan: f.totalKeseluruhan,
+          hppPerUnit: f.hppPerUnit,
+          totalQty: f.totalQty,
+          sisaHutang: f.totalKeseluruhan - po.totalDibayar,
+          catatan: (body.catatan as string | undefined) ?? po.catatan,
+          estimasiTanggalTiba: (body.estimasiTanggalTiba as string | undefined) ?? po.estimasiTanggalTiba,
+          updatedAt: now,
+        }
+        purchaseOrders[idx] = updated
+        return ok(updated)
+      }
+
       if (action === 'kirim' && method === 'post') {
+        // Nomor resmi baru digenerate di sini jika PO masih memakai penanda draft.
+        if (po.nomorPO.startsWith('DRAFT-')) po.nomorPO = generateNomorPO()
         po.status = 'Dikirim ke Supplier'
         po.updatedAt = now
         purchaseOrders[idx] = po

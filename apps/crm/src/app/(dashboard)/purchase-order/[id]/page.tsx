@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
-import { ArrowLeft, Send, Package, Ban, CreditCard, AlertCircle } from 'lucide-react'
+import { ArrowLeft, Send, Package, Ban, CreditCard, AlertCircle, Pencil } from 'lucide-react'
 import { PageHeader } from '@/components/shared'
 import {
   Button,
@@ -14,7 +14,6 @@ import {
   Modal,
   ConfirmModal,
   Input,
-  Textarea,
   Select,
 } from '@/components/ui'
 import { InputNominal } from '@/components/ui/input-nominal'
@@ -391,7 +390,10 @@ export default function DetailPOPage() {
     )
   }
 
+  const canEdit = po.status === 'Draft'
   const canKirim = po.status === 'Draft'
+  // Draft belum punya nomor resmi (penanda DRAFT-xxxx) — tampilkan label ramah.
+  const isDraftNomor = po.nomorPO.startsWith('DRAFT-')
   const canGoodsReceipt =
     po.status === 'Dikirim ke Supplier' || po.status === 'Sebagian Diterima'
   const canBatalkan = po.status === 'Draft' || po.status === 'Dikirim ke Supplier'
@@ -401,8 +403,12 @@ export default function DetailPOPage() {
     <div className="space-y-6">
       {/* ===== HEADER ===== */}
       <PageHeader
-        title={po.nomorPO}
-        subtitle={`Dibuat pada ${formatTanggalWaktu(po.createdAt)}`}
+        title={isDraftNomor ? 'Draft Purchase Order' : po.nomorPO}
+        subtitle={
+          isDraftNomor
+            ? `Nomor resmi terbit saat dikirim ke supplier · Dibuat ${formatTanggalWaktu(po.createdAt)}`
+            : `Dibuat pada ${formatTanggalWaktu(po.createdAt)}`
+        }
         actions={
           <Button variant="outline" onClick={() => router.push('/purchase-order')}>
             <ArrowLeft className="h-4 w-4" />
@@ -441,6 +447,12 @@ export default function DetailPOPage() {
 
         {/* Action Buttons */}
         <div className="flex flex-wrap items-center gap-2">
+          {canEdit && (
+            <Button size="sm" variant="outline" onClick={() => router.push(`/purchase-order/baru?id=${id}`)}>
+              <Pencil className="h-4 w-4" />
+              Edit Draft
+            </Button>
+          )}
           {canKirim && (
             <Button size="sm" onClick={() => setShowKirimConfirm(true)}>
               <Send className="h-4 w-4" />
@@ -713,7 +725,7 @@ export default function DetailPOPage() {
           setShowKirimConfirm(false)
         }}
         title="Kirim ke Supplier?"
-        description={`PO ${po.nomorPO} akan dikirimkan ke ${po.supplierNama}. Status akan berubah menjadi "Dikirim ke Supplier".`}
+        description={`PO untuk ${po.supplierNama} akan dikirimkan dan mendapat nomor resmi. Status berubah menjadi "Dikirim ke Supplier".`}
         confirmLabel="Ya, Kirim Sekarang"
         cancelLabel="Batal"
         variant="default"

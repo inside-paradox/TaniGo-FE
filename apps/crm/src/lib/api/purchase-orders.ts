@@ -1,5 +1,5 @@
 import api from './axios'
-import type { PurchaseOrder, CreatePODto, PembayaranPO, PaginatedResponse, TableParams } from '@/types'
+import type { PurchaseOrder, CreatePODto, UpdatePODto, PembayaranPO, PaginatedResponse, TableParams } from '@/types'
 
 export const purchaseOrdersApi = {
   getAll: async (
@@ -16,6 +16,11 @@ export const purchaseOrdersApi = {
 
   create: async (payload: CreatePODto): Promise<PurchaseOrder> => {
     const { data } = await api.post('/purchase-orders', payload)
+    return data.data
+  },
+
+  update: async (id: string, payload: UpdatePODto): Promise<PurchaseOrder> => {
+    const { data } = await api.patch(`/purchase-orders/${id}`, payload)
     return data.data
   },
 

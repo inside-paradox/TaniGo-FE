@@ -1607,11 +1607,23 @@ Create a new purchase order.
 - Compute `hppPerUnit = totalKeseluruhan / totalQty` (round to integer).
 - Set `status = 'Draft'`, `statusPembayaran = 'Belum Bayar'`, `totalDibayar = 0`, `sisaHutang = totalKeseluruhan`.
 - Populate `supplierNama` from supplier FK.
-- Generate `nomorPO`.
+- **Do NOT generate the official `nomorPO` yet.** A draft is a provisional document; assign a temporary marker instead (e.g. `nomorPO = 'DRAFT-' + short uuid`, or leave it blank/`-`). The official sequential number (`PO-YEAR-NNN`) is only issued when the PO is sent to the supplier (see `/kirim`). This prevents gaps/burned numbers from drafts that are later edited or cancelled.
 
 #### `GET /purchase-orders/{id}`
 
 **Response `data`:** `PurchaseOrder`
+
+#### `PATCH /purchase-orders/{id}`
+Edit a Draft purchase order (items, biaya tambahan, supplier, catatan, estimasiTanggalTiba).
+
+**Request body:** Same shape as `POST /purchase-orders`.
+
+**Response `data`:** Updated `PurchaseOrder`
+
+**Business logic:**
+- **Only allowed when `status == 'Draft'`.** Reject with 422 otherwise.
+- Rebuild items and recompute all financial totals exactly as in `POST` (`totalHargaBarang`, `totalBiayaTambahan`, `totalKeseluruhan`, `totalQty`, `hppPerUnit`, `sisaHutang = totalKeseluruhan - totalDibayar`).
+- Keep `id`, `nomorPO` (still the draft marker), `status`, and `createdAt` unchanged; bump `updatedAt`.
 
 #### `POST /purchase-orders/{id}/kirim`
 Send PO to supplier (changes status from Draft).
@@ -1620,7 +1632,9 @@ Send PO to supplier (changes status from Draft).
 
 **Response `data`:** Updated `PurchaseOrder`
 
-**Business logic:** Set `status = 'Dikirim ke Supplier'`.
+**Business logic:**
+- **Generate the official `nomorPO` here** (`PO-YEAR-NNN`, zero-padded sequential) if the PO still carries a draft marker. This is the point the document becomes official.
+- Set `status = 'Dikirim ke Supplier'`.
 
 #### `POST /purchase-orders/{id}/goods-receipt`
 Record goods received against a PO.
@@ -2284,6 +2298,8 @@ Always compute `biaya.total = bbm + upahDriver + tol + lainnya` server-side. Nev
 
 ### 7.13 Nomor Generation (Auto-numbering)
 All entities with human-readable numbers (`nomorPesanan`, `nomorPengiriman`, `nomorTransfer`, `nomorOpname`, `nomorPO`, `nomorStruk`) must be generated server-side. The pattern is `PREFIX-YEAR-NNN` (zero-padded sequential). Use database sequences or row counts with appropriate locking to avoid collisions.
+
+**Defer numbering for draft documents:** the official number must only be issued at the point a document becomes official, not while it is a provisional draft. For `nomorPO` this means generation happens on `/kirim` (transition out of `Draft`), not on create — drafts hold a temporary `DRAFT-…` marker until then. This avoids burning sequential numbers on drafts that get edited or cancelled.
 
 ## 8. Enum / Choice Values Reference
 

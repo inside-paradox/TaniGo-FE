@@ -1,9 +1,9 @@
 'use client'
 
-import { useState, useCallback } from 'react'
-import { useRouter } from 'next/navigation'
+import { Suspense, useState, useCallback } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { useForm, Controller } from 'react-hook-form'
-import { Trash2, Plus, ArrowLeft, Package } from 'lucide-react'
+import { Trash2, Plus, ArrowLeft, Package, AlertCircle } from 'lucide-react'
 import { PageHeader } from '@/components/shared'
 import {
   Button,
@@ -16,11 +16,12 @@ import {
 } from '@/components/ui'
 import { Combobox } from '@/components/ui/combobox'
 import { InputNominal } from '@/components/ui/input-nominal'
+import { Skeleton } from '@/components/ui/skeleton'
 import { useSuppliers } from '@/hooks/use-inventory'
 import { useProducts } from '@/hooks/use-products'
-import { useCreatePO } from '@/hooks/use-purchase-orders'
+import { useCreatePO, useUpdatePO, usePurchaseOrder } from '@/hooks/use-purchase-orders'
 import { formatRupiah } from '@/lib/utils'
-import type { CreatePODto } from '@/types'
+import type { CreatePODto, PurchaseOrder } from '@/types'
 
 interface ItemRow {
   _key: number
@@ -42,9 +43,15 @@ interface FormValues {
 
 let _rowCounter = 1
 
-export default function BuatPOPage() {
+// ─── Form utama (create & edit draft) ────────────────────────────────────────
+// State diinisialisasi dari prop `initialPO` (bukan via effect) agar bebas dari
+// aturan lint setState-in-effect; pemanggil me-remount via `key` saat data siap.
+function POForm({ initialPO }: { initialPO?: PurchaseOrder }) {
   const router = useRouter()
-  const { mutateAsync: createPO, isPending } = useCreatePO()
+  const isEdit = !!initialPO
+  const { mutateAsync: createPO, isPending: isCreating } = useCreatePO()
+  const { mutateAsync: updatePO, isPending: isUpdating } = useUpdatePO()
+  const isPending = isCreating || isUpdating
 
   const { data: suppliersData } = useSuppliers({ page: 1, limit: 100 })
   const { data: productsData } = useProducts({ page: 1, limit: 200 })
@@ -52,9 +59,16 @@ export default function BuatPOPage() {
   const suppliers = suppliersData?.data ?? []
   const products = productsData?.data ?? []
 
-  const [items, setItems] = useState<ItemRow[]>([
-    { _key: 0, produkId: '', qtyPesan: 1, hargaBeli: 0 },
-  ])
+  const [items, setItems] = useState<ItemRow[]>(() =>
+    initialPO
+      ? initialPO.items.map((it) => ({
+          _key: ++_rowCounter,
+          produkId: it.produkId,
+          qtyPesan: it.qtyPesan,
+          hargaBeli: it.hargaBeli,
+        }))
+      : [{ _key: 0, produkId: '', qtyPesan: 1, hargaBeli: 0 }]
+  )
   const [errors, setErrors] = useState<Record<string, string>>({})
 
   const {
@@ -64,14 +78,14 @@ export default function BuatPOPage() {
     control,
   } = useForm<FormValues>({
     defaultValues: {
-      supplierId: '',
-      catatan: '',
-      estimasiTanggalTiba: '',
-      ongkosKirim: 0,
-      biayaBongkarMuat: 0,
-      upahKurir: 0,
-      lainnya: 0,
-      keteranganLainnya: '',
+      supplierId: initialPO?.supplierId ?? '',
+      catatan: initialPO?.catatan ?? '',
+      estimasiTanggalTiba: initialPO?.estimasiTanggalTiba?.slice(0, 10) ?? '',
+      ongkosKirim: initialPO?.biayaTambahan.ongkosKirim ?? 0,
+      biayaBongkarMuat: initialPO?.biayaTambahan.biayaBongkarMuat ?? 0,
+      upahKurir: initialPO?.biayaTambahan.upahKurir ?? 0,
+      lainnya: initialPO?.biayaTambahan.lainnya ?? 0,
+      keteranganLainnya: initialPO?.biayaTambahan.keteranganLainnya ?? '',
     },
   })
 
@@ -164,19 +178,29 @@ export default function BuatPOPage() {
       estimasiTanggalTiba: data.estimasiTanggalTiba || undefined,
     }
 
-    await createPO(payload)
-    router.push('/purchase-order')
+    if (isEdit && initialPO) {
+      await updatePO({ id: initialPO.id, data: payload })
+      router.push(`/purchase-order/${initialPO.id}`)
+    } else {
+      await createPO(payload)
+      router.push('/purchase-order')
+    }
   })
 
   const watchLainnya = watch('lainnya')
+  const cancelHref = isEdit && initialPO ? `/purchase-order/${initialPO.id}` : '/purchase-order'
 
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Buat Purchase Order Baru"
-        subtitle="Isi detail PO untuk dikirimkan ke supplier"
+        title={isEdit ? 'Edit Draft Purchase Order' : 'Buat Purchase Order Baru'}
+        subtitle={
+          isEdit
+            ? 'Ubah item & biaya draft. Nomor resmi tetap belum diterbitkan sampai dikirim ke supplier.'
+            : 'Isi detail PO untuk dikirimkan ke supplier'
+        }
         actions={
-          <Button variant="outline" onClick={() => router.push('/purchase-order')}>
+          <Button variant="outline" onClick={() => router.push(cancelHref)}>
             <ArrowLeft className="h-4 w-4" />
             Kembali
           </Button>
@@ -443,13 +467,13 @@ export default function BuatPOPage() {
                 {/* Tombol aksi */}
                 <div className="mt-6 space-y-2">
                   <Button type="submit" className="w-full" loading={isPending}>
-                    Simpan sebagai Draft
+                    {isEdit ? 'Simpan Perubahan' : 'Simpan sebagai Draft'}
                   </Button>
                   <Button
                     type="button"
                     variant="outline"
                     className="w-full"
-                    onClick={() => router.push('/purchase-order')}
+                    onClick={() => router.push(cancelHref)}
                     disabled={isPending}
                   >
                     Batal
@@ -461,5 +485,59 @@ export default function BuatPOPage() {
         </div>
       </form>
     </div>
+  )
+}
+
+// ─── Loader: ambil draft saat mode edit, lalu mount form dengan key ──────────
+function BuatPOContent() {
+  const router = useRouter()
+  const searchParams = useSearchParams()
+  const editId = searchParams.get('id') ?? ''
+  const { data: po, isLoading } = usePurchaseOrder(editId)
+
+  if (editId && isLoading) {
+    return (
+      <div className="space-y-4">
+        <Skeleton className="h-64 w-full rounded-xl" />
+        <Skeleton className="h-40 w-full rounded-xl" />
+      </div>
+    )
+  }
+
+  // Hanya draft yang boleh diedit; selain itu kembalikan ke detail.
+  if (editId && (!po || po.status !== 'Draft')) {
+    return (
+      <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-gray-200 py-24 text-center">
+        <AlertCircle className="mb-3 h-10 w-10 text-gray-300" />
+        <p className="text-sm font-medium text-gray-500">
+          {po ? 'Hanya PO berstatus Draft yang dapat diedit' : 'Purchase Order tidak ditemukan'}
+        </p>
+        <Button
+          variant="outline"
+          size="sm"
+          className="mt-4"
+          onClick={() => router.push(editId ? `/purchase-order/${editId}` : '/purchase-order')}
+        >
+          Kembali
+        </Button>
+      </div>
+    )
+  }
+
+  return <POForm key={editId || 'new'} initialPO={editId ? po : undefined} />
+}
+
+export default function BuatPOPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="space-y-4">
+          <Skeleton className="h-64 w-full rounded-xl" />
+          <Skeleton className="h-40 w-full rounded-xl" />
+        </div>
+      }
+    >
+      <BuatPOContent />
+    </Suspense>
   )
 }

@@ -64,3 +64,6 @@ export interface CreatePODto {
   catatan?: string
   estimasiTanggalTiba?: string
 }
+
+// Edit draft memakai payload yang sama dengan create.
+export type UpdatePODto = CreatePODto
