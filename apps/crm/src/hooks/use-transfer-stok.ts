@@ -1,4 +1,4 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useQuery, useMutation, useQueryClient, type QueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { transferStokApi } from '@/lib/api'
 import type {
@@ -39,8 +39,9 @@ function actionableKeys(user: User | null | undefined, transfers: TransferStok[]
 /** Error backend yang berarti "endpoint badge belum tersedia" → harus fallback ke klien. */
 function isBadgeEndpointUnsupported(err: unknown): boolean {
   const status = (err as { response?: { status?: number } })?.response?.status
-  // 404/501 = belum diimplementasi; tanpa response = network/CORS (mis. backend lama).
-  return status === 404 || status === 501 || !(err as { response?: unknown })?.response
+  // 400/404/501 = belum diimplementasi / kontrak belum siap;
+  // tanpa response = network/CORS (mis. backend lama).
+  return status === 400 || status === 404 || status === 501 || !(err as { response?: unknown })?.response
 }
 
 type BadgeData =
@@ -48,19 +49,64 @@ type BadgeData =
   | { mode: 'client'; transfers: TransferStok[] }
 
 /**
- * Mengambil data badge. Coba endpoint server-side dulu; bila belum didukung
- * (404/network, atau mode demo yang mengembalikan count non-numerik), fallback
- * mengambil daftar transfer untuk dihitung di klien.
+ * Memo level-sesi untuk badge. Tujuannya menghentikan tiga gejala bug:
+ * - `serverBadgeSupported` mengunci mode (server↔klien) agar tidak berganti tiap
+ *   refetch/focus. Mode yang bolak-balik membuat sumber hitungan berbeda →
+ *   badge berkedip (state fluctuation) dan memicu acknowledge berulang.
+ *   Sticky satu arah: sekali server-mode aktif, blip jaringan sementara tidak
+ *   menurunkannya ke klien (React Query mempertahankan data terakhir).
+ * - `acknowledgeBroken` mematikan acknowledge setelah gagal sekali (mis. 400)
+ *   agar tidak dipanggil berulang (auto-looping).
  */
-async function fetchBadgeData(): Promise<BadgeData> {
-  try {
-    const count = await transferStokApi.getBadgeCount()
-    if (typeof count === 'number') return { mode: 'server', count }
-  } catch (err) {
-    if (!isBadgeEndpointUnsupported(err)) throw err
-  }
+let serverBadgeSupported: boolean | null = null
+let acknowledgeBroken = false
+
+async function fetchClientBadge(): Promise<BadgeData> {
   const list = await transferStokApi.getAll({ page: 1, limit: 200 })
   return { mode: 'client', transfers: list.data }
+}
+
+/**
+ * Mengambil data badge. Coba endpoint server-side dulu; bila belum didukung
+ * (400/404/network, atau mode demo yang mengembalikan count non-numerik),
+ * kunci ke mode klien untuk sisa sesi dan hitung dari daftar transfer.
+ */
+async function fetchBadgeData(): Promise<BadgeData> {
+  if (serverBadgeSupported === false) return fetchClientBadge()
+
+  try {
+    const count = await transferStokApi.getBadgeCount()
+    if (typeof count === 'number') {
+      serverBadgeSupported = true
+      return { mode: 'server', count }
+    }
+    // Endpoint menjawab tapi bukan angka (mis. mode demo) → kunci ke klien.
+    serverBadgeSupported = false
+    return fetchClientBadge()
+  } catch (err) {
+    // Sudah server-mode: jangan flap karena blip sementara — biarkan error agar
+    // React Query menahan data terakhir yang valid.
+    if (serverBadgeSupported === true) throw err
+    if (!isBadgeEndpointUnsupported(err)) throw err
+    serverBadgeSupported = false
+    return fetchClientBadge()
+  }
+}
+
+/**
+ * Acknowledge badge ke backend saat user membuka halaman Transfer Stok.
+ * Hanya berlaku di server-mode. Best-effort: bila gagal (mis. 400 karena kontrak
+ * backend belum siap) endpoint dimatikan untuk sesi ini agar tidak dipanggil
+ * berulang kali. Hanya menyegarkan query badge, bukan seluruh daftar transfer.
+ */
+export async function acknowledgeTransferBadge(qc: QueryClient): Promise<void> {
+  if (acknowledgeBroken || serverBadgeSupported !== true) return
+  try {
+    await transferStokApi.acknowledge()
+    qc.invalidateQueries({ queryKey: [TRANSFER_STOK_KEY, 'badge'] })
+  } catch {
+    acknowledgeBroken = true
+  }
 }
 
 export function useTransferStokList(params: TableParams & { status?: string }) {

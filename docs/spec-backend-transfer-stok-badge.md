@@ -76,3 +76,28 @@ perlu perubahan kode saat backend mengaktifkan endpoint:
 
 Begitu backend men-deploy kedua endpoint, mode server aktif otomatis dan
 `transfer-ack-store` (penyimpanan lokal) berhenti dipakai dengan sendirinya.
+
+## Syarat Ketahanan (wajib dipenuhi backend)
+
+Tiga gejala bug pernah muncul saat endpoint backend tidak stabil: badge muncul
+padahal tak ada permintaan baru (false trigger), `POST /acknowledge` dipanggil
+berulang menghasilkan **400** beruntun (auto-loop), dan badge berkedip
+muncul-hilang (state fluctuation). Akarnya: frontend dulu memutuskan ulang
+server-vs-klien tiap refetch (30 dtk) sehingga mode **berganti-ganti** dan setiap
+peralihan memicu acknowledge lagi.
+
+Frontend kini menambal ini (mode dikunci per sesi + acknowledge dimatikan setelah
+gagal sekali — lihat `serverBadgeSupported`/`acknowledgeBroken` di
+`hooks/use-transfer-stok.ts`). Agar mode server berfungsi penuh, backend **harus**:
+
+1. **`GET /transfer-stok/badge-count` deterministik & stabil.** Selalu balas
+   `{ data: { count: <integer> } }`. Jangan balas 400/500 untuk request normal —
+   error (selain 401) membuat frontend mengunci ke mode klien untuk sesi itu.
+2. **`POST /transfer-stok/acknowledge` idempoten & selalu 2xx** untuk request
+   valid (body kosong). Bila endpoint mengembalikan **400**, frontend
+   menonaktifkannya untuk sesi tersebut (badge tak lagi auto-clear di server).
+   Jadi pastikan acknowledge tidak mensyaratkan body/param yang tidak dikirim.
+3. **`count` konsisten dengan efek `acknowledge`.** Setelah acknowledge sukses,
+   `badge-count` berikutnya harus mengecualikan dokumen yang baru di-ack
+   (key `(user_id, transfer_id, status)`), agar badge benar-benar turun dan tidak
+   "false trigger".

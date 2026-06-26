@@ -14,8 +14,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { useAuthStore } from '@/store/auth-store'
-import { useTransferStokList, useTransferStokBadge, TRANSFER_STOK_KEY } from '@/hooks/use-transfer-stok'
-import { transferStokApi } from '@/lib/api'
+import { useTransferStokList, useTransferStokBadge, acknowledgeTransferBadge } from '@/hooks/use-transfer-stok'
 import { useTransferAckStore } from '@/store/transfer-ack-store'
 import { formatTanggalWaktu } from '@/lib/utils'
 import type { TransferStok, StatusTransferStok } from '@/types'
@@ -105,14 +104,11 @@ export default function TransferStokPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [actionableKey, markSeen])
 
-  // Mode server: acknowledge ke backend lalu segarkan badge. Best-effort —
-  // kegagalan diabaikan agar halaman tetap berfungsi.
+  // Mode server: acknowledge ke backend (sekali per sesi, dimatikan bila gagal —
+  // lihat acknowledgeTransferBadge). `serverMode` terkunci sehingga effect ini
+  // tidak terpicu berulang oleh flap mode.
   useEffect(() => {
-    if (!serverMode) return
-    transferStokApi
-      .acknowledge()
-      .then(() => qc.invalidateQueries({ queryKey: [TRANSFER_STOK_KEY] }))
-      .catch(() => {})
+    if (serverMode) acknowledgeTransferBadge(qc)
   }, [serverMode, qc])
 
   const [page, setPage] = useState(1)

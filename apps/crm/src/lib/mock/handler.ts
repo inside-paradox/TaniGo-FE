@@ -576,6 +576,17 @@ export function getMockResponse(config: AxiosRequestConfig): Omit<AxiosResponse,
     }
   }
 
+  // Badge endpoints — ditangani eksplisit SEBELUM regex id/aksi di bawah, supaya
+  // 'badge-count'/'acknowledge' tidak disalahartikan sebagai ID transfer.
+  // Mode demo sengaja mengembalikan count non-numerik agar badge dihitung di
+  // klien (sumber kebenaran tunggal di demo); acknowledge cukup no-op 200.
+  if (rawUrl === '/transfer-stok/badge-count' && method === 'get') {
+    return ok({ count: null })
+  }
+  if (rawUrl === '/transfer-stok/acknowledge' && method === 'post') {
+    return ok({ acknowledged: 0 })
+  }
+
   const tsActionMatch = matchPath(rawUrl, /^\/transfer-stok\/([^/]+)(?:\/(.+))?$/)
   if (tsActionMatch) {
     const id = tsActionMatch[1]
