@@ -32,8 +32,11 @@ export const ROUTE_ACCESS: RouteAccess[] = [
   { href: '/audit-log',      roles: ['admin'] },
   { href: '/pengaturan',     roles: ['admin', 'manajer'] },
 
+  // ── Inventori — semua tipe cabang. Halaman menyesuaikan tampilan via flag
+  //    isGudang (toko: tanpa tab Supplier, hanya monitor stok & pergerakan). ──
+  { href: '/inventori',      roles: ['admin', 'manajer', 'staf_gudang'] },
+
   // ── Gudang only — superadmin tidak perlu akses operasional per cabang ──
-  { href: '/inventori',      roles: ['admin', 'manajer', 'staf_gudang'], tipeCabang: ['gudang'] },
   { href: '/purchase-order', roles: ['admin', 'manajer', 'staf_gudang'], tipeCabang: ['gudang'] },
 
   // ── Toko only — admin tidak termasuk (admin hanya di gudang) ──
