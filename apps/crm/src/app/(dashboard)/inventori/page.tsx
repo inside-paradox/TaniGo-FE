@@ -1,30 +1,25 @@
 'use client'
 
 import { useState } from 'react'
-import { Plus, Package, AlertTriangle, XCircle, CalendarClock, History, Truck } from 'lucide-react'
+import { Package, AlertTriangle, XCircle, CalendarClock, History } from 'lucide-react'
 import type { SortingState } from '@tanstack/react-table'
 import type { ColumnDef } from '@tanstack/react-table'
 import { PageHeader } from '@/components/shared/page-header'
 import { DataTable } from '@/components/shared/data-table'
 import { Pagination } from '@/components/shared/pagination'
 import { SearchInput } from '@/components/shared/search-input'
-import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
-import { ConfirmModal } from '@/components/ui/modal'
-import { SupplierForm } from '@/components/inventori/supplier-form'
 import {
   useDashboardInventori,
   usePergerakanStok,
-  useSuppliers,
-  useDeleteSupplier,
 } from '@/hooks/use-inventory'
 import { useAuthStore } from '@/store/auth-store'
-import { formatTanggalWaktu, formatTanggal } from '@/lib/utils'
-import type { PergerakanStok, Supplier } from '@/types'
+import { formatTanggalWaktu } from '@/lib/utils'
+import type { PergerakanStok } from '@/types'
 
-type TabKey = 'stok' | 'riwayat' | 'supplier'
+type TabKey = 'stok' | 'riwayat'
 
 function StatCard({
   icon,
@@ -143,58 +138,14 @@ function getPergerakanColumns(showLokasi: boolean): ColumnDef<PergerakanStok>[] 
   ]
 }
 
-function getSupplierColumns(
-  onEdit: (s: Supplier) => void,
-  onDelete: (s: Supplier) => void
-): ColumnDef<Supplier>[] {
-  return [
-    {
-      accessorKey: 'nama',
-      header: 'Nama Supplier',
-      cell: ({ getValue }) => <span className="font-medium text-gray-900">{getValue<string>()}</span>,
-    },
-    {
-      accessorKey: 'kontak',
-      header: 'Kontak',
-      cell: ({ getValue }) => <span className="text-sm text-gray-600">{getValue<string>()}</span>,
-    },
-    {
-      accessorKey: 'alamat',
-      header: 'Alamat',
-      cell: ({ getValue }) => <span className="text-sm text-gray-600">{getValue<string>()}</span>,
-    },
-    {
-      accessorKey: 'createdAt',
-      header: 'Bergabung',
-      cell: ({ getValue }) => <span className="text-sm text-gray-500">{formatTanggal(getValue<string>())}</span>,
-    },
-    {
-      id: 'aksi',
-      header: '',
-      cell: ({ row }) => (
-        <div className="flex items-center justify-end gap-2">
-          <Button size="sm" variant="ghost" onClick={() => onEdit(row.original)}>Edit</Button>
-          <Button size="sm" variant="ghost" className="text-red-500 hover:text-red-700" onClick={() => onDelete(row.original)}>Hapus</Button>
-        </div>
-      ),
-    },
-  ]
-}
-
 export default function InventoriPage() {
   const { user } = useAuthStore()
-  const isGudang = user?.tipeCabang === 'gudang' || user?.role === 'superadmin'
   const isSuperadmin = user?.role === 'superadmin'
 
   const [tab, setTab] = useState<TabKey>('stok')
-  const [supplierFormOpen, setSupplierFormOpen] = useState(false)
-  const [editSupplier, setEditSupplier] = useState<Supplier | null>(null)
-  const [deleteSupplier, setDeleteSupplier] = useState<Supplier | null>(null)
   const [riwayatPage, setRiwayatPage] = useState(1)
   const [riwayatSearch, setRiwayatSearch] = useState('')
   const [riwayatSorting, setRiwayatSorting] = useState<SortingState>([])
-  const [supplierPage, setSupplierPage] = useState(1)
-  const [supplierSearch, setSupplierSearch] = useState('')
 
   const { data: dashboard, isLoading: dashLoading } = useDashboardInventori()
   const { data: riwayat, isLoading: riwayatLoading } = usePergerakanStok({
@@ -204,24 +155,17 @@ export default function InventoriPage() {
     sortBy: riwayatSorting[0]?.id,
     sortOrder: riwayatSorting[0] ? (riwayatSorting[0].desc ? 'desc' : 'asc') : undefined,
   })
-  const { data: suppliers, isLoading: suppliersLoading } = useSuppliers({
-    page: supplierPage,
-    limit: 25,
-    search: supplierSearch || undefined,
-  })
-  const deleteMutation = useDeleteSupplier()
 
   const TABS: { key: TabKey; label: string; icon: React.ReactNode }[] = [
     { key: 'stok', label: 'Dashboard Stok', icon: <Package className="h-4 w-4" /> },
     { key: 'riwayat', label: 'Riwayat Pergerakan', icon: <History className="h-4 w-4" /> },
-    ...(isGudang ? [{ key: 'supplier' as TabKey, label: 'Supplier', icon: <Truck className="h-4 w-4" /> }] : []),
   ]
 
   return (
     <div className="space-y-6">
       <PageHeader
         title="Manajemen Inventori"
-        subtitle={isGudang ? 'Monitor stok, pergerakan barang, dan supplier' : 'Monitor stok dan pergerakan barang'}
+        subtitle="Monitor stok dan pergerakan barang"
       />
 
       <div className="flex border-b border-gray-200">
@@ -269,13 +213,12 @@ export default function InventoriPage() {
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 {[
                   { icon: <History className="h-5 w-5 text-blue-600" />, bg: 'bg-blue-100', label: 'Riwayat Pergerakan', desc: 'Lacak masuk & keluar barang', action: () => setTab('riwayat'), hover: 'hover:border-blue-300 hover:bg-blue-50' },
-                  isGudang ? { icon: <Truck className="h-5 w-5 text-purple-600" />, bg: 'bg-purple-100', label: 'Manajemen Supplier', desc: 'Kelola data supplier', action: () => setTab('supplier'), hover: 'hover:border-purple-300 hover:bg-purple-50' } : null,
-                ].filter(Boolean).map((item) => (
-                  <button key={item!.label} onClick={item!.action} className={`flex items-center gap-3 rounded-xl border border-gray-200 bg-white p-4 text-left ${item!.hover} transition-colors`}>
-                    <div className={`rounded-lg ${item!.bg} p-2`}>{item!.icon}</div>
+                ].map((item) => (
+                  <button key={item.label} onClick={item.action} className={`flex items-center gap-3 rounded-xl border border-gray-200 bg-white p-4 text-left ${item.hover} transition-colors`}>
+                    <div className={`rounded-lg ${item.bg} p-2`}>{item.icon}</div>
                     <div>
-                      <p className="font-medium text-gray-900">{item!.label}</p>
-                      <p className="text-xs text-gray-500">{item!.desc}</p>
+                      <p className="font-medium text-gray-900">{item.label}</p>
+                      <p className="text-xs text-gray-500">{item.desc}</p>
                     </div>
                   </button>
                 ))}
@@ -306,46 +249,6 @@ export default function InventoriPage() {
         </Card>
       )}
 
-      {tab === 'supplier' && (
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <SearchInput value={supplierSearch} onChange={(v) => { setSupplierSearch(v); setSupplierPage(1) }} placeholder="Cari supplier..." className="w-full sm:w-72" />
-            <Button onClick={() => { setEditSupplier(null); setSupplierFormOpen(true) }}>
-              <Plus className="h-4 w-4" />
-              Tambah Supplier
-            </Button>
-          </div>
-          <Card>
-            <div className="p-4 sm:p-6">
-              <DataTable
-                columns={getSupplierColumns(
-                  (s) => { setEditSupplier(s); setSupplierFormOpen(true) },
-                  (s) => setDeleteSupplier(s)
-                )}
-                data={suppliers?.data ?? []}
-                loading={suppliersLoading}
-                emptyText="Belum ada supplier"
-              />
-              {suppliers && suppliers.meta.total > 0 && (
-                <Pagination page={supplierPage} totalPages={suppliers.meta.totalPages} total={suppliers.meta.total} limit={25} onPageChange={setSupplierPage} />
-              )}
-            </div>
-          </Card>
-        </div>
-      )}
-
-      <SupplierForm open={supplierFormOpen} onClose={() => { setSupplierFormOpen(false); setEditSupplier(null) }} supplier={editSupplier} />
-      <ConfirmModal
-        open={!!deleteSupplier}
-        onClose={() => setDeleteSupplier(null)}
-        onConfirm={async () => {
-          if (deleteSupplier) { await deleteMutation.mutateAsync(deleteSupplier.id); setDeleteSupplier(null) }
-        }}
-        title="Hapus Supplier"
-        description={`Yakin ingin menghapus supplier "${deleteSupplier?.nama}"?`}
-        confirmLabel="Ya, Hapus"
-        loading={deleteMutation.isPending}
-      />
     </div>
   )
 }

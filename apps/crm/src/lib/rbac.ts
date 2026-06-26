@@ -38,6 +38,7 @@ export const ROUTE_ACCESS: RouteAccess[] = [
 
   // ── Gudang only — superadmin tidak perlu akses operasional per cabang ──
   { href: '/purchase-order', roles: ['admin', 'manajer', 'staf_gudang'], tipeCabang: ['gudang'] },
+  { href: '/supplier',       roles: ['admin', 'manajer', 'staf_gudang'], tipeCabang: ['gudang'] },
 
   // ── Toko only — admin tidak termasuk (admin hanya di gudang) ──
   { href: '/denah-toko',     roles: ['manajer'],          tipeCabang: ['toko'] },
