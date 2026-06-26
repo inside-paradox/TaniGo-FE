@@ -531,6 +531,7 @@ export function getMockResponse(config: AxiosRequestConfig): Omit<AxiosResponse,
       if (q) list = list.filter((p) => p.nama.toLowerCase().includes(q.toLowerCase()) || p.sku.toLowerCase().includes(q.toLowerCase()))
       if (params.kategori) list = list.filter((p) => p.kategori === params.kategori)
       if (params.statusStok) list = list.filter((p) => p.statusStok === params.statusStok)
+      if (params.supplierId) list = list.filter((p) => p.supplierId === params.supplierId)
       return ok(paginate(applySort(list, params), Number(params.page ?? 1), Number(params.limit ?? 25)))
     }
   }

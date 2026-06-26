@@ -920,10 +920,15 @@ List all products (paginated).
 | `kategori` | KategoriProduk | Filter by category |
 | `statusStok` | `'normal'` \| `'menipis'` \| `'habis'` | Filter by stock status |
 | `satuan` | string | Filter by unit |
+| `supplierId` | string | Filter by related supplier (dependent dropdown produk di PO) |
 | `page` | integer | |
 | `limit` | integer | |
 
 **Response `data`:** `PaginatedResponse<Produk>`
+
+> Dropdown produk pada Buat PO memakai `?supplierId=&search=` (server-side, debounced) agar
+> daftar dikerucutkan per supplier dan seluruh master data dapat ditelusuri tanpa truncation.
+> Detail: `docs/spec-backend-po-produk-filter-supplier.md`.
 
 #### `POST /products`
 Create a new product.

@@ -43,4 +43,6 @@ export interface ProdukFilter {
   statusStok?: StatusStok
   satuan?: string
   search?: string
+  /** Filter produk berdasarkan relasi supplier (dipakai dropdown produk di PO). */
+  supplierId?: string
 }

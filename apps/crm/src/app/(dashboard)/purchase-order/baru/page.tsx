@@ -15,17 +15,19 @@ import {
   Textarea,
 } from '@/components/ui'
 import { Combobox } from '@/components/ui/combobox'
+import { ProdukCombobox } from '@/components/purchase-order/produk-combobox'
 import { InputNominal } from '@/components/ui/input-nominal'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useSuppliers } from '@/hooks/use-inventory'
-import { useProducts } from '@/hooks/use-products'
 import { useCreatePO, useUpdatePO, usePurchaseOrder } from '@/hooks/use-purchase-orders'
 import { formatRupiah } from '@/lib/utils'
-import type { CreatePODto, PurchaseOrder } from '@/types'
+import type { CreatePODto, Produk, PurchaseOrder } from '@/types'
 
 interface ItemRow {
   _key: number
   produkId: string
+  /** Label produk (`[SKU] Nama`) untuk ditampilkan tanpa memuat ulang katalog. */
+  produkLabel: string
   qtyPesan: number
   hargaBeli: number
 }
@@ -54,20 +56,19 @@ function POForm({ initialPO }: { initialPO?: PurchaseOrder }) {
   const isPending = isCreating || isUpdating
 
   const { data: suppliersData } = useSuppliers({ page: 1, limit: 100 })
-  const { data: productsData } = useProducts({ page: 1, limit: 200 })
 
   const suppliers = suppliersData?.data ?? []
-  const products = productsData?.data ?? []
 
   const [items, setItems] = useState<ItemRow[]>(() =>
     initialPO
       ? initialPO.items.map((it) => ({
           _key: ++_rowCounter,
           produkId: it.produkId,
+          produkLabel: `[${it.produkSku}] ${it.produkNama}`,
           qtyPesan: it.qtyPesan,
           hargaBeli: it.hargaBeli,
         }))
-      : [{ _key: 0, produkId: '', qtyPesan: 1, hargaBeli: 0 }]
+      : [{ _key: 0, produkId: '', produkLabel: '', qtyPesan: 1, hargaBeli: 0 }]
   )
   const [errors, setErrors] = useState<Record<string, string>>({})
 
@@ -90,11 +91,12 @@ function POForm({ initialPO }: { initialPO?: PurchaseOrder }) {
   })
 
   const watchedBiaya = watch(['ongkosKirim', 'biayaBongkarMuat', 'upahKurir', 'lainnya'])
+  const supplierId = watch('supplierId')
 
   const addItem = useCallback(() => {
     setItems((prev) => [
       ...prev,
-      { _key: ++_rowCounter, produkId: '', qtyPesan: 1, hargaBeli: 0 },
+      { _key: ++_rowCounter, produkId: '', produkLabel: '', qtyPesan: 1, hargaBeli: 0 },
     ])
   }, [])
 
@@ -104,20 +106,37 @@ function POForm({ initialPO }: { initialPO?: PurchaseOrder }) {
 
   const updateItem = useCallback(
     <K extends keyof Omit<ItemRow, '_key'>>(key: number, field: K, value: ItemRow[K]) => {
-      setItems((prev) =>
-        prev.map((r) => {
-          if (r._key !== key) return r
-          const updated = { ...r, [field]: value }
-          // auto-fill hargaBeli when product is selected
-          if (field === 'produkId') {
-            const produk = products.find((p) => p.id === (value as string))
-            if (produk) updated.hargaBeli = produk.hargaBeli
-          }
-          return updated
-        })
-      )
+      setItems((prev) => prev.map((r) => (r._key === key ? { ...r, [field]: value } : r)))
     },
-    [products]
+    []
+  )
+
+  // Pemilihan produk membawa objek Produk lengkap (dropdown server-side):
+  // set id + label + auto-fill harga beli sekaligus.
+  const selectProduct = useCallback((key: number, produk: Produk | null) => {
+    setItems((prev) =>
+      prev.map((r) =>
+        r._key === key
+          ? {
+              ...r,
+              produkId: produk?.id ?? '',
+              produkLabel: produk ? `[${produk.sku}] ${produk.nama}` : '',
+              hargaBeli: produk ? produk.hargaBeli : r.hargaBeli,
+            }
+          : r
+      )
+    )
+  }, [])
+
+  // Ganti supplier → produk pada item lama tak lagi relevan; reset ke satu baris kosong.
+  const handleSupplierChange = useCallback(
+    (next: string, current: string, onChange: (v: string) => void) => {
+      onChange(next)
+      if (next !== current) {
+        setItems([{ _key: ++_rowCounter, produkId: '', produkLabel: '', qtyPesan: 1, hargaBeli: 0 }])
+      }
+    },
+    []
   )
 
   // ---- Kalkulasi ----
@@ -230,7 +249,7 @@ function POForm({ initialPO }: { initialPO?: PurchaseOrder }) {
                           placeholder="Cari supplier..."
                           options={suppliers}
                           value={field.value}
-                          onChange={field.onChange}
+                          onChange={(v) => handleSupplierChange(v, field.value, field.onChange)}
                           getOptionValue={(s) => s.id}
                           getOptionLabel={(s) => s.nama}
                           error={errors.supplierId}
@@ -294,13 +313,11 @@ function POForm({ initialPO }: { initialPO?: PurchaseOrder }) {
                       >
                         {/* Produk */}
                         <div className="col-span-3 mb-2 sm:mb-0">
-                          <Combobox
-                            placeholder="Cari produk..."
-                            options={products}
+                          <ProdukCombobox
+                            supplierId={supplierId}
                             value={item.produkId}
-                            onChange={(v) => updateItem(item._key, 'produkId', v)}
-                            getOptionValue={(p) => p.id}
-                            getOptionLabel={(p) => `[${p.sku}] ${p.nama}`}
+                            selectedLabel={item.produkLabel}
+                            onChange={(produk) => selectProduct(item._key, produk)}
                             error={errors[`item_${idx}_produk`]}
                           />
                         </div>

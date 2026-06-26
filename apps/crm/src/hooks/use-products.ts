@@ -5,11 +5,15 @@ import type { CreateProdukDto, UpdateProdukDto, ProdukFilter, TableParams } from
 
 export const PRODUCTS_KEY = 'products'
 
-export function useProducts(params: TableParams & ProdukFilter) {
+export function useProducts(
+  params: TableParams & ProdukFilter,
+  options?: { enabled?: boolean }
+) {
   return useQuery({
     queryKey: [PRODUCTS_KEY, params],
     queryFn: () => productsApi.getAll(params),
     placeholderData: (prev) => prev,
+    enabled: options?.enabled,
   })
 }
 
