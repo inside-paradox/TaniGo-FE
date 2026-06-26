@@ -1,8 +1,9 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
+import { useQueryClient } from '@tanstack/react-query'
 import { Plus } from 'lucide-react'
 import type { ColumnDef, SortingState } from '@tanstack/react-table'
 import { PageHeader } from '@/components/shared/page-header'
@@ -13,7 +14,9 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { useAuthStore } from '@/store/auth-store'
-import { useTransferStokList } from '@/hooks/use-transfer-stok'
+import { useTransferStokList, useTransferStokBadge, TRANSFER_STOK_KEY } from '@/hooks/use-transfer-stok'
+import { transferStokApi } from '@/lib/api'
+import { useTransferAckStore } from '@/store/transfer-ack-store'
 import { formatTanggalWaktu } from '@/lib/utils'
 import type { TransferStok, StatusTransferStok } from '@/types'
 
@@ -88,6 +91,29 @@ export default function TransferStokPage() {
   const router = useRouter()
   const { user } = useAuthStore()
   const isGudang = user?.tipeCabang === 'gudang' || user?.role === 'staf_gudang'
+
+  // Membuka halaman ini menandai dokumen actionable sebagai sudah dibaca,
+  // sehingga badge di sidebar otomatis berkurang/hilang.
+  const qc = useQueryClient()
+  const { keys: actionableKeys, serverMode } = useTransferStokBadge()
+  const markSeen = useTransferAckStore((s) => s.markSeen)
+
+  // Mode klien: simpan status "dibaca" secara lokal dari daftar key actionable.
+  const actionableKey = actionableKeys.join('|')
+  useEffect(() => {
+    if (actionableKeys.length > 0) markSeen(actionableKeys)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [actionableKey, markSeen])
+
+  // Mode server: acknowledge ke backend lalu segarkan badge. Best-effort —
+  // kegagalan diabaikan agar halaman tetap berfungsi.
+  useEffect(() => {
+    if (!serverMode) return
+    transferStokApi
+      .acknowledge()
+      .then(() => qc.invalidateQueries({ queryKey: [TRANSFER_STOK_KEY] }))
+      .catch(() => {})
+  }, [serverMode, qc])
 
   const [page, setPage] = useState(1)
   const [limit, setLimit] = useState(25)

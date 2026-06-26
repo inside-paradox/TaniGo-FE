@@ -21,6 +21,22 @@ export const transferStokApi = {
     return data.data
   },
 
+  /**
+   * Jumlah dokumen yang butuh perhatian user (badge sidebar), dihitung server-side
+   * berdasarkan role. Mengembalikan `null` bila backend belum menyediakan endpoint
+   * (mis. mode demo / belum dideploy) — pemanggil wajib fallback ke perhitungan klien.
+   */
+  getBadgeCount: async (): Promise<number | null> => {
+    const { data } = await api.get('/transfer-stok/badge-count')
+    const count = data?.data?.count
+    return typeof count === 'number' ? count : null
+  },
+
+  /** Menandai semua dokumen actionable user sebagai sudah dibaca (best-effort). */
+  acknowledge: async (): Promise<void> => {
+    await api.post('/transfer-stok/acknowledge')
+  },
+
   create: async (payload: CreateTransferStokDto): Promise<TransferStok> => {
     const { data } = await api.post('/transfer-stok', payload)
     return data.data

@@ -27,6 +27,7 @@ import { useUIStore } from '@/store/ui-store'
 import { useAuthStore } from '@/store/auth-store'
 import { canAccess } from '@/lib/rbac'
 import { useNotifications } from '@/hooks/use-notifications'
+import { useTransferStokBadge } from '@/hooks/use-transfer-stok'
 
 interface NavItem {
   href: string
@@ -58,10 +59,17 @@ export function Sidebar() {
   const { sidebarCollapsed, toggleSidebar } = useUIStore()
   const { user } = useAuthStore()
   const { data: notifikasi = [] } = useNotifications()
+  const { count: transferCount } = useTransferStokBadge()
 
   const unreadCount = user
     ? notifikasi.filter((n) => !n.readByUserIds.includes(user.id)).length
     : 0
+
+  /** Jumlah badge per menu (0 = tanpa badge). */
+  const badgeCounts: Record<string, number> = {
+    '/notifikasi': unreadCount,
+    '/transfer-stok': transferCount,
+  }
 
   const visibleItems = navItems.filter((item) => canAccess(user, item.href))
 
@@ -106,8 +114,8 @@ export function Sidebar() {
         <ul className="space-y-1 px-2">
           {visibleItems.map((item) => {
             const isActive = pathname === item.href || pathname.startsWith(item.href + '/')
-            const isNotifikasi = item.href === '/notifikasi'
-            const showBadge = isNotifikasi && unreadCount > 0
+            const badgeCount = badgeCounts[item.href] ?? 0
+            const showBadge = badgeCount > 0
             return (
               <li key={item.href}>
                 <Link
@@ -132,7 +140,7 @@ export function Sidebar() {
                       <span className="flex-1">{item.label}</span>
                       {showBadge && (
                         <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white">
-                          {unreadCount > 9 ? '9+' : unreadCount}
+                          {badgeCount > 9 ? '9+' : badgeCount}
                         </span>
                       )}
                     </>
