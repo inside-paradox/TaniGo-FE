@@ -1451,6 +1451,36 @@ Confirm receipt of transferred goods (toko confirms).
 - **Add `qtyDiterima` to toko's `CabangInventory`** for each item where `qtyDiterima > 0`.
 - Record `PergerakanStok` entries for each addition (jenis = 'masuk', referensi = nomorTransfer).
 
+#### `GET /transfer-stok/badge-count`
+Count of transfer documents needing the authenticated user's attention (sidebar badge).
+Role-aware; server derives scope from the user's role + `cabangId`.
+
+**Response `data`:**
+```json
+{ "count": 3 }
+```
+
+**Business logic:**
+- **Gudang (admin / staf_gudang):** count transfers with `status = 'Menunggu Persetujuan'` where `gudangId == user.cabangId`.
+- **Manajer (toko):** count transfers with `status IN ('Disetujui', 'Ditolak', 'Dikirim')` where `tokoId == user.cabangId` that the user has **not** acknowledged (see `/acknowledge`).
+- Acknowledgement is keyed by `(transferId, status)`, so a later status change re-surfaces the document.
+
+> If this endpoint is absent, the frontend falls back to computing the count from `GET /transfer-stok` and persisting acknowledgement client-side. See `docs/spec-backend-transfer-stok-badge.md`.
+
+#### `POST /transfer-stok/acknowledge`
+Mark **all** documents currently actionable for the authenticated user (at their current status) as read. Called when the user opens the Transfer Stok page so the badge auto-clears.
+
+**Request body:** _(empty)_
+
+**Response `data`:**
+```json
+{ "acknowledged": 2 }
+```
+
+**Business logic:**
+- Persist `TransferAcknowledgement(userId, transferId, status, acknowledgedAt)` with a unique constraint on `(userId, transferId, status)` (idempotent).
+- Only affects the badge for `manajer`; gudang's badge clears naturally when documents leave `Menunggu Persetujuan`.
+
 ### 6.10 Stok Opname
 
 #### `GET /stok-opname`
@@ -2217,6 +2247,13 @@ Rejected (by Gudang):
   → status: Ditolak
 ```
 
+#### Sidebar badge & acknowledgement
+The sidebar shows an unread badge on **Transfer Stok** (see `GET /transfer-stok/badge-count`, `POST /transfer-stok/acknowledge`):
+- **Gudang** badge = open requests (`Menunggu Persetujuan`); clears naturally once approved/rejected/shipped.
+- **Toko (manajer)** badge = documents the warehouse has responded to (`Disetujui` / `Ditolak` / `Dikirim`) that the manajer has not acknowledged. Acknowledgement is keyed by `(userId, transferId, status)`, so each new status change re-surfaces the badge until acknowledged again (or, for `Dikirim`, until `terima` moves it to `Selesai`).
+
+Persist acknowledgements in a `TransferAcknowledgement(userId, transferId, status, acknowledgedAt)` table with a unique constraint on `(userId, transferId, status)`. Full contract: `docs/spec-backend-transfer-stok-badge.md`.
+
 ### 7.5 Stok Opname Reconciliation
 On `approve`, the system sets each product's `CabangInventory.stok` to the `stokFisik` value counted during the opname. This overwrites the system count. Any discrepancy (`selisih != 0`) should generate a `PergerakanStok` entry of type `penyesuaian`.
 
@@ -2398,6 +2435,7 @@ The frontend enforces these role gates. The Django backend must mirror them with
 | **Transfer Stok** — create (toko) | ✓ | ✓ | ✓ | — | — |
 | **Transfer Stok** — approve/kirim (gudang) | ✓ | ✓ | — | — | ✓ |
 | **Transfer Stok** — terima (toko) | ✓ | ✓ | ✓ | — | — |
+| **Transfer Stok** — badge-count / acknowledge | — | ✓ | ✓ | — | ✓ |
 | **Stok Opname** — create | ✓ | ✓ | ✓ | — | ✓ |
 | **Stok Opname** — submit | ✓ | ✓ | ✓ | — | — |
 | **Stok Opname** — approve | ✓ | ✓ | — | — | — |
