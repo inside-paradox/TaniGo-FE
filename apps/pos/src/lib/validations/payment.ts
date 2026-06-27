@@ -20,7 +20,10 @@ export const bukaShiftSchema = z.object({
 export type BukaShiftFormValues = z.infer<typeof bukaShiftSchema>
 
 export const tutupShiftSchema = z.object({
-  saldoAkhir: z.number().min(0, 'Saldo akhir tidak valid'),
+  // Wajib diinput manual oleh kasir (rekonsiliasi kas fisik). Nilai 0 valid —
+  // kas fisik bisa benar-benar kosong. Yang ditolak hanya field yang tidak
+  // diisi sama sekali (undefined), bukan nilai nominalnya.
+  saldoAkhir: z.number({ error: 'Saldo akhir kas aktual wajib diisi' }),
 })
 
 export type TutupShiftFormValues = z.infer<typeof tutupShiftSchema>

@@ -66,7 +66,8 @@ export default function ShiftPage() {
 
   const tutupForm = useForm<TutupShiftFormValues>({
     resolver: zodResolver(tutupShiftSchema),
-    defaultValues: { saldoAkhir: 0 },
+    // Sengaja undefined (bukan 0) agar kasir wajib mengetik nominal kas fisik.
+    defaultValues: { saldoAkhir: undefined },
   })
 
   function openShiftOffline(saldoAwal: number) {
@@ -199,7 +200,10 @@ export default function ShiftPage() {
     )
   }
 
-  const saldoAkhir = tutupForm.watch('saldoAkhir') ?? 0
+  // saldoAkhirInput undefined = kasir belum mengisi field; 0 = sudah diisi (valid).
+  const saldoAkhirInput = tutupForm.watch('saldoAkhir')
+  const saldoAkhirTerisi = saldoAkhirInput != null
+  const saldoAkhir = saldoAkhirInput ?? 0
   // Uang fisik di laci = saldoAwal + tunai_masuk - kembalian_keluar - retur_tunai_keluar
   // Hanya retur metode Tunai yang mengurangi kas fisik; retur Transfer tidak menyentuh laci.
   // Fallback: jika BE belum kirim totalReturTunai, gunakan totalRetur (konservatif — over-deduct sementara).
@@ -271,11 +275,13 @@ export default function ShiftPage() {
                 label="Saldo Akhir Kas Aktual"
                 value={field.value ?? 0}
                 onChange={field.onChange}
+                required
+                error={tutupForm.formState.errors.saldoAkhir?.message}
               />
             )}
           />
 
-          {saldoAkhir > 0 && (
+          {saldoAkhirTerisi && (
             <div className="rounded-lg bg-gray-50 p-3 text-sm space-y-1">
               <div className="flex justify-between text-gray-500">
                 <span>Ekspektasi kas</span>
@@ -298,6 +304,7 @@ export default function ShiftPage() {
               variant="danger"
               className="flex-1"
               loading={tutupLoading}
+              disabled={!saldoAkhirTerisi}
             >
               <CheckCircle size={16} />
               Tutup Shift
