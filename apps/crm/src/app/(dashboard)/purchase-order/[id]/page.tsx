@@ -392,7 +392,7 @@ export default function DetailPOPage() {
 
   const canEdit = po.status === 'Draft'
   const canKirim = po.status === 'Draft'
-  // Draft belum punya nomor resmi (penanda DRAFT-xxxx) — tampilkan label ramah.
+  // Draft belum punya nomor resmi PO — pakai penanda sementara DRAFT-{tahun}-{urut}.
   const isDraftNomor = po.nomorPO.startsWith('DRAFT-')
   const canGoodsReceipt =
     po.status === 'Dikirim ke Supplier' || po.status === 'Sebagian Diterima'
@@ -403,10 +403,10 @@ export default function DetailPOPage() {
     <div className="space-y-6">
       {/* ===== HEADER ===== */}
       <PageHeader
-        title={isDraftNomor ? 'Draft Purchase Order' : po.nomorPO}
+        title={po.nomorPO}
         subtitle={
           isDraftNomor
-            ? `Nomor resmi terbit saat dikirim ke supplier · Dibuat ${formatTanggalWaktu(po.createdAt)}`
+            ? `Nomor sementara · nomor resmi terbit saat dikirim ke supplier · Dibuat ${formatTanggalWaktu(po.createdAt)}`
             : `Dibuat pada ${formatTanggalWaktu(po.createdAt)}`
         }
         actions={

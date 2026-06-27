@@ -306,7 +306,7 @@ export const mockPurchaseOrders: PurchaseOrder[] = [
   // PO-003: Draft — belum dikirim ke supplier
   {
     id: 'po-003',
-    nomorPO: 'DRAFT-7f3a1c9e',
+    nomorPO: 'DRAFT-2026-001',
     supplierId: 'sup-3',
     supplierNama: 'Toko Benih Nusantara',
     items: [

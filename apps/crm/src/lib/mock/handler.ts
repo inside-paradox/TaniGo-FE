@@ -169,8 +169,18 @@ function generateNomorPO(): string {
 }
 
 // Penanda sementara untuk dokumen yang masih draft (belum punya nomor resmi).
+// Format DRAFT-{tahun}-{urut} agar mudah dibaca Admin (mis. DRAFT-2026-001).
+// Nomor resmi PO-{tahun}-{urut} baru digenerate saat "Kirim ke Supplier".
 function generateNomorDraft(): string {
-  return `DRAFT-${Math.random().toString(16).slice(2, 10)}`
+  const year = new Date().getFullYear()
+  const prefix = `DRAFT-${year}-`
+  const max = purchaseOrders
+    .map((p) => p.nomorPO)
+    .filter((n) => n.startsWith(prefix))
+    .map((n) => parseInt(n.slice(prefix.length), 10))
+    .filter((n) => !Number.isNaN(n))
+    .reduce((m, n) => Math.max(m, n), 0)
+  return `${prefix}${String(max + 1).padStart(3, '0')}`
 }
 
 // Bangun item + kalkulasi finansial PO dari body (dipakai saat create & update draft).
