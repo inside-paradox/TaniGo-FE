@@ -2,6 +2,7 @@ export type StatusPesanan =
   | 'Baru'
   | 'Diproses'
   | 'Siap Kirim'
+  | 'Siap Diambil'
   | 'Dalam Pengiriman'
   | 'Selesai'
   | 'Dibatalkan'

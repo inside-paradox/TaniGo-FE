@@ -1197,6 +1197,17 @@ Update the status of an order.
 }
 ```
 
+**Business logic — valid transitions by `metodePengiriman`:**
+
+| `metodePengiriman` | Valid status flow |
+|---|---|
+| `dikirim` | `Baru` → `Diproses` → `Siap Kirim` → `Dalam Pengiriman` → `Selesai` |
+| `ambil_sendiri` | `Baru` → `Diproses` → `Siap Diambil` → `Selesai` |
+
+- Pesanan `ambil_sendiri` **tidak boleh** bertransisi ke `Siap Kirim` atau `Dalam Pengiriman`.
+- Pesanan `dikirim` **tidak boleh** bertransisi ke `Siap Diambil`.
+- Semua pesanan dapat dibatalkan (`Dibatalkan`) dari status apapun kecuali `Selesai` dan `Dibatalkan`.
+
 **Response `data`:** Updated `Pesanan`
 
 #### `GET /orders/{id}/struk`
@@ -2331,7 +2342,7 @@ normal | menipis | habis
 
 ### StatusPesanan
 ```
-Baru | Diproses | Siap Kirim | Dalam Pengiriman | Selesai | Dibatalkan
+Baru | Diproses | Siap Kirim | Siap Diambil | Dalam Pengiriman | Selesai | Dibatalkan
 ```
 
 ### MetodePembayaran (CRM Orders)

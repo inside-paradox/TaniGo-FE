@@ -25,7 +25,7 @@ import type { StatusPesanan, ItemPesanan, Pesanan } from '@/types'
 
 function StatusBadge({ status }: { status: StatusPesanan }) {
   const variantMap: Record<StatusPesanan, 'info' | 'warning' | 'purple' | 'default' | 'success' | 'danger'> = {
-    Baru: 'info', Diproses: 'warning', 'Siap Kirim': 'purple',
+    Baru: 'info', Diproses: 'warning', 'Siap Kirim': 'purple', 'Siap Diambil': 'purple',
     'Dalam Pengiriman': 'default', Selesai: 'success', Dibatalkan: 'danger',
   }
   return <Badge variant={variantMap[status] ?? 'default'}>{status}</Badge>
@@ -219,7 +219,10 @@ function DetailManual({ pesanan, refetch }: { pesanan: Pesanan; refetch: () => v
   const [batalError, setBatalError] = useState('')
   const [showProsesConfirm, setShowProsesConfirm] = useState(false)
   const [showSiapKirimConfirm, setShowSiapKirimConfirm] = useState(false)
+  const [showSiapDiambilConfirm, setShowSiapDiambilConfirm] = useState(false)
+  const [showKonfirmasiAmbilConfirm, setShowKonfirmasiAmbilConfirm] = useState(false)
 
+  const isAmbilSendiri = pesanan.metodePengiriman === 'ambil_sendiri'
   const statusFinal = pesanan.status === 'Selesai' || pesanan.status === 'Dibatalkan'
   const dalamPengiriman = pesanan.status === 'Dalam Pengiriman'
 
@@ -266,11 +269,22 @@ function DetailManual({ pesanan, refetch }: { pesanan: Pesanan; refetch: () => v
                 </Button>
               )}
               {pesanan.status === 'Diproses' && (
-                <Button onClick={() => setShowSiapKirimConfirm(true)} loading={isUpdating} size="sm">
-                  Tandai Siap Kirim
+                isAmbilSendiri ? (
+                  <Button onClick={() => setShowSiapDiambilConfirm(true)} loading={isUpdating} size="sm">
+                    Tandai Siap Diambil
+                  </Button>
+                ) : (
+                  <Button onClick={() => setShowSiapKirimConfirm(true)} loading={isUpdating} size="sm">
+                    Tandai Siap Kirim
+                  </Button>
+                )
+              )}
+              {pesanan.status === 'Siap Diambil' && (
+                <Button onClick={() => setShowKonfirmasiAmbilConfirm(true)} loading={isUpdating} size="sm">
+                  Konfirmasi Pengambilan
                 </Button>
               )}
-              {pesanan.status === 'Siap Kirim' && (
+              {pesanan.status === 'Siap Kirim' && !isAmbilSendiri && (
                 <Link href={`/pengiriman/baru?pesananId=${pesanan.id}`}>
                   <Button size="sm">Buat Jadwal Pengiriman</Button>
                 </Link>
@@ -377,6 +391,16 @@ function DetailManual({ pesanan, refetch }: { pesanan: Pesanan; refetch: () => v
         onConfirm={async () => { await updateStatus({ id: pesanan.id, status: 'Siap Kirim' }); setShowSiapKirimConfirm(false); refetch() }}
         title="Tandai Siap Kirim" description={`Ubah status pesanan ${pesanan.nomorPesanan} menjadi "Siap Kirim"?`}
         confirmLabel="Ya, Siap Kirim" variant="default" loading={isUpdating}
+      />
+      <ConfirmModal open={showSiapDiambilConfirm} onClose={() => setShowSiapDiambilConfirm(false)}
+        onConfirm={async () => { await updateStatus({ id: pesanan.id, status: 'Siap Diambil' }); setShowSiapDiambilConfirm(false); refetch() }}
+        title="Tandai Siap Diambil" description={`Ubah status pesanan ${pesanan.nomorPesanan} menjadi "Siap Diambil"? Pelanggan akan dinotifikasi untuk mengambil pesanan.`}
+        confirmLabel="Ya, Siap Diambil" variant="default" loading={isUpdating}
+      />
+      <ConfirmModal open={showKonfirmasiAmbilConfirm} onClose={() => setShowKonfirmasiAmbilConfirm(false)}
+        onConfirm={async () => { await updateStatus({ id: pesanan.id, status: 'Selesai' }); setShowKonfirmasiAmbilConfirm(false); refetch() }}
+        title="Konfirmasi Pengambilan" description={`Konfirmasi bahwa pelanggan telah mengambil pesanan ${pesanan.nomorPesanan}? Status akan berubah menjadi "Selesai".`}
+        confirmLabel="Ya, Selesaikan" variant="default" loading={isUpdating}
       />
       <Modal open={showBatalModal} onClose={() => { setShowBatalModal(false); setAlasanBatal(''); setBatalError('') }}
         title="Batalkan Pesanan" description={`Batalkan pesanan ${pesanan.nomorPesanan}?`} size="md"
