@@ -29,9 +29,10 @@ const STATUS_OPTIONS: { value: string; label: string }[] = [
   { value: 'Dibatalkan', label: 'Dibatalkan' },
 ]
 
+// nilai internal: '' | 'selesai_saja' | 'ada_retur'
 const STATUS_POS_OPTIONS: { value: string; label: string }[] = [
   { value: '', label: 'Semua' },
-  { value: 'Selesai', label: 'Selesai' },
+  { value: 'selesai_saja', label: 'Selesai' },
   { value: 'ada_retur', label: 'Ada Retur' },
 ]
 
@@ -171,11 +172,20 @@ export default function PesananPage() {
   const [search, setSearch] = useState('')
   const [status, setStatus] = useState('')
 
+  // Untuk tab POS: petakan nilai filter internal ke params API yang tepat
+  const posFilterParams = activeTab === 'pos'
+    ? status === 'ada_retur'
+      ? { status: 'Selesai' as const, hasRetur: true }
+      : status === 'selesai_saja'
+        ? { status: 'Selesai' as const, hasRetur: false }
+        : { status: undefined, hasRetur: undefined }
+    : { status: status || undefined, hasRetur: undefined }
+
   const { data, isLoading } = useOrders({
     page,
     limit,
     search: search || undefined,
-    status: status || undefined,
+    ...posFilterParams,
     sumber: activeTab,
     sortBy: sorting[0]?.id,
     sortOrder: sorting[0] ? (sorting[0].desc ? 'desc' : 'asc') : undefined,

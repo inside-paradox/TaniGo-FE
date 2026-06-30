@@ -7,7 +7,7 @@ export const ORDERS_KEY = 'orders'
 
 export function useOrders(params: TableParams & {
   status?: string; sumber?: string; pelangganId?: string; kasirId?: string
-  tanggalDari?: string; tanggalSampai?: string
+  tanggalDari?: string; tanggalSampai?: string; hasRetur?: boolean
 }) {
   return useQuery({
     queryKey: [ORDERS_KEY, params],

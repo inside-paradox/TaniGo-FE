@@ -1134,7 +1134,8 @@ List all orders (paginated).
 | Param | Type | Description |
 |-------|------|-------------|
 | `search` | string | Search by `nomorPesanan` or `pelangganNama` |
-| `status` | StatusPesanan or `'ada_retur'` | Filter by status; `'ada_retur'` filters orders where `hasRetur = true` |
+| `status` | StatusPesanan | Filter by order status |
+| `hasRetur` | boolean | Filter by retur flag — `true` returns orders where `hasRetur = true`; `false` returns orders where `hasRetur = false`; omit for no filter |
 | `sumber` | `'pos'` \| `'manual'` | Filter by order source |
 | `pelangganId` | string | Filter by VIP customer |
 | `kasirId` | string | Filter by cashier |

@@ -3,7 +3,7 @@ import type { Pesanan, CreatePesananDto, PaginatedResponse, TableParams } from '
 
 export const ordersApi = {
   getAll: async (
-    params: TableParams & { status?: string; sumber?: string; pelangganId?: string; kasirId?: string; tanggalDari?: string; tanggalSampai?: string }
+    params: TableParams & { status?: string; sumber?: string; pelangganId?: string; kasirId?: string; tanggalDari?: string; tanggalSampai?: string; hasRetur?: boolean }
   ): Promise<PaginatedResponse<Pesanan>> => {
     const { data } = await api.get('/orders', { params })
     return { data: data.data, meta: data.meta }
