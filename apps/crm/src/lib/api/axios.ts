@@ -35,6 +35,8 @@ api.interceptors.request.use(
   (error) => Promise.reject(error)
 )
 
+let refreshPromise: Promise<string> | null = null
+
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
@@ -51,13 +53,19 @@ api.interceptors.response.use(
           return Promise.reject(error)
         }
 
-        const { data } = await axios.post(
-          `${process.env.NEXT_PUBLIC_API_URL}/auth/refresh`,
-          { refreshToken }
-        )
+        if (!refreshPromise) {
+          refreshPromise = axios
+            .post(`${process.env.NEXT_PUBLIC_API_URL}/auth/refresh`, { refreshToken })
+            .then(({ data }) => {
+              const newToken: string = data.data.accessToken
+              localStorage.setItem('accessToken', newToken)
+              return newToken
+            })
+            .finally(() => { refreshPromise = null })
+        }
 
-        localStorage.setItem('accessToken', data.data.accessToken)
-        originalRequest.headers.Authorization = `Bearer ${data.data.accessToken}`
+        const newToken = await refreshPromise
+        originalRequest.headers.Authorization = `Bearer ${newToken}`
         return api(originalRequest)
       } catch {
         redirectToLogin()

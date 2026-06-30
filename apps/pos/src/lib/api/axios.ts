@@ -240,6 +240,8 @@ api.interceptors.request.use((config) => {
   return config
 })
 
+let refreshPromise: Promise<string> | null = null
+
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
@@ -263,12 +265,19 @@ api.interceptors.response.use(
         const refreshToken = localStorage.getItem('refresh_token')
         if (!refreshToken) throw new Error('No refresh token')
 
-        const { data } = await axios.post(`${BASE_URL}/api/auth/refresh`, {
-          refreshToken,
-        })
+        if (!refreshPromise) {
+          refreshPromise = axios
+            .post(`${BASE_URL}/api/auth/refresh`, { refreshToken })
+            .then(({ data }) => {
+              const newToken: string = data.data.accessToken
+              localStorage.setItem('access_token', newToken)
+              return newToken
+            })
+            .finally(() => { refreshPromise = null })
+        }
 
-        localStorage.setItem('access_token', data.data.accessToken)
-        original.headers.Authorization = `Bearer ${data.data.accessToken}`
+        const newToken = await refreshPromise
+        original.headers.Authorization = `Bearer ${newToken}`
         return api(original)
       } catch {
         localStorage.removeItem('access_token')
