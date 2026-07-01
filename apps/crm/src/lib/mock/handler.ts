@@ -692,6 +692,18 @@ export function getMockResponse(config: AxiosRequestConfig): Omit<AxiosResponse,
     }
   }
 
+  if (rawUrl === '/deliveries/available-orders' || rawUrl.startsWith('/deliveries/available-orders?')) {
+    if (method === 'get') {
+      const scheduledIds = new Set(
+        pengiriman.filter((p) => p.status !== 'Gagal').flatMap((p) => p.pesananIds)
+      )
+      let list = pesanan.filter((o) => o.status === 'Siap Kirim' && !scheduledIds.has(o.id))
+      const q = params.search as string | undefined
+      if (q) list = list.filter((o) => o.nomorPesanan.toLowerCase().includes(q.toLowerCase()) || o.pelangganNama.toLowerCase().includes(q.toLowerCase()))
+      return ok(list)
+    }
+  }
+
   const pgActionMatch = matchPath(rawUrl, /^\/deliveries\/([^/]+)(?:\/(.+))?$/)
   if (pgActionMatch) {
     const id = pgActionMatch[1]

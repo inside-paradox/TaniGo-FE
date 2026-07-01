@@ -1,5 +1,5 @@
 import api from './axios'
-import type { Pengiriman, CreatePengirimanDto, BiayaPengiriman, SubmitChecklistPengirimanDto, PaginatedResponse, TableParams } from '@/types'
+import type { Pengiriman, CreatePengirimanDto, BiayaPengiriman, SubmitChecklistPengirimanDto, PaginatedResponse, TableParams, Pesanan } from '@/types'
 
 export const deliveriesApi = {
   getAll: async (
@@ -7,6 +7,11 @@ export const deliveriesApi = {
   ): Promise<PaginatedResponse<Pengiriman>> => {
     const { data } = await api.get('/deliveries', { params })
     return { data: data.data, meta: data.meta }
+  },
+
+  getAvailableOrders: async (params?: { search?: string }): Promise<Pesanan[]> => {
+    const { data } = await api.get('/deliveries/available-orders', { params })
+    return data.data
   },
 
   getById: async (id: string): Promise<Pengiriman> => {

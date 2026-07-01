@@ -10,8 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Skeleton } from '@/components/ui/skeleton'
-import { useCreateDelivery } from '@/hooks/use-deliveries'
-import { useOrders } from '@/hooks/use-orders'
+import { useCreateDelivery, useAvailableOrdersForDelivery } from '@/hooks/use-deliveries'
 import type { Pesanan } from '@/types'
 
 // ─── Inner form (uses useSearchParams) ───────────────────────────────────────
@@ -21,13 +20,9 @@ function BuatPengirimanForm() {
   const searchParams = useSearchParams()
   const preselectedId = searchParams.get('pesananId')
 
-  // Pesanan data
-  const { data: pesananData, isLoading: loadingPesanan } = useOrders({
-    page: 1,
-    limit: 100,
-    status: 'Siap Kirim',
-  })
-  const pesananList: Pesanan[] = pesananData?.data ?? []
+  // Pesanan data — hanya pesanan yang belum dijadwalkan pengirimannya
+  const { data: pesananData, isLoading: loadingPesanan } = useAvailableOrdersForDelivery()
+  const pesananList: Pesanan[] = pesananData ?? []
 
   // Form state
   const [selectedIds, setSelectedIds] = useState<Set<string>>(
@@ -112,7 +107,7 @@ function BuatPengirimanForm() {
           ) : pesananList.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-10 text-center">
               <Package className="mb-2 h-10 w-10 text-gray-300" />
-              <p className="text-sm text-gray-400">Tidak ada pesanan dengan status &quot;Siap Kirim&quot;</p>
+              <p className="text-sm text-gray-400">Tidak ada pesanan yang siap dijadwalkan pengirimannya</p>
             </div>
           ) : (
             <div className="space-y-2">

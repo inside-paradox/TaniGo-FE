@@ -1261,6 +1261,21 @@ List all deliveries (paginated).
 
 **Response `data`:** `PaginatedResponse<Pengiriman>`
 
+#### `GET /deliveries/available-orders`
+List pesanan that are eligible to be picked for a new delivery batch (used by the "Pilih Pesanan" picker on the create-delivery form).
+
+**Query params:**
+| Param | Type | Description |
+|-------|------|-------------|
+| `search` | string | Search by `nomorPesanan` or `pelangganNama` |
+
+**Response `data`:** `Pesanan[]` (not paginated)
+
+**Business logic:**
+- Base filter: `Pesanan.status = 'Siap Kirim'`.
+- Exclude orders whose `id` already appears in `Pengiriman.pesananIds` for any delivery with `status != 'Gagal'` (i.e. `Dijadwalkan`, `Dalam Perjalanan`, or `Selesai`) — this prevents an order from being scheduled for delivery twice.
+- Orders whose only associated delivery is `Gagal` remain eligible so they can be rescheduled.
+
 #### `POST /deliveries`
 Create a new delivery batch.
 

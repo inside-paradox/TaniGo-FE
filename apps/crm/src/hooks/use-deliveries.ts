@@ -15,6 +15,13 @@ export function useDeliveries(params: TableParams & {
   })
 }
 
+export function useAvailableOrdersForDelivery(params?: { search?: string }) {
+  return useQuery({
+    queryKey: [DELIVERIES_KEY, 'available-orders', params],
+    queryFn: () => deliveriesApi.getAvailableOrders(params),
+  })
+}
+
 export function useDelivery(id: string) {
   return useQuery({
     queryKey: [DELIVERIES_KEY, id],
