@@ -11,13 +11,15 @@ import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { ConfirmModal } from '@/components/ui/modal'
 import { SupplierForm } from '@/components/inventori/supplier-form'
+import { SupplierProdukModal } from '@/components/inventori/supplier-produk-modal'
 import { useSuppliers, useDeleteSupplier } from '@/hooks/use-inventory'
 import { formatTanggal } from '@/lib/utils'
 import type { Supplier } from '@/types'
 
 function getSupplierColumns(
   onEdit: (s: Supplier) => void,
-  onDelete: (s: Supplier) => void
+  onDelete: (s: Supplier) => void,
+  onLihatProduk: (s: Supplier) => void
 ): ColumnDef<Supplier>[] {
   return [
     {
@@ -45,6 +47,7 @@ function getSupplierColumns(
       header: '',
       cell: ({ row }) => (
         <div className="flex items-center justify-end gap-2">
+          <Button size="sm" variant="ghost" onClick={() => onLihatProduk(row.original)}>Lihat Produk</Button>
           <Button size="sm" variant="ghost" onClick={() => onEdit(row.original)}>Edit</Button>
           <Button size="sm" variant="ghost" className="text-red-500 hover:text-red-700" onClick={() => onDelete(row.original)}>Hapus</Button>
         </div>
@@ -57,6 +60,7 @@ export default function SupplierPage() {
   const [supplierFormOpen, setSupplierFormOpen] = useState(false)
   const [editSupplier, setEditSupplier] = useState<Supplier | null>(null)
   const [deleteSupplier, setDeleteSupplier] = useState<Supplier | null>(null)
+  const [lihatProdukSupplier, setLihatProdukSupplier] = useState<Supplier | null>(null)
   const [supplierPage, setSupplierPage] = useState(1)
   const [supplierSearch, setSupplierSearch] = useState('')
 
@@ -87,7 +91,8 @@ export default function SupplierPage() {
             <DataTable
               columns={getSupplierColumns(
                 (s) => { setEditSupplier(s); setSupplierFormOpen(true) },
-                (s) => setDeleteSupplier(s)
+                (s) => setDeleteSupplier(s),
+                (s) => setLihatProdukSupplier(s)
               )}
               data={suppliers?.data ?? []}
               loading={suppliersLoading}
@@ -101,6 +106,7 @@ export default function SupplierPage() {
       </div>
 
       <SupplierForm open={supplierFormOpen} onClose={() => { setSupplierFormOpen(false); setEditSupplier(null) }} supplier={editSupplier} />
+      <SupplierProdukModal open={!!lihatProdukSupplier} onClose={() => setLihatProdukSupplier(null)} supplier={lihatProdukSupplier} />
       <ConfirmModal
         open={!!deleteSupplier}
         onClose={() => setDeleteSupplier(null)}
