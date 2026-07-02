@@ -44,13 +44,13 @@ export function Modal({ open, onClose, title, description, children, size = 'md'
       />
       <div
         className={cn(
-          'relative z-10 w-full rounded-xl bg-white shadow-xl',
+          'relative z-10 flex max-h-[85vh] w-full flex-col rounded-xl bg-white shadow-xl',
           sizeClasses[size],
           className
         )}
       >
         {(title || description) && (
-          <div className="flex items-start justify-between border-b border-gray-200 p-6">
+          <div className="flex shrink-0 items-start justify-between border-b border-gray-200 p-6">
             <div>
               {title && <h2 className="text-lg font-semibold text-gray-900">{title}</h2>}
               {description && <p className="mt-1 text-sm text-gray-500">{description}</p>}
@@ -63,7 +63,7 @@ export function Modal({ open, onClose, title, description, children, size = 'md'
             </button>
           </div>
         )}
-        <div className="p-6">{children}</div>
+        <div className="overflow-y-auto p-6">{children}</div>
       </div>
     </div>
   )
