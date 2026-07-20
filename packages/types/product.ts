@@ -52,6 +52,12 @@ export interface ProdukFilter {
   /** Filter produk berdasarkan relasi supplier (dipakai dropdown produk di PO). */
   supplierId?: string
   /**
+   * Filter produk aktif/non-aktif. Difilter server-side (sebelum pagination) —
+   * memfilter di client akan melubangi tiap halaman hasil pada dropdown
+   * berpencarian server. Kosong/absen = semua produk.
+   */
+  statusAktif?: boolean
+  /**
    * Filter stok berdasarkan lokasi fisik (cabang/gudang). Bila diisi, kolom
    * `stok` & `statusStok` dihitung ulang untuk lokasi tsb (bukan akumulasi global)
    * untuk mencegah overselling. Kosong = stok global seluruh lokasi.

@@ -541,6 +541,11 @@ export function getMockResponse(config: AxiosRequestConfig): Omit<AxiosResponse,
       if (q) list = list.filter((p) => p.nama.toLowerCase().includes(q.toLowerCase()) || p.sku.toLowerCase().includes(q.toLowerCase()))
       if (params.kategori) list = list.filter((p) => p.kategori === params.kategori)
       if (params.supplierId) list = list.filter((p) => p.supplierIds?.includes(params.supplierId as string))
+      // Difilter sebelum pagination agar meta.total mencerminkan jumlah produk aktif.
+      if (params.statusAktif !== undefined) {
+        const aktif = String(params.statusAktif) === 'true'
+        list = list.filter((p) => p.statusAktif === aktif)
+      }
       // Filter lokasi: hitung ulang stok & statusStok untuk cabang/gudang terpilih
       // (bukan akumulasi global) agar angka stok mencerminkan kuantitas fisik di
       // lokasi tsb. Produk tanpa catatan inventory di lokasi itu dianggap 0/habis.

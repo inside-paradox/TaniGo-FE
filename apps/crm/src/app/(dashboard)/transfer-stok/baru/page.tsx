@@ -13,8 +13,8 @@ import {
   Combobox,
   Textarea,
 } from '@/components/ui'
+import { TransferProdukCombobox } from '@/components/transfer-stok/produk-combobox'
 import { useCreateTransferStok } from '@/hooks/use-transfer-stok'
-import { useProducts } from '@/hooks/use-products'
 import { useCabangList } from '@/hooks/use-cabang'
 import { useCabangInventory } from '@/hooks/use-inventory'
 import { useAuthStore } from '@/store/auth-store'
@@ -41,15 +41,8 @@ export default function BuatTransferStokPage() {
   const router = useRouter()
   const { user } = useAuthStore()
   const { mutateAsync: create, isPending } = useCreateTransferStok()
-  // Dropdown produk masih memfilter client-side, jadi seluruh katalog harus termuat
-  // di halaman pertama — produk di luar `limit` tidak akan pernah bisa dicari.
-  // Sementara sampai backend menyediakan filter `statusAktif` agar bisa pindah ke
-  // pencarian server-side berdebounce (lih. docs/spec-backend-produk-filter-status-aktif.md).
-  const { data: produksData } = useProducts({ page: 1, limit: 1000 })
   const { data: cabangData } = useCabangList({ tipe: 'gudang', aktif: true })
   const gudangList: Cabang[] = cabangData?.data ?? []
-
-  const produkList: Produk[] = useMemo(() => produksData?.data ?? [], [produksData])
 
   const [gudangId, setGudangId] = useState('')
   const [items, setItems] = useState<ItemBaris[]>([
@@ -92,8 +85,7 @@ export default function BuatTransferStokPage() {
     setItems((prev) => prev.filter((i) => i._key !== key))
   }
 
-  function handlePilihProduk(key: number, produkId: string) {
-    const produk = produkList.find((p) => p.id === produkId)
+  function handlePilihProduk(key: number, produk: Produk | null) {
     setItems((prev) =>
       prev.map((i) =>
         i._key === key
@@ -229,31 +221,12 @@ export default function BuatTransferStokPage() {
                 >
                   {/* Produk */}
                   <div className="col-span-12 sm:col-span-5">
-                    <Combobox<Produk>
-                      options={gudangId ? produkList.filter((p) => p.statusAktif) : []}
+                    <TransferProdukCombobox
+                      gudangId={gudangId}
                       value={item.produkId}
-                      onChange={(id) => handlePilihProduk(item._key, id)}
-                      getOptionValue={(p) => p.id}
-                      getOptionLabel={(p) => p.nama}
-                      filterFn={(p, q) =>
-                        p.nama.toLowerCase().includes(q.toLowerCase()) ||
-                        p.sku.toLowerCase().includes(q.toLowerCase())
-                      }
-                      renderOption={(p) => {
-                        const stok = stokDiGudang(p.id)
-                        return (
-                          <div className="flex items-center justify-between">
-                            <div>
-                              <span>{p.nama}</span>
-                              <span className="ml-2 text-xs text-gray-500">{p.sku}</span>
-                            </div>
-                            <span className={`ml-4 shrink-0 text-xs ${stok > 0 ? 'text-gray-500' : 'text-red-500'}`}>
-                              Stok {stok} {p.satuan}
-                            </span>
-                          </div>
-                        )
-                      }}
-                      placeholder={gudangId ? 'Cari produk...' : 'Pilih gudang tujuan dulu'}
+                      selectedLabel={item.produkNama}
+                      stokDiGudang={stokDiGudang}
+                      onChange={(produk) => handlePilihProduk(item._key, produk)}
                       error={errors[`item_${idx}_produk`]}
                     />
                     {item.produkId && (
