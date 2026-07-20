@@ -41,7 +41,11 @@ export default function BuatTransferStokPage() {
   const router = useRouter()
   const { user } = useAuthStore()
   const { mutateAsync: create, isPending } = useCreateTransferStok()
-  const { data: produksData } = useProducts({ page: 1, limit: 200 })
+  // Dropdown produk masih memfilter client-side, jadi seluruh katalog harus termuat
+  // di halaman pertama — produk di luar `limit` tidak akan pernah bisa dicari.
+  // Sementara sampai backend menyediakan filter `statusAktif` agar bisa pindah ke
+  // pencarian server-side berdebounce (lih. docs/spec-backend-produk-filter-status-aktif.md).
+  const { data: produksData } = useProducts({ page: 1, limit: 1000 })
   const { data: cabangData } = useCabangList({ tipe: 'gudang', aktif: true })
   const gudangList: Cabang[] = cabangData?.data ?? []
 

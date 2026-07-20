@@ -921,6 +921,7 @@ List all products (paginated).
 | `statusStok` | `'normal'` \| `'menipis'` \| `'habis'` | Filter by stock status |
 | `satuan` | string | Filter by unit |
 | `supplierId` | string | Filter by related supplier (dependent dropdown produk di PO) |
+| `statusAktif` | boolean | `true` = only active products, `false` = only inactive. Absent = all (legacy behaviour) |
 | `page` | integer | |
 | `limit` | integer | |
 
@@ -929,6 +930,10 @@ List all products (paginated).
 > Dropdown produk pada Buat PO memakai `?supplierId=&search=` (server-side, debounced) agar
 > daftar dikerucutkan per supplier dan seluruh master data dapat ditelusuri tanpa truncation.
 > Detail: `docs/spec-backend-po-produk-filter-supplier.md`.
+
+> `statusAktif` harus difilter **sebelum** pagination — dropdown yang hanya boleh menampilkan
+> produk aktif tidak bisa memfilter di client tanpa melubangi tiap halaman hasil.
+> Detail: `docs/spec-backend-produk-filter-status-aktif.md`.
 
 #### `POST /products`
 Create a new product.
