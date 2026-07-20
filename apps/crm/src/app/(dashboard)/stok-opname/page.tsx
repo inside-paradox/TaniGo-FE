@@ -56,7 +56,9 @@ export default function StokOpnamePage() {
   })
   const { mutate: hapus, isPending: isDeleting } = useDeleteStokOpname()
 
-  const { data: produkData } = useProducts({ page: 1, limit: 200 })
+  // Formulir opname cetak harus memuat SELURUH katalog — produk di luar `limit`
+  // hilang dari formulir fisik. Stopgap sampai diganti fetch-all.
+  const { data: produkData } = useProducts({ page: 1, limit: 300 })
   const { data: inventoryData } = useCabangInventory(user?.cabangId ?? undefined)
 
   const handleCetakFormulir = () => {

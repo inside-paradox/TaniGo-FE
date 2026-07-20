@@ -39,7 +39,10 @@ function SelisihCell({ diff }: { diff: number | null }) {
 export default function StokOpnameBaruPage() {
   const router = useRouter()
   const { user } = useAuthStore()
-  const { data: produkData, isLoading: produkLoading } = useProducts({ page: 1, limit: 100 })
+  // Lembar opname harus memuat SELURUH katalog — produk di luar `limit` tidak
+  // muncul sebagai baris, jadi tidak pernah ikut dihitung & direkonsiliasi tanpa
+  // peringatan apa pun. Stopgap sampai diganti fetch-all (loop halaman via meta.total).
+  const { data: produkData, isLoading: produkLoading } = useProducts({ page: 1, limit: 300 })
   const { data: inventoryData, isLoading: inventoryLoading } = useCabangInventory(user?.cabangId ?? undefined)
   const produkList = produkData?.data ?? []
 
