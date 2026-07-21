@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useRouter } from 'next/navigation'
-import { Eye, EyeOff, FlaskConical, Sprout, AlertCircle } from 'lucide-react'
+import { Eye, EyeOff, Sprout, AlertCircle } from 'lucide-react'
 import { toast } from 'sonner'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
@@ -13,19 +13,6 @@ import { login } from '@/lib/api/auth'
 import { fetchActiveShift } from '@/lib/api/shifts'
 import { useAuthStore } from '@/store/authStore'
 import { useShiftStore } from '@/store/shiftStore'
-
-const DEMO_USER = {
-  id: 'demo-001',
-  nama: 'Kasir Demo',
-  email: 'demo@tanigo.id',
-  role: 'kasir' as const,
-  cabangId: 'toko-1',
-  cabang: 'Toko Utama',
-  tipeCabang: 'toko' as const,
-  aktif: true,
-  createdAt: new Date().toISOString(),
-  updatedAt: new Date().toISOString(),
-}
 
 export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false)
@@ -74,19 +61,6 @@ export default function LoginPage() {
       const error = err as { response?: { data?: { message?: string } } }
       const message = error.response?.data?.message || 'Email atau password salah'
       setError('root', { message })
-    }
-  }
-
-  const handleDemo = async () => {
-    setAuth(DEMO_USER, 'demo-token', 'demo-refresh-token')
-    toast.success('Masuk sebagai Kasir Demo')
-    const activeShift = await fetchActiveShift()
-    if (activeShift) {
-      setShift(activeShift)
-      router.replace('/transaksi')
-    } else {
-      clearShift()
-      router.replace('/shift')
     }
   }
 
@@ -142,24 +116,6 @@ export default function LoginPage() {
               Masuk
             </Button>
           </form>
-
-          <div className="relative">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-gray-200" />
-            </div>
-            <div className="relative flex justify-center">
-              <span className="bg-white px-3 text-xs text-gray-400">atau</span>
-            </div>
-          </div>
-
-          <button
-            type="button"
-            onClick={handleDemo}
-            className="flex w-full items-center justify-center gap-2 rounded-lg border border-dashed border-gray-300 py-2.5 text-sm text-gray-500 transition-colors hover:border-green-400 hover:text-green-600"
-          >
-            <FlaskConical className="h-4 w-4" />
-            Masuk sebagai Demo (tanpa backend)
-          </button>
         </div>
 
         <p className="mt-6 text-center text-xs text-gray-400">

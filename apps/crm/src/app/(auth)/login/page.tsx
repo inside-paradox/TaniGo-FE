@@ -4,37 +4,11 @@ import { Suspense, useState, useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { Eye, EyeOff, Loader2, FlaskConical, Sprout, AlertCircle } from 'lucide-react'
+import { Eye, EyeOff, Loader2, Sprout, AlertCircle } from 'lucide-react'
 import { toast } from 'sonner'
 import { loginSchema, type LoginFormData } from '@/lib/validations/auth'
 import { authApi } from '@/lib/api'
 import { useAuthStore } from '@/store/auth-store'
-import type { User } from '@/types'
-
-const DEMO_USERS: { label: string; user: User }[] = [
-  {
-    label: 'Superadmin',
-    user: { id: 'demo-superadmin', nama: 'Super Admin', email: 'superadmin@tanigo.id', role: 'superadmin', cabangId: null, cabang: null, tipeCabang: null, aktif: true, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
-  },
-  {
-    label: 'Admin (Gudang)',
-    user: { id: 'demo-admin', nama: 'Admin Demo', email: 'admin@tanigo.id', role: 'admin', cabangId: 'gudang-1', cabang: 'Gudang Pusat', tipeCabang: 'gudang', aktif: true, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
-  },
-  {
-    label: 'Manajer (Toko)',
-    user: { id: 'demo-manajer', nama: 'Budi Manajer', email: 'manajer@tanigo.id', role: 'manajer', cabangId: 'toko-1', cabang: 'Toko Utama', tipeCabang: 'toko', aktif: true, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
-  },
-  {
-    label: 'Kasir (Toko)',
-    user: { id: 'demo-kasir', nama: 'Siti Kasir', email: 'kasir@tanigo.id', role: 'kasir', cabangId: 'toko-1', cabang: 'Toko Utama', tipeCabang: 'toko', aktif: true, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
-  },
-  {
-    label: 'Staf Gudang',
-    user: { id: 'demo-gudang', nama: 'Andi Gudang', email: 'gudang@tanigo.id', role: 'staf_gudang', cabangId: 'gudang-1', cabang: 'Gudang Pusat', tipeCabang: 'gudang', aktif: true, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
-  },
-]
-
-const DEMO_TOKEN = 'demo-access-token'
 
 function getSafeRedirect(searchParams: ReturnType<typeof useSearchParams>) {
   const redirect = searchParams.get('redirect') || '/dashboard'
@@ -46,7 +20,6 @@ function getSafeRedirect(searchParams: ReturnType<typeof useSearchParams>) {
 function LoginForm() {
   const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
-  const [showDemo, setShowDemo] = useState(false)
   const [authError, setAuthError] = useState<string | null>(null)
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -59,13 +32,6 @@ function LoginForm() {
       router.replace(getSafeRedirect(searchParams))
     }
   }, [_hasHydrated, isAuthenticated, router, searchParams])
-
-  const loginAsDemo = (user: User) => {
-    setAuth(user, DEMO_TOKEN, 'demo-refresh-token')
-    document.cookie = `accessToken=${DEMO_TOKEN}; path=/; max-age=${60 * 60 * 24}`
-    toast.success(`Masuk sebagai ${user.nama} (Demo)`)
-    router.push(getSafeRedirect(searchParams))
-  }
 
   const {
     register,
@@ -167,34 +133,6 @@ function LoginForm() {
         {loading && <Loader2 className="h-4 w-4 animate-spin" />}
         {loading ? 'Memproses...' : 'Masuk'}
       </button>
-
-      {/* Demo login */}
-      <div className="pt-2">
-        <button
-          type="button"
-          onClick={() => setShowDemo(!showDemo)}
-          className="flex w-full items-center justify-center gap-2 rounded-lg border border-dashed border-gray-300 py-2.5 text-sm text-gray-500 hover:border-green-400 hover:text-green-600 transition-colors"
-        >
-          <FlaskConical className="h-4 w-4" />
-          Masuk sebagai Demo (tanpa backend)
-        </button>
-
-        {showDemo && (
-          <div className="mt-2 grid grid-cols-2 gap-2">
-            {DEMO_USERS.map(({ label, user }) => (
-              <button
-                key={user.id}
-                type="button"
-                onClick={() => loginAsDemo(user)}
-                className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-left text-sm hover:border-green-400 hover:bg-green-50 transition-colors"
-              >
-                <p className="font-medium text-gray-900">{label}</p>
-                <p className="text-xs text-gray-400">{user.email}</p>
-              </button>
-            ))}
-          </div>
-        )}
-      </div>
     </form>
   )
 }
